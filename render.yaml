@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: sistema-escritural
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2 --timeout 120
+    disk:
+      name: banco-dados
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DB_PATH
+        value: /data/banco_dados.db
+      - key: SECRET_KEY
+        generateValue: true

@@ -6,8 +6,7 @@ from utils import usuario_logado, checar_login
 
 importacao_bp = Blueprint('importacao', __name__)
 
-# /tmp é gravável no Vercel (filesystem read-only exceto /tmp); localmente usa uploads/
-_PASTA_UPLOADS = '/tmp' if os.environ.get('DATABASE_URL') else os.path.join(os.path.dirname(__file__), '..', 'uploads')
+_PASTA_UPLOADS = '/tmp' if os.environ.get('RENDER') else os.path.join(os.path.dirname(__file__), '..', 'uploads')
 
 
 def _checar_admin():

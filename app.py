@@ -16,16 +16,8 @@ from routes.config      import config_bp
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
 
-if not os.environ.get('DATABASE_URL'):
-    # Localmente inicializa o SQLite normalmente
-    banco.inicializar_banco()
-    banco.migrar_pendentes_legados()
-else:
-    # Em produção (Vercel+Neon) as tabelas já existem; só inicializa na primeira vez
-    try:
-        banco.conectar().execute("SELECT 1 FROM usuarios LIMIT 1")
-    except Exception:
-        banco.inicializar_banco()
+banco.inicializar_banco()
+banco.migrar_pendentes_legados()
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(pendente_bp)
