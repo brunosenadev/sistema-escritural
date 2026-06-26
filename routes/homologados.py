@@ -37,6 +37,7 @@ def _render(tipo):
     for reg in registros:
         tec = reg.get('tecnico') or 'SEM TEC.'
         resumo_tecnicos[tec] = resumo_tecnicos.get(tec, 0) + 1
+    resumo_tecnicos = dict(sorted(resumo_tecnicos.items(), key=lambda x: x[1], reverse=True))
     return render_template(
         'aba_homologados.html',
         tipo=tipo, nome_aba=nome_aba, aba_ativa=aba_ativa,

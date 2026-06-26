@@ -19,6 +19,7 @@ def aba_cancelados():
     for reg in registros:
         tecnico = reg.get('tecnico') or 'SEM TEC.'
         resumo_tecnicos[tecnico] = resumo_tecnicos.get(tecnico, 0) + 1
+    resumo_tecnicos = dict(sorted(resumo_tecnicos.items(), key=lambda x: x[1], reverse=True))
 
     return render_template(
         'aba_cancelados.html',

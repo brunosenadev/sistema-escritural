@@ -22,6 +22,9 @@ def aba_pendente():
         resumo_tecnicos[tecnico] = resumo_tecnicos.get(tecnico, 0) + 1
         resumo_status[status]    = resumo_status.get(status, 0) + 1
 
+    resumo_tecnicos = dict(sorted(resumo_tecnicos.items(), key=lambda x: x[1], reverse=True))
+    resumo_status   = dict(sorted(resumo_status.items(),   key=lambda x: x[1], reverse=True))
+
     tecnico_logado = session.get('tecnico_vinculado', '') or ''
     if tecnico_logado:
         registros.sort(key=lambda r: (0 if (r.get('tecnico') or '') == tecnico_logado else 1))
