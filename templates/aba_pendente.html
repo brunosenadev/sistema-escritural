@@ -267,6 +267,8 @@
 
   .botao-acao.editar { color: #3b82f6; }
   .botao-acao.editar:hover { background: #eff6ff; }
+  .botao-acao.assumir { color: #16a34a; }
+  .botao-acao.assumir:hover { background: #f0fdf4; }
   .botao-acao.deletar { color: #ef4444; }
   .botao-acao.deletar:hover { background: #fef2f2; }
 
@@ -607,16 +609,31 @@
                   <button
                     class="botao-acao editar"
                     title="Editar"
-                    onclick="abrirModalEditar({{ reg | tojson }})"
+                    data-reg='{{ reg | tojson }}'
+                    onclick="abrirModalEditar(JSON.parse(this.dataset.reg))"
                   >
                     <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                   </button>
+                  {% if not reg.tecnico or reg.tecnico.upper().strip() in ('', 'SEM TEC.') %}
+                  <button
+                    class="botao-acao assumir"
+                    title="Assumir este registro"
+                    onclick="assumirRegistro({{ reg.id }})"
+                  >
+                    <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <line x1="19" y1="8" x2="19" y2="14"/>
+                      <line x1="22" y1="11" x2="16" y2="11"/>
+                    </svg>
+                  </button>
+                  {% endif %}
                   <button
                     class="botao-acao deletar"
                     title="Deletar"
-                    onclick="confirmarDelecao({{ reg.id }}, {{ reg.empresa | tojson }})"
+                    data-empresa="{{ reg.empresa | e }}"
+                    onclick="confirmarDelecao({{ reg.id }}, this.dataset.empresa)"
                   >
                     <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
@@ -773,6 +790,31 @@
         <button type="submit" class="botao-salvar" id="botao-salvar-texto">Salvar</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal: escolher técnico (para admin) -->
+<div class="overlay-modal" id="overlay-assumir" onclick="if(event.target===this)fecharModalAssumirTec()">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-titulo">
+      <span>Escolher Técnico</span>
+      <button class="botao-fechar-modal" onclick="fecharModalAssumirTec()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="grupo-form" style="margin-bottom:20px;">
+      <label for="select-tecnico-assumir">Técnico que vai assumir</label>
+      <select class="select-form" id="select-tecnico-assumir">
+        <option value="">Selecionar...</option>
+        {% for t in lista_tecnicos %}{% if t.nome != 'SEM TEC.' %}
+        <option value="{{ t.nome }}">{{ t.nome }}</option>
+        {% endif %}{% endfor %}
+      </select>
+    </div>
+    <div class="rodape-modal">
+      <button type="button" class="botao-cancelar" onclick="fecharModalAssumirTec()">Cancelar</button>
+      <button type="button" class="botao-salvar" onclick="confirmarAssumirTec()">Assumir</button>
+    </div>
   </div>
 </div>
 
@@ -1105,6 +1147,50 @@
         mostrarToast('sucesso', 'Status atualizado!');
       } else {
         mostrarToast('erro', d.erro || 'Erro ao atualizar status.');
+      }
+    })
+    .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
+  }
+
+  // ─── Assumir registro ───────────────────────────────────────
+  const _tecnicoVinculado = '{{ session.get("tecnico_vinculado", "") | e }}';
+  let _idAssumirAtual = null;
+
+  function assumirRegistro(id) {
+    if (_tecnicoVinculado) {
+      _chamarAssumir(id, _tecnicoVinculado);
+    } else {
+      _idAssumirAtual = id;
+      document.getElementById('select-tecnico-assumir').value = '';
+      document.getElementById('overlay-assumir').classList.add('aberto');
+    }
+  }
+
+  function confirmarAssumirTec() {
+    const tecnico = document.getElementById('select-tecnico-assumir').value;
+    if (!tecnico) { mostrarToast('erro', 'Selecione um técnico.'); return; }
+    fecharModalAssumirTec();
+    _chamarAssumir(_idAssumirAtual, tecnico);
+  }
+
+  function fecharModalAssumirTec() {
+    document.getElementById('overlay-assumir').classList.remove('aberto');
+    _idAssumirAtual = null;
+  }
+
+  function _chamarAssumir(id, tecnico) {
+    fetch(`/pendente/assumir/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tecnico }),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) {
+        mostrarToast('sucesso', `Registro assumido por ${d.tecnico}!`);
+        setTimeout(() => location.reload(), 700);
+      } else {
+        mostrarToast('erro', d.erro || 'Erro ao assumir.');
       }
     })
     .catch(() => mostrarToast('erro', 'Erro de comunicação.'));

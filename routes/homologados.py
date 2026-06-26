@@ -139,6 +139,21 @@ def retornar_homologado_pendente(tipo, id_registro):
     return jsonify({'erro': 'Registro não encontrado'}), 404
 
 
+@homologados_bp.route('/homologados-<tipo>/assumir/<int:id_registro>', methods=['POST'])
+def assumir_homologado(tipo, id_registro):
+    if tipo not in _CONFIGS:
+        return jsonify({'erro': 'Tipo inválido'}), 400
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    tecnico = (session.get('tecnico_vinculado') or '').strip()
+    if not tecnico:
+        return jsonify({'erro': 'Seu usuário não tem técnico vinculado.'}), 400
+    ok = banco.assumir_homologado(id_registro, tipo, tecnico)
+    if ok:
+        return jsonify({'sucesso': True, 'tecnico': tecnico})
+    return jsonify({'erro': 'Registro não encontrado ou já possui técnico.'}), 404
+
+
 @homologados_bp.route('/homologados-<tipo>/cancelar/<int:id_registro>', methods=['POST'])
 def cancelar_homologado(tipo, id_registro):
     if tipo not in _CONFIGS:

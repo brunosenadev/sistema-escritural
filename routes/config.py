@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, session, make_response
 import banco
-from utils import checar_admin, usuario_logado
+from utils import checar_admin, usuario_logado, criar_tokens, _preencher_sessao
 
 config_bp = Blueprint('config', __name__)
 
@@ -69,6 +69,18 @@ def api_atualizar_usuario(id_usuario):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.atualizar_usuario(id_usuario, request.get_json())
+    # Se atualizou o próprio usuário, renova o token com dados frescos
+    if id_usuario == session.get('id_usuario'):
+        u = banco.buscar_usuario_por_id(id_usuario)
+        _preencher_sessao({
+            'usr': u['usuario'], 'nome': u['nome'], 'niv': u['nivel'],
+            'tec': u.get('tecnico_vinculado') or '', 'tema': u.get('tema') or 'light',
+            'sub': u['id'], 'mp': int(u.get('mudar_senha') or 0),
+        })
+        access, _ = criar_tokens(u)
+        resp = make_response(jsonify({'sucesso': True}))
+        resp.set_cookie('access_token', access, max_age=15*60, httponly=True, samesite='Lax', path='/')
+        return resp
     return jsonify({'sucesso': True})
 
 

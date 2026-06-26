@@ -81,6 +81,20 @@ def cancelar_pendente(id_registro):
     return jsonify({'erro': 'Registro não encontrado'}), 404
 
 
+@pendente_bp.route('/pendente/assumir/<int:id_registro>', methods=['POST'])
+def assumir_pendente(id_registro):
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    dados = request.get_json() or {}
+    tecnico = (dados.get('tecnico') or session.get('tecnico_vinculado') or '').strip()
+    if not tecnico:
+        return jsonify({'erro': 'Nenhum técnico selecionado.'}), 400
+    ok = banco.assumir_pendente(id_registro, tecnico)
+    if ok:
+        return jsonify({'sucesso': True, 'tecnico': tecnico})
+    return jsonify({'erro': 'Registro não encontrado ou já possui técnico.'}), 404
+
+
 @pendente_bp.route('/pendente/homologar/<int:id_registro>', methods=['POST'])
 def homologar_pendente(id_registro):
     if not usuario_logado():

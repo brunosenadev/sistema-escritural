@@ -501,6 +501,33 @@ def importar_pendentes(lista_registros, substituir=True):
     return total
 
 
+def assumir_homologado(id_registro, tipo, nome_tecnico):
+    tabela = f'homologados_{tipo}'
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    conn = conectar()
+    conn.execute(
+        f"UPDATE {tabela} SET tecnico=?, atualizado_em=? WHERE id=? AND (tecnico IS NULL OR UPPER(TRIM(tecnico))='' OR UPPER(TRIM(tecnico))='SEM TEC.')",
+        (nome_tecnico, agora, id_registro)
+    )
+    changed = conn.total_changes
+    conn.commit()
+    conn.close()
+    return changed > 0
+
+
+def assumir_pendente(id_registro, nome_tecnico):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    conn = conectar()
+    conn.execute(
+        "UPDATE pendentes SET tecnico=?, atualizado_em=? WHERE id=? AND (tecnico IS NULL OR UPPER(TRIM(tecnico))='' OR UPPER(TRIM(tecnico))='SEM TEC.')",
+        (nome_tecnico, agora, id_registro)
+    )
+    changed = conn.total_changes
+    conn.commit()
+    conn.close()
+    return changed > 0
+
+
 def migrar_pendentes_legados():
     conn = conectar()
     hom = [dict(r) for r in conn.execute("SELECT * FROM pendentes WHERE UPPER(TRIM(status))='HOMOLOGADO'").fetchall()]
