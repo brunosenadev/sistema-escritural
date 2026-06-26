@@ -7,18 +7,34 @@ Modo dual:
 """
 
 import os
+import ssl
 import sqlite3
+import urllib.parse as _urlparse
 from datetime import datetime
 
 _DATABASE_URL = os.environ.get('DATABASE_URL', '')
 _USE_PG       = bool(_DATABASE_URL)
 
 if _USE_PG:
-    import psycopg2
-    import psycopg2.extras
-    import psycopg2.errors
+    import pg8000.dbapi as _pg
 
 CAMINHO_BANCO = os.path.join(os.path.dirname(__file__), 'banco_dados.db')
+
+
+def _pg_params():
+    """Converte DATABASE_URL em kwargs para pg8000.dbapi.connect()."""
+    r = _urlparse.urlparse(_DATABASE_URL)
+    qs = _urlparse.parse_qs(r.query)
+    params = {
+        'host':     r.hostname,
+        'port':     r.port or 5432,
+        'database': r.path.lstrip('/'),
+        'user':     r.username,
+        'password': r.password,
+    }
+    if qs.get('sslmode', [''])[0] in ('require', 'verify-ca', 'verify-full'):
+        params['ssl_context'] = ssl.create_default_context()
+    return params
 
 # ── Dados iniciais ────────────────────────────────────────
 
@@ -47,46 +63,64 @@ SERVICOS_INICIAIS = [
 ]
 
 
+# ── Cursor dict-like para pg8000 ──────────────────────────
+
+class _PgDictCursor:
+    """Wraps pg8000 cursor para retornar dicts (como sqlite3.Row)."""
+
+    def __init__(self, cur):
+        self._cur = cur
+
+    def _cols(self):
+        return [d[0] for d in (self._cur.description or [])]
+
+    def fetchone(self):
+        row = self._cur.fetchone()
+        return dict(zip(self._cols(), row)) if row is not None else None
+
+    def fetchall(self):
+        cols = self._cols()
+        return [dict(zip(cols, row)) for row in self._cur.fetchall()]
+
+
 # ── Wrapper PostgreSQL ────────────────────────────────────
 
 class _PgConn:
-    """Thin wrapper em psycopg2 com interface compatível com sqlite3."""
+    """Thin wrapper em pg8000 com interface compatível com sqlite3."""
 
     def __init__(self):
-        self._conn = psycopg2.connect(_DATABASE_URL)
-        self._cur  = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        self._conn = _pg.connect(**_pg_params())
+        self._cur  = None
 
     def execute(self, sql, params=()):
-        # Cursor fresco a cada execute para evitar estado sujo entre chamadas
-        self._cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         sql = sql.replace('?', '%s')
         if 'INSERT OR IGNORE INTO' in sql:
             sql = sql.replace('INSERT OR IGNORE INTO', 'INSERT INTO')
             sql = sql.rstrip(' ;') + ' ON CONFLICT DO NOTHING'
-        self._cur.execute(sql, params or ())
+        raw = self._conn.cursor()
+        raw.execute(sql, list(params) if params else [])
+        self._cur = _PgDictCursor(raw)
         return self._cur
 
     def commit(self):
         self._conn.commit()
 
     def close(self):
-        # Não fecha a conexão real — ela fica em cache para a próxima request
         try:
-            self._conn.rollback()  # descarta transação aberta (se houver)
+            self._conn.rollback()
         except Exception:
             pass
 
 
-# ── Cache de conexão PostgreSQL (uma por instância serverless) ────────────────
+# ── Cache de conexão PostgreSQL (uma por instância) ───────
 
-_pg_conn_cache: '_PgConn | None' = None
+_pg_conn_cache = None
 
 
-def _pg_conectar() -> '_PgConn':
+def _pg_conectar():
     global _pg_conn_cache
     if _pg_conn_cache is not None:
         try:
-            # Verifica se a conexão ainda está viva
             _pg_conn_cache._conn.cursor().execute('SELECT 1')
             return _pg_conn_cache
         except Exception:
