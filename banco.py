@@ -57,6 +57,8 @@ class _PgConn:
         self._cur  = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     def execute(self, sql, params=()):
+        # Cursor fresco a cada execute para evitar estado sujo entre chamadas
+        self._cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         sql = sql.replace('?', '%s')
         if 'INSERT OR IGNORE INTO' in sql:
             sql = sql.replace('INSERT OR IGNORE INTO', 'INSERT INTO')
@@ -68,14 +70,40 @@ class _PgConn:
         self._conn.commit()
 
     def close(self):
-        self._conn.close()
+        # Não fecha a conexão real — ela fica em cache para a próxima request
+        try:
+            self._conn.rollback()  # descarta transação aberta (se houver)
+        except Exception:
+            pass
+
+
+# ── Cache de conexão PostgreSQL (uma por instância serverless) ────────────────
+
+_pg_conn_cache: '_PgConn | None' = None
+
+
+def _pg_conectar() -> '_PgConn':
+    global _pg_conn_cache
+    if _pg_conn_cache is not None:
+        try:
+            # Verifica se a conexão ainda está viva
+            _pg_conn_cache._conn.cursor().execute('SELECT 1')
+            return _pg_conn_cache
+        except Exception:
+            try:
+                _pg_conn_cache._conn.close()
+            except Exception:
+                pass
+            _pg_conn_cache = None
+    _pg_conn_cache = _PgConn()
+    return _pg_conn_cache
 
 
 # ── Conexão ───────────────────────────────────────────────
 
 def conectar():
     if _USE_PG:
-        return _PgConn()
+        return _pg_conectar()
     conn = sqlite3.connect(CAMINHO_BANCO)
     conn.row_factory = sqlite3.Row
     return conn
@@ -650,6 +678,21 @@ def importar_pendentes(lista_registros, substituir=True):
     conn.commit()
     conn.close()
     return total
+
+
+def contar_todos():
+    """Retorna dict com contagem de todas as tabelas em uma única query."""
+    conn = conectar()
+    row = conn.execute("""
+        SELECT
+            (SELECT COUNT(*) FROM pendentes)             AS pendentes,
+            (SELECT COUNT(*) FROM cancelados)            AS cancelados,
+            (SELECT COUNT(*) FROM homologados_cobranca)  AS cobranca,
+            (SELECT COUNT(*) FROM homologados_pagamentos) AS pagamentos,
+            (SELECT COUNT(*) FROM homologados_extrato)   AS extrato
+    """).fetchone()
+    conn.close()
+    return dict(row)
 
 
 def contar_pendentes():

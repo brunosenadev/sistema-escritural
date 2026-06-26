@@ -16,8 +16,16 @@ from routes.config      import config_bp
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
 
-banco.inicializar_banco()
-banco.migrar_pendentes_legados()
+if not os.environ.get('DATABASE_URL'):
+    # Localmente inicializa o SQLite normalmente
+    banco.inicializar_banco()
+    banco.migrar_pendentes_legados()
+else:
+    # Em produção (Vercel+Neon) as tabelas já existem; só inicializa na primeira vez
+    try:
+        banco.conectar().execute("SELECT 1 FROM usuarios LIMIT 1")
+    except Exception:
+        banco.inicializar_banco()
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(pendente_bp)
@@ -47,14 +55,15 @@ def filtro_css_status(status_texto):
 
 @app.context_processor
 def injetar_globais():
+    totais = banco.contar_todos()
     return {
         'nivel_acesso':            session.get('nivel_acesso', ''),
         'nome_usuario':            session.get('nome', ''),
-        'total_pendentes_db':      banco.contar_pendentes(),
-        'total_cancelados_db':     banco.contar_cancelados(),
-        'total_hom_cobranca_db':   banco.contar_homologados_cobranca(),
-        'total_hom_pagamentos_db': banco.contar_homologados_pagamentos(),
-        'total_hom_extrato_db':    banco.contar_homologados_extrato(),
+        'total_pendentes_db':      totais['pendentes'],
+        'total_cancelados_db':     totais['cancelados'],
+        'total_hom_cobranca_db':   totais['cobranca'],
+        'total_hom_pagamentos_db': totais['pagamentos'],
+        'total_hom_extrato_db':    totais['extrato'],
     }
 
 
