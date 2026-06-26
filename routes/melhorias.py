@@ -60,7 +60,7 @@ def aba_melhorias():
     return render_template(
         'aba_melhorias.html',
         por_estagio=por_estagio,
-        tecnicos=banco.listar_tecnicos(),
+        programadores=banco.listar_programadores(),
         pode_mover=_pode_mover(),
         pode_criar=_pode_criar(),
     )

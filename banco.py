@@ -275,6 +275,16 @@ def listar_usuarios():
     return [dict(r) for r in rows]
 
 
+def listar_programadores():
+    """Usuários com setor contendo 'PROGRAMAÇÃO' e tecnico_vinculado preenchido."""
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT tecnico_vinculado FROM usuarios WHERE UPPER(setor) LIKE '%PROGRAMAÇÃO%' AND tecnico_vinculado != '' ORDER BY nome"
+    ).fetchall()
+    conn.close()
+    return [r['tecnico_vinculado'] for r in rows]
+
+
 def adicionar_usuario(dados):
     try:
         conn = conectar()

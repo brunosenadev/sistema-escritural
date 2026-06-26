@@ -389,14 +389,21 @@
       {% endif %}
     </div>
     <div class="frow">
+      {% set tec_vinc = session.get('tecnico_vinculado', '') %}
       <div class="fg">
         <label>Programador</label>
-        <select id="mel-prog">
-          <option value="">— Nenhum —</option>
-          {% for t in tecnicos %}
-          <option value="{{ t.nome }}">{{ t.nome }}</option>
-          {% endfor %}
-        </select>
+        {% if tec_vinc %}
+          {# usuário tem técnico vinculado: mostra como texto, não precisa selecionar #}
+          <input type="text" id="mel-prog" value="{{ tec_vinc | e }}" readonly
+                 style="background:var(--z-elevated,#f1f5f9);color:var(--z-text-2,#475569);cursor:default;">
+        {% else %}
+          <select id="mel-prog">
+            <option value="">— Nenhum —</option>
+            {% for p in programadores %}
+            <option value="{{ p | e }}">{{ p }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
       </div>
       <div class="fg">
         <label>Solicitante</label>
@@ -436,15 +443,21 @@
 
   const $  = id => document.getElementById(id);
 
+  function _setProg(valor) {
+    const el = $('mel-prog');
+    if (!el || el.readOnly) return;  // readonly = vinculado, não sobrescreve
+    el.value = valor || '';
+  }
+
   function abrirModalNova(estagio) {
     $('mel-titulo-modal').textContent = 'Nova Melhoria';
-    $('mel-id').value    = '';
+    $('mel-id').value     = '';
     $('mel-titulo').value = '';
-    $('mel-desc').value  = '';
-    $('mel-prior').value = 'media';
+    $('mel-desc').value   = '';
+    $('mel-prior').value  = 'media';
     $('mel-estagio').value = estagio || 'em_analise';
-    $('mel-prog').value  = '';
-    $('mel-solic').value = '';
+    _setProg('');
+    $('mel-solic').value  = '';
     if ($('mbtn-del')) $('mbtn-del').style.display = 'none';
     $('ov-mel').classList.add('aberto');
     $('mel-titulo').focus();
@@ -452,13 +465,13 @@
 
   function abrirDetalhe(m) {
     $('mel-titulo-modal').textContent = 'Editar Melhoria';
-    $('mel-id').value    = m.id;
-    $('mel-titulo').value = m.titulo  || '';
-    $('mel-desc').value  = m.descricao || '';
-    $('mel-prior').value = m.prioridade || 'media';
-    $('mel-estagio').value = m.estagio || 'em_analise';
-    $('mel-prog').value  = m.programador || '';
-    $('mel-solic').value = m.solicitante || '';
+    $('mel-id').value     = m.id;
+    $('mel-titulo').value = m.titulo    || '';
+    $('mel-desc').value   = m.descricao || '';
+    $('mel-prior').value  = m.prioridade || 'media';
+    $('mel-estagio').value = m.estagio  || 'em_analise';
+    _setProg(m.programador);
+    $('mel-solic').value  = m.solicitante || '';
     if ($('mbtn-del')) $('mbtn-del').style.display = 'inline-flex';
     $('ov-mel').classList.add('aberto');
   }
