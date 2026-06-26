@@ -276,10 +276,10 @@ def listar_usuarios():
 
 
 def listar_programadores():
-    """Usuários com setor contendo 'PROGRAMAÇÃO'."""
+    """Usuários com setor de programação (UPPER() não funciona com acentos no SQLite)."""
     conn = conectar()
     rows = conn.execute(
-        "SELECT nome FROM usuarios WHERE UPPER(setor) LIKE '%PROGRAMAÇÃO%' ORDER BY nome"
+        "SELECT nome FROM usuarios WHERE setor IN ('PROGRAMAÇÃO','GESTOR PROGRAMAÇÃO') ORDER BY nome"
     ).fetchall()
     conn.close()
     return [r['nome'] for r in rows]

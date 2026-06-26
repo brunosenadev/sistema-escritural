@@ -7,7 +7,7 @@
 
 {% block acoes_header %}
 {% if pode_criar %}
-<button class="btn-header-action" style="background:#6366f1;color:#fff;border:none;gap:5px;padding:0 14px;font-size:0.8rem;font-weight:600;display:inline-flex;align-items:center;" onclick="abrirModalNova()">
+<button class="btn-nova-mel" onclick="abrirModalNova()">
   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   Nova Melhoria
 </button>
@@ -251,6 +251,33 @@
   [data-tema="dark"] .prior-baixa   { background:rgba(21,128,61,.15);  color:#4ade80; }
   [data-tema="dark"] .kadd-btn      { border-color: #4f46e5 !important; color: #818cf8 !important; background: rgba(99,102,241,0.06) !important; }
   [data-tema="dark"] .kadd-btn:hover { border-color:#818cf8 !important; color:#a5b4fc !important; background: rgba(99,102,241,0.12) !important; }
+
+  /* ── Botão nova melhoria ── */
+  .btn-nova-mel {
+    background: #6366f1; color: #fff;
+    border: none; border-radius: 7px;
+    padding: 0 14px; height: 32px;
+    font-size: 0.8rem; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 5px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-nova-mel:hover { background: #4f46e5; }
+  [data-tema="dark"] .btn-nova-mel { background: #4f46e5 !important; }
+  [data-tema="dark"] .btn-nova-mel:hover { background: #4338ca !important; }
+
+  /* ── Drag & drop ── */
+  .kcard[draggable="true"] { cursor: grab; }
+  .kcard[draggable="true"]:active { cursor: grabbing; }
+  .kcard.dragging { opacity: 0.45; transform: rotate(1.5deg) scale(0.97); }
+  .kanban-col.drag-over .kanban-cards {
+    background: rgba(99,102,241,0.06);
+    border-radius: 0 0 8px 8px;
+    outline: 2px dashed #6366f1;
+    outline-offset: -4px;
+  }
+  [data-tema="dark"] .kanban-col.drag-over .kanban-cards {
+    background: rgba(99,102,241,0.10) !important;
+  }
   [data-tema="dark"] .mod-mel,
   [data-tema="dark"] .mod-rej       { background: var(--z-surface) !important; }
   [data-tema="dark"] .mod-mel h3,
@@ -273,7 +300,9 @@
 {# ── Macro card compacto ── #}
 {% macro kcard(m) %}
 {% set pcls = {'urgente':'prior-urgente','alta':'prior-alta','media':'prior-media','baixa':'prior-baixa'} %}
-<div class="kcard" data-mel='{{ m | tojson }}' onclick="abrirDetalhe(JSON.parse(this.dataset.mel))">
+<div class="kcard" data-mel='{{ m | tojson }}' data-id="{{ m.id }}"
+     {% if pode_mover %}draggable="true"{% endif %}
+     onclick="abrirDetalhe(JSON.parse(this.dataset.mel))">
   <div class="kcard-top">
     <span class="prior-badge {{ pcls.get(m.prioridade, 'prior-media') }}">{{ m.prioridade }}</span>
     {% if m.programador %}<span class="kcard-prog">{{ m.programador }}</span>{% endif %}
@@ -300,7 +329,7 @@
 
 <div class="kanban-wrap">
 
-  <div class="kanban-col col-analise">
+  <div class="kanban-col col-analise" data-estagio="em_analise">
     <div class="kanban-col-header">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       Em Análise
@@ -312,7 +341,7 @@
     <button class="kadd-btn" onclick="abrirModalNova('em_analise')">+ Adicionar</button>
   </div>
 
-  <div class="kanban-col col-prog">
+  <div class="kanban-col col-prog" data-estagio="em_programacao">
     <div class="kanban-col-header">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       Em Programação
@@ -324,7 +353,7 @@
     <button class="kadd-btn" onclick="abrirModalNova('em_programacao')">+ Adicionar</button>
   </div>
 
-  <div class="kanban-col col-concluida">
+  <div class="kanban-col col-concluida" data-estagio="concluida">
     <div class="kanban-col-header">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
       Concluída
@@ -336,7 +365,7 @@
     <button class="kadd-btn" onclick="abrirModalNova('concluida')">+ Adicionar</button>
   </div>
 
-  <div class="kanban-col col-rejeitada">
+  <div class="kanban-col col-rejeitada" data-estagio="rejeitada">
     <div class="kanban-col-header">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       Rejeitada
@@ -391,8 +420,7 @@
     <div class="frow">
       <div class="fg">
         <label>Programador</label>
-        {% set setor_up = setor_usuario | upper %}
-        {% if 'PROGRAMAÇÃO' in setor_up %}
+        {% if setor_usuario in ['PROGRAMAÇÃO', 'GESTOR PROGRAMAÇÃO'] %}
           {# usuário já é da programação: auto-preenche com seu próprio nome #}
           <input type="text" id="mel-prog" value="{{ nome_usuario | e }}" readonly
                  style="background:var(--z-elevated,#f1f5f9);color:var(--z-text-2,#475569);cursor:default;">
@@ -406,7 +434,7 @@
         {% endif %}
       </div>
       <div class="fg">
-        <label>Solicitante</label>
+        <label>Solicitante *</label>
         <input type="text" id="mel-solic" placeholder="Quem pediu?">
       </div>
     </div>
@@ -482,7 +510,9 @@
   async function salvar() {
     const id    = $('mel-id').value;
     const tit   = $('mel-titulo').value.trim();
-    if (!tit) { alert('Informe o título.'); return; }
+    const solic = $('mel-solic').value.trim();
+    if (!tit)   { alert('Informe o título.');       return; }
+    if (!solic) { alert('Informe o solicitante.');  return; }
     const dados = {
       titulo:      tit,
       descricao:   $('mel-desc').value.trim(),
@@ -537,5 +567,46 @@
       body: JSON.stringify(body),
     });
   }
+
+  {% if pode_mover %}
+  /* ── Drag & drop ── */
+  let _dragId = null;
+
+  document.querySelectorAll('.kcard[draggable]').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      _dragId = card.dataset.id;
+      setTimeout(() => card.classList.add('dragging'), 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+    });
+  });
+
+  document.querySelectorAll('.kanban-col').forEach(col => {
+    col.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+      col.classList.add('drag-over');
+    });
+    col.addEventListener('dragleave', e => {
+      if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+    });
+    col.addEventListener('drop', async e => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      const novoEstagio = col.dataset.estagio;
+      if (!_dragId || !novoEstagio) return;
+      if (novoEstagio === 'rejeitada') {
+        pedirMotivo(_dragId);
+        return;
+      }
+      await _post(`${_B}/mover/${_dragId}`, {estagio: novoEstagio});
+      location.reload();
+    });
+  });
+  {% endif %}
 </script>
 {% endblock %}
