@@ -389,12 +389,12 @@
       {% endif %}
     </div>
     <div class="frow">
-      {% set tec_vinc = session.get('tecnico_vinculado', '') %}
       <div class="fg">
         <label>Programador</label>
-        {% if tec_vinc %}
-          {# usuário tem técnico vinculado: mostra como texto, não precisa selecionar #}
-          <input type="text" id="mel-prog" value="{{ tec_vinc | e }}" readonly
+        {% set setor_up = setor_usuario | upper %}
+        {% if 'PROGRAMAÇÃO' in setor_up %}
+          {# usuário já é da programação: auto-preenche com seu próprio nome #}
+          <input type="text" id="mel-prog" value="{{ nome_usuario | e }}" readonly
                  style="background:var(--z-elevated,#f1f5f9);color:var(--z-text-2,#475569);cursor:default;">
         {% else %}
           <select id="mel-prog">
