@@ -245,7 +245,7 @@ def adicionar_usuario(dados):
     try:
         conn = conectar()
         conn.execute(
-            "INSERT INTO usuarios (usuario,senha,nome,nivel,tecnico_vinculado) VALUES (?,?,?,?,?)",
+            "INSERT INTO usuarios (usuario,senha,nome,nivel,tecnico_vinculado,mudar_senha) VALUES (?,?,?,?,?,1)",
             (dados['usuario'].strip().lower(), dados['senha'], dados['nome'].strip(),
              dados['nivel'], dados.get('tecnico_vinculado') or None)
         )
@@ -257,19 +257,18 @@ def adicionar_usuario(dados):
 
 
 def atualizar_usuario(id_usuario, campos):
-    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
     conn = conectar()
     if campos.get('senha'):
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,atualizado_em=? WHERE id=?",
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             campos['senha'], agora, id_usuario)
+             campos['senha'], id_usuario)
         )
     else:
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,atualizado_em=? WHERE id=?",
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             agora, id_usuario)
+             id_usuario)
         )
     conn.commit()
     conn.close()
