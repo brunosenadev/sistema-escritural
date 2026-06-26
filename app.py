@@ -55,15 +55,9 @@ def filtro_css_status(status_texto):
 
 @app.context_processor
 def injetar_globais():
-    totais = banco.contar_todos()
     return {
-        'nivel_acesso':            session.get('nivel_acesso', ''),
-        'nome_usuario':            session.get('nome', ''),
-        'total_pendentes_db':      totais['pendentes'],
-        'total_cancelados_db':     totais['cancelados'],
-        'total_hom_cobranca_db':   totais['cobranca'],
-        'total_hom_pagamentos_db': totais['pagamentos'],
-        'total_hom_extrato_db':    totais['extrato'],
+        'nivel_acesso': session.get('nivel_acesso', ''),
+        'nome_usuario': session.get('nome', ''),
     }
 
 

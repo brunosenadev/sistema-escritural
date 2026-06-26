@@ -422,9 +422,7 @@
     <div style="padding:10px 16px 6px; border-bottom:1px solid rgba(255,255,255,0.06);">
       <div style="display:flex;align-items:center;gap:6px;">
         <span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#22c55e;"></span>
-        <span style="font-size:11px;color:#86efac;">
-          Banco ativo · {{ total_pendentes_db }} pendentes
-        </span>
+        <span id="banco-info-pendentes" style="font-size:11px;color:#86efac;">Banco ativo</span>
       </div>
     </div>
 
@@ -437,7 +435,7 @@
           <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
         Pendente
-        {% if total_pendentes_db %}<span class="nav-badge">{{ total_pendentes_db }}</span>{% endif %}
+        <span class="nav-badge" id="badge-pendente" style="display:none"></span>
       </a>
 
       <a href="/homologados-cobranca" class="nav-item {% if aba_ativa == 'homologados_cobranca' %}ativo{% endif %}">
@@ -445,7 +443,7 @@
           <polyline points="22 4 12 14.01 9 11.01"/>
         </svg>
         Hom. Cobrança
-        {% if total_hom_cobranca_db %}<span class="nav-badge" style="background:#15803d;">{{ total_hom_cobranca_db }}</span>{% endif %}
+        <span class="nav-badge" id="badge-cobranca" style="display:none;background:#15803d;"></span>
       </a>
 
       <a href="/homologados-pagamentos" class="nav-item {% if aba_ativa == 'homologados_pagamentos' %}ativo{% endif %}">
@@ -453,7 +451,7 @@
           <line x1="1" y1="10" x2="23" y2="10"/>
         </svg>
         Hom. Pagamentos
-        {% if total_hom_pagamentos_db %}<span class="nav-badge" style="background:#15803d;">{{ total_hom_pagamentos_db }}</span>{% endif %}
+        <span class="nav-badge" id="badge-pagamentos" style="display:none;background:#15803d;"></span>
       </a>
 
       <a href="/homologados-extrato" class="nav-item {% if aba_ativa == 'homologados_extrato' %}ativo{% endif %}">
@@ -461,7 +459,7 @@
           <line x1="2" y1="10" x2="22" y2="10"/>
         </svg>
         Hom. Extrato Cartão
-        {% if total_hom_extrato_db %}<span class="nav-badge" style="background:#15803d;">{{ total_hom_extrato_db }}</span>{% endif %}
+        <span class="nav-badge" id="badge-extrato" style="display:none;background:#15803d;"></span>
       </a>
 
       <a href="/cancelados" class="nav-item {% if aba_ativa == 'cancelados' %}ativo{% endif %}">
@@ -469,7 +467,7 @@
           <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
         </svg>
         Cancelados
-        {% if total_cancelados_db %}<span class="nav-badge" style="background:#dc2626;">{{ total_cancelados_db }}</span>{% endif %}
+        <span class="nav-badge" id="badge-cancelados" style="display:none;background:#dc2626;"></span>
       </a>
 
       <a href="#" class="nav-item {% if aba_ativa == 'sispbol' %}ativo{% endif %}">
@@ -796,5 +794,30 @@
   </script>
 
   {% block scripts_extras %}{% endblock %}
+
+  <script>
+    // Carrega contadores da sidebar de forma assíncrona (não bloqueia o carregamento da página)
+    (function() {
+      function setBadge(id, n) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = n;
+        el.style.display = n > 0 ? '' : 'none';
+      }
+      fetch('/api/contadores')
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(d) {
+          if (!d) return;
+          setBadge('badge-pendente',   d.pendentes);
+          setBadge('badge-cobranca',   d.cobranca);
+          setBadge('badge-pagamentos', d.pagamentos);
+          setBadge('badge-extrato',    d.extrato);
+          setBadge('badge-cancelados', d.cancelados);
+          var info = document.getElementById('banco-info-pendentes');
+          if (info) info.textContent = 'Banco ativo · ' + d.pendentes + ' pendentes';
+        })
+        .catch(function() {});
+    })();
+  </script>
 </body>
 </html>

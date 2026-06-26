@@ -5,6 +5,13 @@ from utils import checar_admin, usuario_logado
 config_bp = Blueprint('config', __name__)
 
 
+@config_bp.route('/api/contadores')
+def api_contadores():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    return jsonify(banco.contar_todos())
+
+
 @config_bp.route('/configuracoes')
 def pagina_configuracoes():
     bloqueio = checar_admin()
@@ -16,7 +23,6 @@ def pagina_configuracoes():
         usuarios=banco.listar_usuarios(),
         lista_status=banco.listar_status(),
         lista_servicos=banco.listar_servicos_completo(),
-        total_pendentes=banco.contar_pendentes(),
     )
 
 
