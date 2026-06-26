@@ -1,6 +1,14 @@
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
-from utils import usuario_logado, checar_login
+from utils import usuario_logado, checar_login, pode_editar
+
+
+def _sem_permissao():
+    err = _sem_permissao()
+    if err: return err
+    if not pode_editar():
+        return jsonify({'erro': 'Sem permissão para editar.'}), 403
+    return None
 
 cancelados_bp = Blueprint('cancelados', __name__)
 
@@ -33,23 +41,23 @@ def aba_cancelados():
 
 @cancelados_bp.route('/cancelados/adicionar', methods=['POST'])
 def adicionar_cancelado():
-    if not usuario_logado():
-        return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     id_novo = banco.adicionar_cancelado(request.get_json(), criado_por=session.get('usuario', ''))
     return jsonify({'sucesso': True, 'id': id_novo})
 
 
 @cancelados_bp.route('/cancelados/atualizar/<int:id_registro>', methods=['PUT'])
 def atualizar_cancelado(id_registro):
-    if not usuario_logado():
-        return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     banco.atualizar_cancelado(id_registro, request.get_json())
     return jsonify({'sucesso': True})
 
 
 @cancelados_bp.route('/cancelados/deletar/<int:id_registro>', methods=['DELETE'])
 def deletar_cancelado(id_registro):
-    if not usuario_logado():
-        return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     banco.deletar_cancelado(id_registro)
     return jsonify({'sucesso': True})

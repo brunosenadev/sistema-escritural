@@ -510,12 +510,14 @@
 {% endblock %}
 
 {% block acoes_header %}
+  {% if pode_editar %}
   <button class="botao-primario" onclick="abrirModalAdicionar()">
     <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/>
       <line x1="5" y1="12" x2="19" y2="12"/>
     </svg>
     Novo Registro
   </button>
+  {% endif %}
 {% endblock %}
 
 {% block conteudo %}
@@ -594,6 +596,7 @@
                   class="badge-status select-status-inline {{ reg.status | css_status }}"
                   data-id="{{ reg.id }}"
                   onchange="atualizarStatusInline(this)"
+                  {% if not pode_editar %}disabled style="pointer-events:none;opacity:0.7;"{% endif %}
                 >
                   {% for s in lista_status %}
                   <option value="{{ s }}" {% if s == reg.status %}selected{% endif %}>{{ s }}</option>
@@ -606,6 +609,7 @@
               <td class="celula-obs" title="{{ reg.obs }}">{{ reg.obs or '' }}</td>
               <td>
                 <div class="celula-acoes">
+                  {% if pode_editar %}
                   <button
                     class="botao-acao editar"
                     title="Editar"
@@ -639,6 +643,7 @@
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
                     </svg>
                   </button>
+                  {% endif %}{# pode_editar #}
                 </div>
               </td>
             </tr>
@@ -1136,8 +1141,8 @@
     const tr = el.closest('tr');
     if (tr) tr.dataset.status = novoStatus.toLowerCase();
 
-    fetch(`/pendente/atualizar/${id}`, {
-      method: 'PUT',
+    fetch(`/pendente/status/${id}`, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: novoStatus }),
     })

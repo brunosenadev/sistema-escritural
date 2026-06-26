@@ -1,6 +1,14 @@
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
-from utils import usuario_logado, checar_login
+from utils import usuario_logado, checar_login, pode_editar
+
+
+def _sem_permissao():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    if not pode_editar():
+        return jsonify({'erro': 'Sem permissão para editar.'}), 403
+    return None
 
 homologados_bp = Blueprint('homologados', __name__)
 
@@ -56,19 +64,22 @@ def aba_homologados_cobranca():
 
 @homologados_bp.route('/homologados-cobranca/adicionar', methods=['POST'])
 def adicionar_hom_cobranca():
-    if not usuario_logado(): return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     id_novo = banco.adicionar_homologado_cobranca(request.get_json(), session.get('usuario', ''))
     return jsonify({'sucesso': True, 'id': id_novo})
 
 @homologados_bp.route('/homologados-cobranca/atualizar/<int:id_registro>', methods=['PUT'])
 def atualizar_hom_cobranca(id_registro):
-    if not usuario_logado(): return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     banco.atualizar_homologado_cobranca(id_registro, request.get_json())
     return jsonify({'sucesso': True})
 
 @homologados_bp.route('/homologados-cobranca/deletar/<int:id_registro>', methods=['DELETE'])
 def deletar_hom_cobranca(id_registro):
-    if not usuario_logado(): return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     banco.deletar_homologado_cobranca(id_registro)
     return jsonify({'sucesso': True})
 
@@ -81,19 +92,22 @@ def aba_homologados_pagamentos():
 
 @homologados_bp.route('/homologados-pagamentos/adicionar', methods=['POST'])
 def adicionar_hom_pagamentos():
-    if not usuario_logado(): return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     id_novo = banco.adicionar_homologado_pagamentos(request.get_json(), session.get('usuario', ''))
     return jsonify({'sucesso': True, 'id': id_novo})
 
 @homologados_bp.route('/homologados-pagamentos/atualizar/<int:id_registro>', methods=['PUT'])
 def atualizar_hom_pagamentos(id_registro):
-    if not usuario_logado(): return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     banco.atualizar_homologado_pagamentos(id_registro, request.get_json())
     return jsonify({'sucesso': True})
 
 @homologados_bp.route('/homologados-pagamentos/deletar/<int:id_registro>', methods=['DELETE'])
 def deletar_hom_pagamentos(id_registro):
-    if not usuario_logado(): return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     banco.deletar_homologado_pagamentos(id_registro)
     return jsonify({'sucesso': True})
 
@@ -106,19 +120,22 @@ def aba_homologados_extrato():
 
 @homologados_bp.route('/homologados-extrato/adicionar', methods=['POST'])
 def adicionar_hom_extrato():
-    if not usuario_logado(): return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     id_novo = banco.adicionar_homologado_extrato(request.get_json(), session.get('usuario', ''))
     return jsonify({'sucesso': True, 'id': id_novo})
 
 @homologados_bp.route('/homologados-extrato/atualizar/<int:id_registro>', methods=['PUT'])
 def atualizar_hom_extrato(id_registro):
-    if not usuario_logado(): return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     banco.atualizar_homologado_extrato(id_registro, request.get_json())
     return jsonify({'sucesso': True})
 
 @homologados_bp.route('/homologados-extrato/deletar/<int:id_registro>', methods=['DELETE'])
 def deletar_hom_extrato(id_registro):
-    if not usuario_logado(): return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     banco.deletar_homologado_extrato(id_registro)
     return jsonify({'sucesso': True})
 

@@ -17,12 +17,19 @@ def pagina_configuracoes():
     bloqueio = checar_admin()
     if bloqueio:
         return bloqueio
+    contadores = banco.contar_todos()
     return render_template(
         'configuracoes.html',
         tecnicos=banco.listar_tecnicos(),
         usuarios=banco.listar_usuarios(),
         lista_status=banco.listar_status(),
         lista_servicos=banco.listar_servicos_completo(),
+        lista_setores=banco.listar_setores(),
+        total_pendentes=contadores['pendentes'],
+        total_hom_cobranca_db=contadores['cobranca'],
+        total_hom_pagamentos_db=contadores['pagamentos'],
+        total_hom_extrato_db=contadores['extrato'],
+        total_cancelados_db=contadores['cancelados'],
     )
 
 
@@ -150,4 +157,22 @@ def api_remover_servico(texto):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.remover_servico(texto)
+    return jsonify({'sucesso': True})
+
+
+# ── API Setores ───────────────────────────────────────────
+
+@config_bp.route('/api/setores', methods=['POST'])
+def api_adicionar_setor():
+    if checar_admin():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    ok = banco.adicionar_setor(request.get_json().get('texto', ''))
+    return jsonify({'sucesso': True}) if ok else (jsonify({'erro': 'Setor já cadastrado.'}), 409)
+
+
+@config_bp.route('/api/setores/<path:texto>', methods=['DELETE'])
+def api_remover_setor(texto):
+    if checar_admin():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    banco.remover_setor(texto)
     return jsonify({'sucesso': True})

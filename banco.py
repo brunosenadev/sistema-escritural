@@ -37,6 +37,10 @@ SERVICOS_INICIAIS = [
     'COBRANÇA', 'COBRANÇA/API', 'PAGFOR', 'PAGFOR/API', 'EXTRATO', 'PAGAMENTO',
 ]
 
+SETORES_INICIAIS = [
+    'GESTOR SUPORTE', 'GESTOR PROGRAMAÇÃO', 'PROGRAMAÇÃO', 'SUPORTE',
+]
+
 # ── Conexão ───────────────────────────────────────────────
 
 def conectar():
@@ -71,6 +75,24 @@ def inicializar_banco():
             id                 INTEGER PRIMARY KEY AUTOINCREMENT,
             texto              TEXT    UNIQUE NOT NULL,
             destino_homologado TEXT    DEFAULT ''
+        );
+        CREATE TABLE IF NOT EXISTS setores_lista (
+            id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            texto TEXT    UNIQUE NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS melhorias (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo          TEXT    NOT NULL,
+            descricao       TEXT    DEFAULT '',
+            estagio         TEXT    DEFAULT 'em_analise',
+            prioridade      TEXT    DEFAULT 'media',
+            programador     TEXT    DEFAULT '',
+            solicitante     TEXT    DEFAULT '',
+            dt_conclusao    TEXT    DEFAULT '',
+            motivo_rejeicao TEXT    DEFAULT '',
+            criado_por      TEXT    DEFAULT '',
+            criado_em       TEXT    DEFAULT (datetime('now','localtime')),
+            atualizado_em   TEXT    DEFAULT (datetime('now','localtime'))
         );
         CREATE TABLE IF NOT EXISTS pendentes (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,6 +188,9 @@ def inicializar_banco():
         for s in SERVICOS_INICIAIS:
             conn.execute("INSERT INTO servicos_lista (texto) VALUES (?)", (s,))
 
+    for s in SETORES_INICIAIS:
+        conn.execute("INSERT OR IGNORE INTO setores_lista (texto) VALUES (?)", (s,))
+
     conn.commit()
 
     # Migrações para bancos já existentes
@@ -173,6 +198,7 @@ def inicializar_banco():
         "ALTER TABLE servicos_lista ADD COLUMN destino_homologado TEXT DEFAULT ''",
         "ALTER TABLE usuarios ADD COLUMN mudar_senha INTEGER DEFAULT 0",
         "ALTER TABLE usuarios ADD COLUMN tema TEXT DEFAULT 'light'",
+        "ALTER TABLE usuarios ADD COLUMN setor TEXT DEFAULT ''",
     ]:
         try:
             conn.execute(ddl)
@@ -253,9 +279,9 @@ def adicionar_usuario(dados):
     try:
         conn = conectar()
         conn.execute(
-            "INSERT INTO usuarios (usuario,senha,nome,nivel,tecnico_vinculado,mudar_senha) VALUES (?,?,?,?,?,1)",
+            "INSERT INTO usuarios (usuario,senha,nome,nivel,tecnico_vinculado,setor,mudar_senha) VALUES (?,?,?,?,?,?,1)",
             (dados['usuario'].strip().lower(), dados['senha'], dados['nome'].strip(),
-             dados['nivel'], dados.get('tecnico_vinculado') or None)
+             dados['nivel'], dados.get('tecnico_vinculado') or None, dados.get('setor') or '')
         )
         conn.commit()
         conn.close()
@@ -268,15 +294,15 @@ def atualizar_usuario(id_usuario, campos):
     conn = conectar()
     if campos.get('senha'):
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=? WHERE id=?",
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             campos['senha'], id_usuario)
+             campos['senha'], campos.get('setor') or '', id_usuario)
         )
     else:
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=? WHERE id=?",
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,setor=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             id_usuario)
+             campos.get('setor') or '', id_usuario)
         )
     conn.commit()
     conn.close()
@@ -389,6 +415,114 @@ def atualizar_destino_servico(texto, destino):
     conn.commit()
     conn.close()
 
+# ── Setores ───────────────────────────────────────────────
+
+def listar_setores():
+    conn = conectar()
+    rows = conn.execute("SELECT texto FROM setores_lista ORDER BY id").fetchall()
+    conn.close()
+    return [r['texto'] for r in rows]
+
+
+def adicionar_setor(texto):
+    try:
+        conn = conectar()
+        conn.execute("INSERT INTO setores_lista (texto) VALUES (?)", (texto.strip().upper(),))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception:
+        return False
+
+
+def remover_setor(texto):
+    conn = conectar()
+    conn.execute("DELETE FROM setores_lista WHERE texto=?", (texto,))
+    conn.commit()
+    conn.close()
+
+
+# ── Melhorias ─────────────────────────────────────────────
+
+def listar_melhorias():
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT * FROM melhorias ORDER BY criado_em DESC"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def adicionar_melhoria(dados: dict) -> int:
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    conn = conectar()
+    cur = conn.execute(
+        """INSERT INTO melhorias (titulo, descricao, prioridade, programador, solicitante, criado_por, criado_em, atualizado_em)
+           VALUES (?,?,?,?,?,?,?,?)""",
+        (
+            dados.get('titulo', ''),
+            dados.get('descricao', ''),
+            dados.get('prioridade', 'media'),
+            dados.get('programador', ''),
+            dados.get('solicitante', ''),
+            dados.get('criado_por', ''),
+            agora, agora,
+        )
+    )
+    novo_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return novo_id
+
+
+def atualizar_melhoria(id_melhoria: int, dados: dict):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    conn = conectar()
+    conn.execute(
+        """UPDATE melhorias
+           SET titulo=?, descricao=?, prioridade=?, programador=?, solicitante=?, atualizado_em=?
+           WHERE id=?""",
+        (
+            dados.get('titulo', ''),
+            dados.get('descricao', ''),
+            dados.get('prioridade', 'media'),
+            dados.get('programador', ''),
+            dados.get('solicitante', ''),
+            agora, id_melhoria,
+        )
+    )
+    conn.commit()
+    conn.close()
+
+
+def mover_estagio_melhoria(id_melhoria: int, novo_estagio: str, motivo: str = ''):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    dt_conclusao = agora if novo_estagio in ('concluida', 'rejeitada') else ''
+    conn = conectar()
+    conn.execute(
+        """UPDATE melhorias
+           SET estagio=?, motivo_rejeicao=?, dt_conclusao=?, atualizado_em=?
+           WHERE id=?""",
+        (novo_estagio, motivo, dt_conclusao, agora, id_melhoria)
+    )
+    conn.commit()
+    conn.close()
+
+
+def remover_melhoria(id_melhoria: int):
+    conn = conectar()
+    conn.execute("DELETE FROM melhorias WHERE id=?", (id_melhoria,))
+    conn.commit()
+    conn.close()
+
+
+def buscar_melhoria(id_melhoria: int):
+    conn = conectar()
+    row = conn.execute("SELECT * FROM melhorias WHERE id=?", (id_melhoria,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
 # ── Contadores (sidebar) ──────────────────────────────────
 
 def contar_todos():
@@ -474,6 +608,17 @@ def atualizar_pendente(id_registro, dados):
     conn.commit()
     conn.close()
     return True
+
+
+def atualizar_status_pendente(id_registro, novo_status):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    conn = conectar()
+    conn.execute(
+        "UPDATE pendentes SET status=?, atualizado_em=? WHERE id=?",
+        (novo_status, agora, id_registro)
+    )
+    conn.commit()
+    conn.close()
 
 
 def deletar_pendente(id_registro):

@@ -1,9 +1,16 @@
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
-from utils import usuario_logado, checar_login
+from utils import usuario_logado, checar_login, pode_editar
 
 pendente_bp = Blueprint('pendente', __name__)
-# v2.3
+
+
+def _sem_permissao():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    if not pode_editar():
+        return jsonify({'erro': 'Sem permissão para editar.'}), 403
+    return None
 
 
 @pendente_bp.route('/pendente')
@@ -49,32 +56,43 @@ def aba_pendente():
 
 @pendente_bp.route('/pendente/adicionar', methods=['POST'])
 def adicionar_pendente():
-    if not usuario_logado():
-        return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     id_novo = banco.adicionar_pendente(request.get_json(), criado_por=session.get('usuario', ''))
     return jsonify({'sucesso': True, 'id': id_novo})
 
 
 @pendente_bp.route('/pendente/atualizar/<int:id_registro>', methods=['PUT'])
 def atualizar_pendente(id_registro):
-    if not usuario_logado():
-        return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     banco.atualizar_pendente(id_registro, request.get_json())
+    return jsonify({'sucesso': True})
+
+
+@pendente_bp.route('/pendente/status/<int:id_registro>', methods=['PATCH'])
+def atualizar_status_pendente(id_registro):
+    err = _sem_permissao()
+    if err: return err
+    novo_status = (request.get_json() or {}).get('status', '')
+    if not novo_status:
+        return jsonify({'erro': 'Status não informado'}), 400
+    banco.atualizar_status_pendente(id_registro, novo_status)
     return jsonify({'sucesso': True})
 
 
 @pendente_bp.route('/pendente/deletar/<int:id_registro>', methods=['DELETE'])
 def deletar_pendente(id_registro):
-    if not usuario_logado():
-        return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     banco.deletar_pendente(id_registro)
     return jsonify({'sucesso': True})
 
 
 @pendente_bp.route('/pendente/cancelar/<int:id_registro>', methods=['POST'])
 def cancelar_pendente(id_registro):
-    if not usuario_logado():
-        return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     id_novo = banco.mover_pendente_para_cancelado(id_registro)
     if id_novo:
         return jsonify({'sucesso': True, 'id_cancelado': id_novo})
@@ -97,8 +115,8 @@ def assumir_pendente(id_registro):
 
 @pendente_bp.route('/pendente/homologar/<int:id_registro>', methods=['POST'])
 def homologar_pendente(id_registro):
-    if not usuario_logado():
-        return jsonify({'erro': 'Não autenticado'}), 401
+    err = _sem_permissao()
+    if err: return err
     id_novo, aba = banco.mover_pendente_para_homologado(id_registro)
     if id_novo:
         nomes = {

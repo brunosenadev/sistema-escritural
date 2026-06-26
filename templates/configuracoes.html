@@ -485,6 +485,12 @@
     </svg>
     Status &amp; Serviços
   </button>
+  <button class="tab-btn" onclick="trocarTab('setores', this)">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+    </svg>
+    Setores
+  </button>
 </div>
 
 <!-- ════════════════════════════════════════════ -->
@@ -665,6 +671,7 @@
           <th>Login</th>
           <th>Nível</th>
           <th>Técnico Vinculado</th>
+          <th>Setor</th>
           <th style="width:110px;text-align:center;">Ações</th>
         </tr>
       </thead>
@@ -683,6 +690,9 @@
           </td>
           <td style="color:{% if usuario.tecnico_vinculado %}#334155{% else %}#cbd5e1{% endif %};">
             {{ usuario.tecnico_vinculado or '—' }}
+          </td>
+          <td style="color:{% if usuario.setor %}#334155{% else %}#cbd5e1{% endif %};font-size:12px;">
+            {{ usuario.setor or '—' }}
           </td>
           <td>
             <div style="display:flex;gap:4px;justify-content:center;flex-wrap:nowrap;">
@@ -814,6 +824,43 @@
 
 
 <!-- ════════════════════════════════════════════ -->
+<!-- TAB: Setores                                -->
+<!-- ════════════════════════════════════════════ -->
+<div id="tab-setores" class="painel-tab">
+  <div class="card-config" style="max-width:500px;">
+    <div class="card-config-header">
+      <span class="card-config-titulo">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        Setores cadastrados
+      </span>
+    </div>
+    <div class="card-config-body">
+      <div class="lista-pills" id="lista-setores-pills">
+        {% for setor in lista_setores %}
+        <div class="pill-item">
+          {{ setor }}
+          <button class="btn-remover-pill" onclick="removerSetor('{{ setor }}')" title="Remover">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        {% else %}
+        <p style="color:#94a3b8;font-size:13px;">Nenhum setor cadastrado.</p>
+        {% endfor %}
+      </div>
+      <div class="form-inline-adicionar">
+        <input class="input-config" type="text" id="input-novo-setor" placeholder="Ex: FINANCEIRO" oninput="this.value=this.value.toUpperCase()">
+        <button class="btn-primario-config" onclick="adicionarSetor()">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Adicionar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
 <!-- MODAIS                                      -->
 <!-- ════════════════════════════════════════════ -->
 
@@ -879,12 +926,21 @@
           <option value="admin">Admin</option>
         </select>
       </div>
-      <div class="grupo-modal" style="grid-column:1/-1;">
+      <div class="grupo-modal">
         <label>Técnico vinculado (opcional)</label>
         <select class="select-modal" id="campo-usuario-tecnico">
           <option value="">Nenhum</option>
           {% for tecnico in tecnicos %}
           <option value="{{ tecnico.nome }}">{{ tecnico.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="grupo-modal">
+        <label>Setor (opcional)</label>
+        <select class="select-modal" id="campo-usuario-setor">
+          <option value="">Nenhum</option>
+          {% for setor in lista_setores %}
+          <option value="{{ setor }}">{{ setor }}</option>
           {% endfor %}
         </select>
       </div>
@@ -1063,6 +1119,7 @@
     document.getElementById('campo-usuario-senha').value = '';
     document.getElementById('campo-usuario-nivel').value = 'normal';
     document.getElementById('campo-usuario-tecnico').value = '';
+    document.getElementById('campo-usuario-setor').value = '';
     document.getElementById('hint-login').style.display = 'none';
     document.getElementById('dica-senha').textContent = 'Mínimo 6 caracteres.';
     abrirModal('overlay-usuario');
@@ -1078,6 +1135,7 @@
     document.getElementById('campo-usuario-senha').value   = '';
     document.getElementById('campo-usuario-nivel').value   = usuario.nivel;
     document.getElementById('campo-usuario-tecnico').value = usuario.tecnico_vinculado || '';
+    document.getElementById('campo-usuario-setor').value = usuario.setor || '';
     document.getElementById('hint-login').style.display = 'inline';
     document.getElementById('dica-senha').textContent = 'Deixe em branco para manter a senha atual.';
     abrirModal('overlay-usuario');
@@ -1090,12 +1148,13 @@
     const senha   = document.getElementById('campo-usuario-senha').value;
     const nivel   = document.getElementById('campo-usuario-nivel').value;
     const tecnico = document.getElementById('campo-usuario-tecnico').value;
+    const setor   = document.getElementById('campo-usuario-setor').value;
 
     if (!nome) { mostrarToast('erro', 'Informe o nome.'); return; }
     if (!modoEdicaoUsuario && !login) { mostrarToast('erro', 'Informe o login.'); return; }
     if (!modoEdicaoUsuario && senha.length < 6) { mostrarToast('erro', 'Senha deve ter pelo menos 6 caracteres.'); return; }
 
-    const dados  = { nome, nivel, tecnico_vinculado: tecnico || null };
+    const dados  = { nome, nivel, tecnico_vinculado: tecnico || null, setor: setor || '' };
     if (senha) dados.senha = senha;
 
     const url    = modoEdicaoUsuario ? `/api/usuarios/${id}` : '/api/usuarios';
@@ -1287,6 +1346,51 @@
       }
     });
   }
+
+  // ─── Setores ─────────────────────────────────────────────────
+  function adicionarSetor() {
+    const texto = document.getElementById('input-novo-setor').value.trim();
+    if (!texto) { mostrarToast('erro', 'Informe o setor.'); return; }
+    fetch('/api/setores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto }),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) {
+        mostrarToast('sucesso', 'Setor adicionado!');
+        setTimeout(() => location.reload(), 600);
+      } else {
+        mostrarToast('erro', d.erro || 'Erro ao adicionar.');
+      }
+    });
+  }
+
+  function removerSetor(texto) {
+    abrirDialogo({
+      titulo: 'Remover Setor',
+      mensagem: `Remover o setor <strong>${texto}</strong>?`,
+      tipo: 'perigo',
+      textoBotao: 'Remover',
+      callback: () => {
+        fetch(`/api/setores/${encodeURIComponent(texto)}`, { method: 'DELETE' })
+          .then(r => r.json())
+          .then(d => {
+            if (d.sucesso) {
+              mostrarToast('sucesso', 'Setor removido.');
+              setTimeout(() => location.reload(), 500);
+            } else {
+              mostrarToast('erro', d.erro || 'Erro.');
+            }
+          });
+      }
+    });
+  }
+
+  document.getElementById('input-novo-setor').addEventListener('keydown', e => {
+    if (e.key === 'Enter') adicionarSetor();
+  });
 
   // Preview de cor do técnico em tempo real
   document.getElementById('campo-tecnico-cor').addEventListener('input', function() {

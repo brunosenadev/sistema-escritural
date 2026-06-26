@@ -14,6 +14,7 @@ from routes.homologados import homologados_bp
 from routes.cancelados  import cancelados_bp
 from routes.importacao  import importacao_bp
 from routes.config      import config_bp
+from routes.melhorias   import melhorias_bp
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
@@ -27,6 +28,7 @@ app.register_blueprint(homologados_bp)
 app.register_blueprint(cancelados_bp)
 app.register_blueprint(importacao_bp)
 app.register_blueprint(config_bp)
+app.register_blueprint(melhorias_bp)
 
 
 # ── JWT: valida em toda requisição ────────────────────────
@@ -98,10 +100,14 @@ def filtro_css_status(status_texto):
 
 @app.context_processor
 def injetar_globais():
+    logado = 'usuario' in session
+    _pe = logado and (session.get('nivel_acesso') == 'admin' or bool(session.get('tecnico_vinculado')))
     return {
         'nivel_acesso':  session.get('nivel_acesso', ''),
         'nome_usuario':  session.get('nome', ''),
         'tema_usuario':  session.get('tema', 'light'),
+        'pode_editar':   _pe,
+        'setor_usuario': session.get('setor', ''),
     }
 
 

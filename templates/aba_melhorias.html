@@ -1,0 +1,580 @@
+{% extends "base.html" %}
+{% set aba_ativa = 'melhorias' %}
+
+{% block titulo %}Melhorias — Sisplan{% endblock %}
+
+{% block estilos_extras %}
+<style>
+  .kanban-wrap {
+    display: flex;
+    gap: 14px;
+    padding: 16px 20px 20px;
+    overflow-x: auto;
+    align-items: flex-start;
+    min-height: calc(100vh - 120px);
+  }
+
+  .kanban-col {
+    flex: 1;
+    min-width: 220px;
+    max-width: 280px;
+    background: var(--bg-secondary, #f8fafc);
+    border-radius: 10px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kanban-col-header {
+    padding: 10px 12px;
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .kanban-col-header .count {
+    margin-left: auto;
+    background: rgba(0,0,0,0.12);
+    color: inherit;
+    border-radius: 20px;
+    padding: 1px 7px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .col-analise   .kanban-col-header { background: #3b82f6; color: #fff; }
+  .col-prog      .kanban-col-header { background: #f59e0b; color: #fff; }
+  .col-concluida .kanban-col-header { background: #22c55e; color: #fff; }
+  .col-rejeitada .kanban-col-header { background: #ef4444; color: #fff; }
+
+  .kanban-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    flex: 1;
+    min-height: 40px;
+  }
+
+  .kanban-card {
+    background: var(--bg-primary, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 7px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+
+  .kanban-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-color: var(--accent, #3b82f6);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 3px;
+  }
+
+  .badge-prior {
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+  .prior-urgente { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+  .prior-alta    { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+  .prior-media   { background: #fefce8; color: #ca8a04; border: 1px solid #fde68a; }
+  .prior-baixa   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+
+  .card-programador {
+    font-size: 0.65rem;
+    color: var(--text-muted, #94a3b8);
+    margin-left: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+  }
+
+  .card-titulo {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+    line-height: 1.3;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .card-solicitante {
+    font-size: 0.63rem;
+    color: var(--text-muted, #94a3b8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 110px;
+  }
+
+  .card-acoes {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+
+  .card-btn {
+    border: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    line-height: 1.4;
+  }
+  .card-btn:hover { opacity: 0.8; }
+  .btn-avancar  { background: #3b82f6; color: #fff; }
+  .btn-concluir { background: #22c55e; color: #fff; }
+  .btn-rejeitar { background: #ef4444; color: #fff; }
+  .btn-retomar  { background: #64748b; color: #fff; }
+
+  {% if not pode_editar %}
+  .card-acoes { display: none; }
+  {% endif %}
+
+  .kanban-add-btn {
+    margin: 0 8px 8px;
+    width: calc(100% - 16px);
+    border: 1.5px dashed var(--border-color, #e2e8f0);
+    background: transparent;
+    color: var(--text-muted, #94a3b8);
+    border-radius: 6px;
+    padding: 7px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .kanban-add-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+
+  {% if not pode_editar %}
+  .kanban-add-btn { display: none; }
+  {% endif %}
+
+  /* ── Modal criar/editar ── */
+  .overlay-mel {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .overlay-mel.aberto { display: flex; }
+
+  .modal-mel {
+    background: var(--bg-primary, #fff);
+    border-radius: 12px;
+    padding: 24px;
+    width: 480px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+
+  .modal-mel h3 {
+    margin: 0 0 16px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary, #1e293b);
+  }
+
+  .form-row-mel { display: flex; gap: 10px; }
+
+  .form-group-mel {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 12px;
+    flex: 1;
+  }
+  .form-group-mel label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary, #475569);
+  }
+  .form-group-mel input,
+  .form-group-mel select,
+  .form-group-mel textarea {
+    padding: 7px 10px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 6px;
+    font-size: 0.82rem;
+    background: var(--bg-secondary, #f8fafc);
+    color: var(--text-primary, #1e293b);
+    outline: none;
+  }
+  .form-group-mel input:focus,
+  .form-group-mel select:focus,
+  .form-group-mel textarea:focus {
+    border-color: #3b82f6;
+    background: var(--bg-primary, #fff);
+  }
+  .form-group-mel textarea { resize: vertical; min-height: 80px; }
+
+  .modal-actions-mel {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+  .btn-mel-salvar  { background:#3b82f6;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:.82rem;font-weight:600;cursor:pointer; }
+  .btn-mel-cancelar{ background:var(--bg-secondary,#f1f5f9);color:var(--text-secondary,#475569);border:1px solid var(--border-color,#e2e8f0);border-radius:7px;padding:8px 16px;font-size:.82rem;font-weight:600;cursor:pointer; }
+  .btn-mel-deletar { background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:7px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;margin-right:auto; }
+
+  /* ── Modal rejeição ── */
+  .overlay-rejeitar { display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1100;align-items:center;justify-content:center; }
+  .overlay-rejeitar.aberto { display:flex; }
+  .modal-rejeitar { background:var(--bg-primary,#fff);border-radius:12px;padding:22px;width:380px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.25); }
+  .modal-rejeitar h3 { margin:0 0 14px;font-size:.95rem;font-weight:700;color:var(--text-primary,#1e293b); }
+  .motivo-ta { width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border-color,#e2e8f0);border-radius:6px;font-size:.82rem;background:var(--bg-secondary,#f8fafc);color:var(--text-primary,#1e293b);resize:vertical;min-height:80px;outline:none; }
+
+  /* ── Cabeçalho da página ── */
+  .mel-header {
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px 0;
+  }
+  .mel-header h2 { font-size:1.05rem;font-weight:700;color:var(--text-primary,#1e293b);margin:0; }
+  .btn-nova-mel {
+    background:#3b82f6;color:#fff;border:none;border-radius:7px;
+    padding:7px 14px;font-size:.8rem;font-weight:600;cursor:pointer;
+    display:{% if pode_editar %}inline-flex{% else %}none{% endif %};
+    align-items:center;gap:5px;
+  }
+
+  /* dark mode */
+  [data-theme="dark"] .kanban-col    { background:#1e293b;border-color:#334155; }
+  [data-theme="dark"] .kanban-card   { background:#0f172a;border-color:#334155; }
+  [data-theme="dark"] .modal-mel,
+  [data-theme="dark"] .modal-rejeitar { background:#1e293b; }
+  [data-theme="dark"] .form-group-mel input,
+  [data-theme="dark"] .form-group-mel select,
+  [data-theme="dark"] .form-group-mel textarea,
+  [data-theme="dark"] .motivo-ta { background:#0f172a;border-color:#334155;color:#e2e8f0; }
+  [data-theme="dark"] .prior-urgente { background:#450a0a;border-color:#7f1d1d; }
+  [data-theme="dark"] .prior-alta    { background:#431407;border-color:#7c2d12; }
+  [data-theme="dark"] .prior-media   { background:#422006;border-color:#78350f; }
+  [data-theme="dark"] .prior-baixa   { background:#052e16;border-color:#14532d; }
+  [data-theme="dark"] .btn-mel-cancelar { background:#334155;border-color:#475569;color:#e2e8f0; }
+  [data-theme="dark"] .btn-mel-deletar  { background:#450a0a;border-color:#7f1d1d; }
+  [data-theme="dark"] .kanban-add-btn   { border-color:#334155;color:#64748b; }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+
+{# ── Macro card compacto — definida antes de ser usada ── #}
+{% macro card_mel(m) %}
+{% set prior_cls = {'urgente':'prior-urgente','alta':'prior-alta','media':'prior-media','baixa':'prior-baixa'} %}
+<div class="kanban-card"
+     data-mel='{{ m | tojson }}'
+     onclick="abrirModalDetalhe(JSON.parse(this.dataset.mel))">
+  <div class="card-top">
+    <span class="badge-prior {{ prior_cls.get(m.prioridade, 'prior-media') }}">{{ m.prioridade }}</span>
+    {% if m.programador %}
+    <span class="card-programador">{{ m.programador }}</span>
+    {% endif %}
+  </div>
+  <div class="card-titulo">{{ m.titulo }}</div>
+  <div class="card-footer">
+    <span class="card-solicitante">{{ m.solicitante or m.criado_por or '' }}</span>
+    <div class="card-acoes" onclick="event.stopPropagation()">
+      {% if m.estagio == 'em_analise' %}
+        <button class="card-btn btn-avancar"  onclick="moverCard({{ m.id }}, 'em_programacao')" title="Mover p/ Programação">→ Prog.</button>
+        <button class="card-btn btn-rejeitar" onclick="pedirMotivo({{ m.id }})"                 title="Rejeitar">✕</button>
+      {% elif m.estagio == 'em_programacao' %}
+        <button class="card-btn btn-concluir" onclick="moverCard({{ m.id }}, 'concluida')"      title="Concluir">✓</button>
+        <button class="card-btn btn-rejeitar" onclick="pedirMotivo({{ m.id }})"                 title="Rejeitar">✕</button>
+      {% elif m.estagio == 'concluida' %}
+        <button class="card-btn btn-retomar"  onclick="moverCard({{ m.id }}, 'em_programacao')" title="Reabrir">↩</button>
+      {% elif m.estagio == 'rejeitada' %}
+        <button class="card-btn btn-retomar"  onclick="moverCard({{ m.id }}, 'em_analise')"     title="Retomar">↩</button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+<div class="mel-header">
+  <h2>Melhorias da Plataforma</h2>
+  <button class="btn-nova-mel" onclick="abrirModalNova()">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Nova Melhoria
+  </button>
+</div>
+
+<div class="kanban-wrap">
+
+  {# Em Análise #}
+  <div class="kanban-col col-analise">
+    <div class="kanban-col-header">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Em Análise
+      <span class="count">{{ por_estagio.em_analise | length }}</span>
+    </div>
+    <div class="kanban-cards">
+      {% for m in por_estagio.em_analise %}{{ card_mel(m) }}{% endfor %}
+    </div>
+    <button class="kanban-add-btn" onclick="abrirModalNova('em_analise')">+ Adicionar</button>
+  </div>
+
+  {# Em Programação #}
+  <div class="kanban-col col-prog">
+    <div class="kanban-col-header">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Em Programação
+      <span class="count">{{ por_estagio.em_programacao | length }}</span>
+    </div>
+    <div class="kanban-cards">
+      {% for m in por_estagio.em_programacao %}{{ card_mel(m) }}{% endfor %}
+    </div>
+    <button class="kanban-add-btn" onclick="abrirModalNova('em_programacao')">+ Adicionar</button>
+  </div>
+
+  {# Concluída #}
+  <div class="kanban-col col-concluida">
+    <div class="kanban-col-header">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Concluída
+      <span class="count">{{ por_estagio.concluida | length }}</span>
+    </div>
+    <div class="kanban-cards">
+      {% for m in por_estagio.concluida %}{{ card_mel(m) }}{% endfor %}
+    </div>
+    <button class="kanban-add-btn" onclick="abrirModalNova('concluida')">+ Adicionar</button>
+  </div>
+
+  {# Rejeitada #}
+  <div class="kanban-col col-rejeitada">
+    <div class="kanban-col-header">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Rejeitada
+      <span class="count">{{ por_estagio.rejeitada | length }}</span>
+    </div>
+    <div class="kanban-cards">
+      {% for m in por_estagio.rejeitada %}{{ card_mel(m) }}{% endfor %}
+    </div>
+    <button class="kanban-add-btn" onclick="abrirModalNova('rejeitada')">+ Adicionar</button>
+  </div>
+
+</div>
+
+{# ── Modal criar / editar ── #}
+<div class="overlay-mel" id="overlay-mel">
+  <div class="modal-mel" onclick="event.stopPropagation()">
+    <h3 id="mel-modal-titulo">Nova Melhoria</h3>
+    <input type="hidden" id="mel-id" value="">
+
+    <div class="form-group-mel">
+      <label>Título *</label>
+      <input type="text" id="mel-titulo" placeholder="Descreva brevemente a melhoria">
+    </div>
+    <div class="form-group-mel">
+      <label>Descrição</label>
+      <textarea id="mel-descricao" placeholder="Detalhes, motivação, critérios de aceite..."></textarea>
+    </div>
+    <div class="form-row-mel">
+      <div class="form-group-mel">
+        <label>Prioridade</label>
+        <select id="mel-prioridade">
+          <option value="baixa">Baixa</option>
+          <option value="media" selected>Média</option>
+          <option value="alta">Alta</option>
+          <option value="urgente">Urgente</option>
+        </select>
+      </div>
+      <div class="form-group-mel">
+        <label>Estágio</label>
+        <select id="mel-estagio">
+          <option value="em_analise">Em Análise</option>
+          <option value="em_programacao">Em Programação</option>
+          <option value="concluida">Concluída</option>
+          <option value="rejeitada">Rejeitada</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row-mel">
+      <div class="form-group-mel">
+        <label>Programador</label>
+        <select id="mel-programador">
+          <option value="">— Nenhum —</option>
+          {% for t in tecnicos %}
+          <option value="{{ t.nome }}">{{ t.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group-mel">
+        <label>Solicitante</label>
+        <input type="text" id="mel-solicitante" placeholder="Quem pediu?">
+      </div>
+    </div>
+
+    <div class="modal-actions-mel">
+      <button class="btn-mel-deletar" id="btn-mel-deletar" style="display:none" onclick="deletarMelhoria()">Excluir</button>
+      <button class="btn-mel-cancelar" onclick="fecharModalMel()">Cancelar</button>
+      <button class="btn-mel-salvar" onclick="salvarMelhoria()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+{# ── Modal motivo rejeição ── #}
+<div class="overlay-rejeitar" id="overlay-rejeitar">
+  <div class="modal-rejeitar" onclick="event.stopPropagation()">
+    <h3>Motivo da Rejeição</h3>
+    <div class="form-group-mel">
+      <label>Motivo (opcional)</label>
+      <textarea class="motivo-ta" id="motivo-rejeicao" placeholder="Descreva o motivo..."></textarea>
+    </div>
+    <div class="modal-actions-mel">
+      <button class="btn-mel-cancelar" onclick="fecharModalRejeitar()">Cancelar</button>
+      <button class="btn-mel-salvar" style="background:#ef4444" onclick="confirmarRejeicao()">Rejeitar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+  const _BASE_MEL = '/melhorias';
+  let _idRejeitar = null;
+
+  function abrirModalNova(estagio) {
+    estagio = estagio || 'em_analise';
+    document.getElementById('mel-modal-titulo').textContent = 'Nova Melhoria';
+    document.getElementById('mel-id').value        = '';
+    document.getElementById('mel-titulo').value    = '';
+    document.getElementById('mel-descricao').value = '';
+    document.getElementById('mel-prioridade').value = 'media';
+    document.getElementById('mel-estagio').value   = estagio;
+    document.getElementById('mel-programador').value = '';
+    document.getElementById('mel-solicitante').value = '';
+    document.getElementById('btn-mel-deletar').style.display = 'none';
+    document.getElementById('overlay-mel').classList.add('aberto');
+    document.getElementById('mel-titulo').focus();
+  }
+
+  function abrirModalDetalhe(m) {
+    document.getElementById('mel-modal-titulo').textContent = 'Editar Melhoria';
+    document.getElementById('mel-id').value        = m.id;
+    document.getElementById('mel-titulo').value    = m.titulo || '';
+    document.getElementById('mel-descricao').value = m.descricao || '';
+    document.getElementById('mel-prioridade').value = m.prioridade || 'media';
+    document.getElementById('mel-estagio').value   = m.estagio || 'em_analise';
+    document.getElementById('mel-programador').value = m.programador || '';
+    document.getElementById('mel-solicitante').value = m.solicitante || '';
+    document.getElementById('btn-mel-deletar').style.display = 'inline-flex';
+    document.getElementById('overlay-mel').classList.add('aberto');
+  }
+
+  function fecharModalMel() {
+    document.getElementById('overlay-mel').classList.remove('aberto');
+  }
+  document.getElementById('overlay-mel').addEventListener('click', fecharModalMel);
+
+  async function salvarMelhoria() {
+    const id     = document.getElementById('mel-id').value;
+    const titulo = document.getElementById('mel-titulo').value.trim();
+    if (!titulo) { alert('Informe o título.'); return; }
+
+    const dados = {
+      titulo,
+      descricao:   document.getElementById('mel-descricao').value.trim(),
+      prioridade:  document.getElementById('mel-prioridade').value,
+      estagio:     document.getElementById('mel-estagio').value,
+      programador: document.getElementById('mel-programador').value,
+      solicitante: document.getElementById('mel-solicitante').value.trim(),
+    };
+
+    if (id) {
+      await fetch(`${_BASE_MEL}/atualizar/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(dados),
+      });
+      await fetch(`${_BASE_MEL}/mover/${id}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({estagio: dados.estagio}),
+      });
+    } else {
+      await fetch(`${_BASE_MEL}/adicionar`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(dados),
+      });
+    }
+    fecharModalMel();
+    location.reload();
+  }
+
+  async function deletarMelhoria() {
+    const id = document.getElementById('mel-id').value;
+    if (!id || !confirm('Excluir esta melhoria permanentemente?')) return;
+    await fetch(`${_BASE_MEL}/deletar/${id}`, {method: 'DELETE'});
+    fecharModalMel();
+    location.reload();
+  }
+
+  async function moverCard(id, estagio) {
+    await fetch(`${_BASE_MEL}/mover/${id}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({estagio}),
+    });
+    location.reload();
+  }
+
+  function pedirMotivo(id) {
+    _idRejeitar = id;
+    document.getElementById('motivo-rejeicao').value = '';
+    document.getElementById('overlay-rejeitar').classList.add('aberto');
+    document.getElementById('motivo-rejeicao').focus();
+  }
+
+  function fecharModalRejeitar() {
+    document.getElementById('overlay-rejeitar').classList.remove('aberto');
+    _idRejeitar = null;
+  }
+  document.getElementById('overlay-rejeitar').addEventListener('click', fecharModalRejeitar);
+
+  async function confirmarRejeicao() {
+    if (!_idRejeitar) return;
+    const motivo = document.getElementById('motivo-rejeicao').value.trim();
+    await fetch(`${_BASE_MEL}/mover/${_idRejeitar}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({estagio: 'rejeitada', motivo}),
+    });
+    fecharModalRejeitar();
+    location.reload();
+  }
+</script>
+{% endblock %}
