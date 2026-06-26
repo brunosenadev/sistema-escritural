@@ -80,6 +80,14 @@ def api_resetar_senha(id_usuario):
     return jsonify({'sucesso': True})
 
 
+@config_bp.route('/api/usuarios/<int:id_usuario>/limpar-troca', methods=['POST'])
+def api_limpar_troca(id_usuario):
+    if checar_admin():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    banco.limpar_mudar_senha(id_usuario)
+    return jsonify({'sucesso': True})
+
+
 @config_bp.route('/api/usuarios/<int:id_usuario>', methods=['DELETE'])
 def api_remover_usuario(id_usuario):
     if checar_admin():

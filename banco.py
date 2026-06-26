@@ -281,6 +281,13 @@ def resetar_senha_usuario(id_usuario):
     conn.close()
 
 
+def limpar_mudar_senha(id_usuario):
+    conn = conectar()
+    conn.execute("UPDATE usuarios SET mudar_senha=0 WHERE id=?", (id_usuario,))
+    conn.commit()
+    conn.close()
+
+
 def alterar_minha_senha(id_usuario, nova_senha):
     conn = conectar()
     conn.execute("UPDATE usuarios SET senha=?,mudar_senha=0 WHERE id=?", (nova_senha, id_usuario))

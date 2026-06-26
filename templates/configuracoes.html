@@ -674,7 +674,7 @@
           <td style="font-weight:500;">
             {{ usuario.nome }}
             {% if usuario.mudar_senha %}
-            <span style="font-size:10px;font-weight:600;background:#fef9c3;color:#a16207;padding:1px 6px;border-radius:99px;margin-left:4px;">troca pendente</span>
+            <span id="troca-{{ usuario.id }}" onclick='limparTroca({{ usuario.id }})' title="Clique para limpar" style="font-size:10px;font-weight:600;background:#fef9c3;color:#a16207;padding:1px 6px;border-radius:99px;margin-left:4px;cursor:pointer;" onmouseover="this.style.background='#fde68a'" onmouseout="this.style.background='#fef9c3'">troca pendente ✕</span>
             {% endif %}
           </td>
           <td style="font-family:monospace;color:#64748b;font-size:12px;">{{ usuario.usuario }}</td>
@@ -1142,6 +1142,20 @@
           });
       }
     });
+  }
+
+  function limparTroca(id) {
+    fetch(`/api/usuarios/${id}/limpar-troca`, { method: 'POST' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.sucesso) {
+          const el = document.getElementById('troca-' + id);
+          if (el) el.remove();
+          mostrarToast('sucesso', 'Flag de troca removido.');
+        } else {
+          mostrarToast('erro', d.erro || 'Erro.');
+        }
+      });
   }
 
   function resetarSenha(id, nome) {
