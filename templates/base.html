@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block titulo %}Sisplan{% endblock %} — Controle de Escriturais</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --azul-escuro:   #0a1628;
+      --azul-medio:    #0d2144;
+      --azul-sidebar:  #111d38;
+      --azul-accent:   #2563eb;
+      --azul-claro:    #3b82f6;
+      --azul-hover:    #1a3a7a;
+      --branco:        #ffffff;
+      --fundo-pagina:  #f0f4ff;
+      --fundo-card:    #ffffff;
+      --texto-escuro:  #1e293b;
+      --texto-medio:   #475569;
+      --texto-leve:    #94a3b8;
+      --borda:         #e2e8f0;
+      --sidebar-larg:  220px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--fundo-pagina);
+      color: var(--texto-escuro);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-larg);
+      min-height: 100vh;
+      background: var(--azul-escuro);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    .sidebar-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .logo-linha {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icone {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, #1e4fc4, #3b82f6);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-icone svg {
+      width: 18px;
+      height: 18px;
+      stroke: #fff;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .logo-nome {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.3px;
+    }
+
+    .logo-subtitulo {
+      font-size: 10px;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    /* Upload de planilha no topo da sidebar */
+    .area-upload {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .botao-upload {
+      width: 100%;
+      padding: 9px 12px;
+      background: rgba(37, 99, 235, 0.18);
+      border: 1px solid rgba(37, 99, 235, 0.35);
+      border-radius: 8px;
+      color: #93c5fd;
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .botao-upload:hover {
+      background: rgba(37, 99, 235, 0.28);
+      border-color: rgba(59, 130, 246, 0.6);
+    }
+
+    .botao-upload svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      flex-shrink: 0;
+    }
+
+    .status-planilha {
+      margin-top: 8px;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .indicador-status {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .indicador-status.ativa  { background: #22c55e; }
+    .indicador-status.inativa { background: #64748b; }
+
+    .texto-status-planilha {
+      color: rgba(255,255,255,0.35);
+      font-size: 10px;
+    }
+    .texto-status-planilha.ativa { color: #86efac; }
+
+    /* Navegação */
+    .sidebar-nav {
+      padding: 12px 0;
+      flex: 1;
+    }
+
+    .nav-secao-titulo {
+      padding: 14px 20px 6px;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      color: rgba(255,255,255,0.55);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 450;
+      border-left: 3px solid transparent;
+      transition: color 0.2s, background 0.2s, border-color 0.2s;
+      position: relative;
+    }
+
+    .nav-item svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      flex-shrink: 0;
+    }
+
+    .nav-item:hover {
+      color: #ffffff;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .nav-item.ativo {
+      color: #93c5fd;
+      background: rgba(37, 99, 235, 0.12);
+      border-left-color: #3b82f6;
+      font-weight: 500;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: #2563eb;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 99px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    /* Rodapé da sidebar: usuário */
+    .sidebar-rodape {
+      padding: 14px 16px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .info-usuario {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar-usuario {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1e4fc4, #3b82f6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .nome-usuario {
+      font-size: 13px;
+      font-weight: 500;
+      color: #e2e8f0;
+    }
+
+    .nivel-usuario {
+      font-size: 10px;
+      color: rgba(255,255,255,0.35);
+      text-transform: capitalize;
+    }
+
+    .botao-sair {
+      margin-left: auto;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.35);
+      padding: 4px;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+      display: flex;
+      align-items: center;
+    }
+
+    .botao-sair:hover {
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .botao-sair svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    /* ── Conteúdo principal ──────────────────── */
+    .conteudo-principal {
+      margin-left: var(--sidebar-larg);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Header da página */
+    .header-pagina {
+      background: #ffffff;
+      border-bottom: 1px solid var(--borda);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .titulo-pagina {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--texto-escuro);
+      letter-spacing: -0.3px;
+    }
+
+    .breadcrumb {
+      font-size: 12px;
+      color: var(--texto-leve);
+      margin-top: 2px;
+    }
+
+    .acoes-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Área de conteúdo da aba */
+    .area-conteudo {
+      padding: 24px 28px;
+      flex: 1;
+    }
+
+    /* ── Toasts de notificação ───────────────── */
+    #area-toasts {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: all;
+      animation: toast-entrar 0.3s ease forwards;
+      max-width: 320px;
+    }
+
+    .toast.sucesso { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .toast.erro    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .toast.info    { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+    .toast svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      flex-shrink: 0;
+    }
+
+    @keyframes toast-entrar {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0);    }
+    }
+
+    @keyframes toast-sair {
+      from { opacity: 1; transform: translateX(0);    }
+      to   { opacity: 0; transform: translateX(20px); }
+    }
+
+    /* ── Diálogo de Confirmação ──────────────── */
+    @keyframes dialogo-entrar {
+      from { opacity: 0; transform: scale(0.90) translateY(-12px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);     }
+    }
+    @keyframes dialogo-sair {
+      from { opacity: 1; transform: scale(1)    translateY(0);     }
+      to   { opacity: 0; transform: scale(0.90) translateY(-12px); }
+    }
+
+    /* ── Input de arquivo oculto ─────────────── */
+    #input-arquivo-planilha { display: none; }
+  </style>
+  {% block estilos_extras %}{% endblock %}
+</head>
+<body>
+
+  <!-- ═══ Sidebar ═══════════════════════════════ -->
+  <aside class="sidebar">
+
+    <!-- Logo -->
+    <div class="sidebar-logo">
+      <div class="logo-linha">
+        <div class="logo-icone">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <div class="logo-nome">Sisplan</div>
+          <div class="logo-subtitulo">Escriturais</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicador do banco de dados -->
+    <div style="padding:10px 16px 6px; border-bottom:1px solid rgba(255,255,255,0.06);">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#22c55e;"></span>
+        <span style="font-size:11px;color:#86efac;">
+          Banco ativo · {{ total_pendentes_db }} pendentes
+        </span>
+      </div>
+    </div>
+
+    <!-- Navegação -->
+    <nav class="sidebar-nav">
+      <div class="nav-secao-titulo">Abas</div>
+
+      <a href="/pendente" class="nav-item {% if aba_ativa == 'pendente' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Pendente
+        {% if total_pendentes_db %}<span class="nav-badge">{{ total_pendentes_db }}</span>{% endif %}
+      </a>
+
+      <a href="/homologados-cobranca" class="nav-item {% if aba_ativa == 'homologados_cobranca' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        Hom. Cobrança
+        {% if total_hom_cobranca_db %}<span class="nav-badge" style="background:#15803d;">{{ total_hom_cobranca_db }}</span>{% endif %}
+      </a>
+
+      <a href="/homologados-pagamentos" class="nav-item {% if aba_ativa == 'homologados_pagamentos' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+          <line x1="1" y1="10" x2="23" y2="10"/>
+        </svg>
+        Hom. Pagamentos
+        {% if total_hom_pagamentos_db %}<span class="nav-badge" style="background:#15803d;">{{ total_hom_pagamentos_db }}</span>{% endif %}
+      </a>
+
+      <a href="/homologados-extrato" class="nav-item {% if aba_ativa == 'homologados_extrato' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/>
+          <line x1="2" y1="10" x2="22" y2="10"/>
+        </svg>
+        Hom. Extrato Cartão
+        {% if total_hom_extrato_db %}<span class="nav-badge" style="background:#15803d;">{{ total_hom_extrato_db }}</span>{% endif %}
+      </a>
+
+      <a href="/cancelados" class="nav-item {% if aba_ativa == 'cancelados' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        Cancelados
+        {% if total_cancelados_db %}<span class="nav-badge" style="background:#dc2626;">{{ total_cancelados_db }}</span>{% endif %}
+      </a>
+
+      <a href="#" class="nav-item {% if aba_ativa == 'sispbol' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        SispBol
+      </a>
+
+      {% if nivel_acesso == 'admin' %}
+      <div class="nav-secao-titulo" style="margin-top:8px;">Sistema</div>
+
+      <a href="/configuracoes" class="nav-item {% if aba_ativa == 'configuracoes' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        Configurações
+      </a>
+      {% endif %}
+
+      <div class="nav-secao-titulo" style="margin-top:8px;">Referência</div>
+
+      <a href="#" class="nav-item {% if aba_ativa == 'api_bancos' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        API Bancos
+      </a>
+
+      <a href="#" class="nav-item {% if aba_ativa == 'api_pagamentos' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        API Pagamentos
+      </a>
+
+    </nav>
+
+    <!-- Rodapé: info do usuário -->
+    <div class="sidebar-rodape">
+      <div class="info-usuario">
+        <div class="avatar-usuario">
+          {{ session.nome[0] | upper }}
+        </div>
+        <div>
+          <div class="nome-usuario">{{ session.nome }}</div>
+          <div class="nivel-usuario">{{ session.nivel_acesso }}</div>
+        </div>
+        <button class="botao-sair" title="Alterar minha senha" onclick="abrirModalMinhaSenha()" style="margin-right:2px;">
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </button>
+        <a href="/sair" class="botao-sair" title="Sair">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Input oculto para upload (usado apenas na página de configurações) -->
+  <input type="file" id="input-arquivo-planilha" accept=".xlsx,.xls" style="display:none;">
+
+  <!-- Modal: Alterar Minha Senha (disponível em todas as páginas) -->
+  <div id="overlay-minha-senha" style="
+    display:none; position:fixed; inset:0; z-index:10001;
+    background:rgba(10,22,40,0.55); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center;
+  " onclick="if(event.target===this)fecharModalMinhaSenha()">
+    <div style="
+      background:#fff; border-radius:16px; padding:28px;
+      width:100%; max-width:360px;
+      box-shadow:0 20px 60px rgba(10,22,40,0.25);
+      animation:dialogo-entrar 0.22s cubic-bezier(.34,1.3,.64,1);
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <span style="font-size:16px;font-weight:700;color:#0f172a;">Alterar Minha Senha</span>
+        <button onclick="fecharModalMinhaSenha()" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;border-radius:6px;">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:#64748b;margin-bottom:5px;">Nova Senha</label>
+        <input type="password" id="ms-nova" placeholder="Mínimo 6 caracteres" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;color:#1e293b;background:#f8fafc;outline:none;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:#64748b;margin-bottom:5px;">Confirmar Senha</label>
+        <input type="password" id="ms-confirma" placeholder="Repita a nova senha" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;color:#1e293b;background:#f8fafc;outline:none;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button onclick="fecharModalMinhaSenha()" style="padding:9px 18px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;color:#475569;font-size:13px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;">Cancelar</button>
+        <button onclick="salvarMinhaSenha()" style="padding:9px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Conteúdo principal ════════════════════ -->
+  <main class="conteudo-principal">
+
+    <div class="header-pagina">
+      <div>
+        <h1 class="titulo-pagina">{% block titulo_pagina %}{% endblock %}</h1>
+        <div class="breadcrumb">{% block breadcrumb %}{% endblock %}</div>
+      </div>
+      <div class="acoes-header">
+        {% block acoes_header %}{% endblock %}
+      </div>
+    </div>
+
+    <div class="area-conteudo">
+      {% block conteudo %}{% endblock %}
+    </div>
+
+  </main>
+
+  <!-- Área de toasts/notificações -->
+  <div id="area-toasts"></div>
+
+  <!-- ═══ Diálogo de confirmação estilizado ════════════════════ -->
+  <div id="overlay-dialogo" style="
+    display:none; position:fixed; inset:0; z-index:10000;
+    background:rgba(10,22,40,0.60); backdrop-filter:blur(6px);
+    align-items:center; justify-content:center;
+  ">
+    <div id="card-dialogo" style="
+      background:#ffffff; border-radius:20px; padding:36px 32px 28px;
+      max-width:400px; width:calc(100% - 40px);
+      box-shadow:0 24px 64px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.04);
+      animation:dialogo-entrar 0.22s cubic-bezier(.34,1.3,.64,1);
+      text-align:center; position:relative;
+    ">
+      <div id="dialogo-icone-area" style="
+        width:60px; height:60px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        margin:0 auto 18px;
+      ">
+        <svg id="dialogo-icone-svg" viewBox="0 0 24 24" style="
+          width:28px; height:28px; stroke:currentColor; fill:none;
+          stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+        "></svg>
+      </div>
+      <div id="dialogo-titulo" style="
+        font-size:17px; font-weight:700; color:#1e293b;
+        letter-spacing:-0.3px; margin-bottom:8px;
+      "></div>
+      <div id="dialogo-mensagem" style="
+        font-size:13px; color:#64748b; line-height:1.6; margin-bottom:28px;
+      "></div>
+      <div style="display:flex; gap:10px; justify-content:center;">
+        <button
+          onclick="fecharDialogo()"
+          style="
+            padding:10px 22px; border-radius:10px; border:1.5px solid #e2e8f0;
+            background:#f8fafc; color:#475569; font-size:13px; font-weight:500;
+            cursor:pointer; font-family:inherit; transition:background 0.15s, border-color 0.15s;
+          "
+          onmouseover="this.style.background='#f1f5f9';this.style.borderColor='#cbd5e1'"
+          onmouseout="this.style.background='#f8fafc';this.style.borderColor='#e2e8f0'"
+        >Cancelar</button>
+        <button
+          id="dialogo-btn-confirmar"
+          onclick="_confirmarDialogo()"
+          style="
+            padding:10px 22px; border-radius:10px; border:none;
+            font-size:13px; font-weight:600; color:#fff;
+            cursor:pointer; font-family:inherit; transition:opacity 0.15s, transform 0.1s;
+          "
+          onmouseover="this.style.opacity='0.88'"
+          onmouseout="this.style.opacity='1'"
+        >Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── Upload de planilha (apenas abre o seletor; o listener real fica em configuracoes.html)
+    function abrirSeletorPlanilha() {
+      document.getElementById('input-arquivo-planilha').click();
+    }
+
+    // ─── Sistema de toasts ───────────────────────────────────
+    function mostrarToast(tipo, mensagem, duracao = 3500) {
+      const area  = document.getElementById('area-toasts');
+      const toast = document.createElement('div');
+      toast.className = `toast ${tipo}`;
+
+      const icones = {
+        sucesso: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+        erro:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+        info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+      };
+
+      toast.innerHTML = `${icones[tipo] || ''} <span>${mensagem}</span>`;
+      area.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'toast-sair 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+      }, duracao);
+    }
+
+    // Expor globalmente para uso nas abas
+    window.mostrarToast = mostrarToast;
+
+    // ─── Diálogo de Confirmação ──────────────────────────────────
+    let _dialogoCallback = null;
+
+    const _temaDialogo = {
+      perigo: {
+        bg:     '#fff0f0',
+        cor:    '#dc2626',
+        btnBg:  '#dc2626',
+        icone:  '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+      },
+      aviso: {
+        bg:     '#fffbeb',
+        cor:    '#d97706',
+        btnBg:  '#f59e0b',
+        icone:  '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+      },
+      info: {
+        bg:     '#eff6ff',
+        cor:    '#2563eb',
+        btnBg:  '#2563eb',
+        icone:  '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+      },
+    };
+
+    function abrirDialogo({ titulo, mensagem, tipo = 'perigo', textoBotao = 'Confirmar', callback }) {
+      const tema = _temaDialogo[tipo] || _temaDialogo.perigo;
+
+      document.getElementById('dialogo-titulo').textContent    = titulo;
+      document.getElementById('dialogo-mensagem').innerHTML    = mensagem;
+      document.getElementById('dialogo-icone-area').style.background = tema.bg;
+      document.getElementById('dialogo-icone-area').style.color      = tema.cor;
+      document.getElementById('dialogo-icone-svg').innerHTML         = tema.icone;
+
+      const btn = document.getElementById('dialogo-btn-confirmar');
+      btn.textContent       = textoBotao;
+      btn.style.background  = tema.btnBg;
+
+      _dialogoCallback = callback || null;
+
+      const card = document.getElementById('card-dialogo');
+      card.style.animation = 'none';
+      card.offsetHeight; // força reflow para reiniciar animação
+      card.style.animation = 'dialogo-entrar 0.22s cubic-bezier(.34,1.3,.64,1)';
+
+      const overlay = document.getElementById('overlay-dialogo');
+      overlay.style.display = 'flex';
+    }
+
+    function fecharDialogo() {
+      const card = document.getElementById('card-dialogo');
+      card.style.animation = 'dialogo-sair 0.16s ease forwards';
+      setTimeout(() => {
+        document.getElementById('overlay-dialogo').style.display = 'none';
+      }, 160);
+    }
+
+    function _confirmarDialogo() {
+      fecharDialogo();
+      if (_dialogoCallback) setTimeout(_dialogoCallback, 180);
+    }
+
+    // Fechar ao clicar fora do card
+    document.getElementById('overlay-dialogo').addEventListener('click', function(e) {
+      if (e.target === this) fecharDialogo();
+    });
+
+    // Fechar com Esc
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && document.getElementById('overlay-dialogo').style.display === 'flex') {
+        fecharDialogo();
+      }
+    });
+
+    window.abrirDialogo  = abrirDialogo;
+    window.fecharDialogo = fecharDialogo;
+
+    // ─── Modal Alterar Minha Senha ───────────────────────────────
+    function abrirModalMinhaSenha() {
+      document.getElementById('ms-nova').value = '';
+      document.getElementById('ms-confirma').value = '';
+      const el = document.getElementById('overlay-minha-senha');
+      el.style.display = 'flex';
+      setTimeout(() => document.getElementById('ms-nova').focus(), 50);
+    }
+
+    function fecharModalMinhaSenha() {
+      document.getElementById('overlay-minha-senha').style.display = 'none';
+    }
+
+    function salvarMinhaSenha() {
+      const nova     = document.getElementById('ms-nova').value.trim();
+      const confirma = document.getElementById('ms-confirma').value.trim();
+      if (nova.length < 6) { mostrarToast('erro', 'A senha deve ter pelo menos 6 caracteres.'); return; }
+      if (nova !== confirma) { mostrarToast('erro', 'As senhas não coincidem.'); return; }
+      fetch('/api/minha-senha', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nova_senha: nova }),
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.sucesso) {
+          mostrarToast('sucesso', 'Senha alterada com sucesso!');
+          fecharModalMinhaSenha();
+        } else {
+          mostrarToast('erro', d.erro || 'Erro ao alterar senha.');
+        }
+      });
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && document.getElementById('overlay-minha-senha').style.display === 'flex') {
+        fecharModalMinhaSenha();
+      }
+    });
+  </script>
+
+  {% block scripts_extras %}{% endblock %}
+</body>
+</html>

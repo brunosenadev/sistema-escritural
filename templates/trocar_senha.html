@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sisplan — Criar Nova Senha</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #eef2fb;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 40px rgba(10,22,40,0.12);
+    }
+
+    .icone-topo {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg,#f59e0b,#fbbf24);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .icone-topo svg {
+      width: 24px; height: 24px;
+      stroke: #fff; fill: none;
+      stroke-width: 2; stroke-linecap: round;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .subtitulo {
+      font-size: 13px;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .grupo {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      color: #1e293b;
+      background: #f8fafc;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="password"]:focus {
+      border-color: #3b82f6;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+
+    .erro {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 13px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background 0.2s;
+    }
+
+    button[type="submit"]:hover { background: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icone-topo">
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <h1>Criar Nova Senha</h1>
+    <p class="subtitulo">Por segurança, sua senha foi resetada.<br>Defina uma nova senha para continuar.</p>
+
+    {% if erro %}
+    <div class="erro">{{ erro }}</div>
+    {% endif %}
+
+    <form method="POST" action="/trocar-senha">
+      <div class="grupo">
+        <label>Nova Senha</label>
+        <input type="password" name="nova_senha" placeholder="Mínimo 6 caracteres" autofocus required>
+      </div>
+      <div class="grupo">
+        <label>Confirmar Senha</label>
+        <input type="password" name="confirma_senha" placeholder="Repita a nova senha" required>
+      </div>
+      <button type="submit">Salvar e Entrar</button>
+    </form>
+  </div>
+</body>
+</html>

@@ -1,0 +1,728 @@
+{% extends "base.html" %}
+
+{% block titulo %}Cancelados{% endblock %}
+{% block titulo_pagina %}Cancelados{% endblock %}
+{% block breadcrumb %}Controle de Escriturais / Cancelados{% endblock %}
+
+{% set aba_ativa = 'cancelados' %}
+{% set total_pendentes = registros | length %}
+
+{% block estilos_extras %}
+<style>
+
+  /* ── Badge cancelado ───────────────────────── */
+  .badge-cancelado {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    background-color: #fca5a5;
+    color: #7f1d1d;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── Layout ──────────────────────────────── */
+  .grade-cancelados {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── Card tabela ─────────────────────────── */
+  .card-tabela {
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  /* ── Barra de ferramentas ─────────────────── */
+  .barra-ferramentas {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+  }
+
+  .campo-busca {
+    flex: 1;
+    min-width: 180px;
+    padding: 8px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .campo-busca:focus { border-color: #3b82f6; }
+
+  .select-filtro {
+    padding: 8px 10px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    color: #475569;
+    cursor: pointer;
+  }
+  .select-filtro:focus { border-color: #3b82f6; }
+
+  .botao-novo {
+    padding: 8px 16px;
+    background: #0a1628;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .botao-novo:hover { background: #1a3a7a; }
+  .botao-novo svg {
+    width: 14px; height: 14px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2.5; stroke-linecap: round;
+  }
+
+  /* ── Tabela ───────────────────────────────── */
+  .tabela-dados {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .tabela-dados th {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #94a3b8;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+
+  .tabela-dados td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tabela-dados tr:last-child td { border-bottom: none; }
+  .tabela-dados tr:hover td { background: #f8fbff; }
+
+  .celula-tecnico {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .celula-obs {
+    max-width: 180px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  .celula-acoes {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .botao-acao {
+    width: 28px; height: 28px;
+    border: none; background: none;
+    cursor: pointer; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .botao-acao svg {
+    width: 14px; height: 14px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round;
+  }
+  .botao-acao.editar  { color: #3b82f6; }
+  .botao-acao.editar:hover  { background: #eff6ff; }
+  .botao-acao.deletar { color: #ef4444; }
+  .botao-acao.deletar:hover { background: #fef2f2; }
+
+  .linha-vazia td {
+    text-align: center;
+    padding: 40px 20px;
+    color: #94a3b8;
+  }
+  .linha-vazia svg {
+    width: 32px; height: 32px;
+    stroke: #cbd5e1; fill: none; stroke-width: 1.5;
+    display: block; margin: 0 auto 10px;
+  }
+
+  .rodape-tabela {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 18px;
+    font-size: 12px;
+    color: #94a3b8;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  /* ── Resumo lateral ───────────────────────── */
+  .coluna-resumo { display: flex; flex-direction: column; gap: 14px; }
+
+  .card-resumo {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+  }
+  .card-resumo-header {
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #64748b;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .lista-resumo { padding: 4px 0; }
+  .item-resumo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 16px;
+    font-size: 12px;
+    transition: background 0.1s;
+    border-radius: 6px;
+    margin: 1px 4px;
+  }
+  .item-resumo:hover { background: #f8fafc; }
+  .item-resumo-nome { font-weight: 600; font-size: 11px; }
+  .item-resumo-cont {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+  .ponto-tecnico {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+
+  /* ── Modal ───────────────────────────────── */
+  .overlay-modal {
+    display: none;
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(10,22,40,0.55);
+    backdrop-filter: blur(4px);
+    align-items: center; justify-content: center;
+  }
+  .overlay-modal.aberto { display: flex; }
+
+  .card-modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    width: 700px;
+    max-width: calc(100vw - 40px);
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.18);
+    animation: modal-entrar 0.2s ease;
+  }
+  @keyframes modal-entrar {
+    from { opacity:0; transform:translateY(-12px) scale(0.97); }
+    to   { opacity:1; transform:translateY(0)     scale(1);    }
+  }
+
+  .modal-header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+  }
+  .modal-titulo {
+    font-size: 16px; font-weight: 700; color: #1e293b;
+  }
+  .botao-fechar-modal {
+    background: none; border: none; cursor: pointer;
+    color: #94a3b8; padding: 4px; border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+    display: flex; align-items: center;
+  }
+  .botao-fechar-modal:hover { color: #ef4444; background: #fef2f2; }
+  .botao-fechar-modal svg {
+    width: 18px; height: 18px;
+    stroke: currentColor; fill: none; stroke-width: 2;
+  }
+
+  .grade-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 18px;
+  }
+  .campo-completo { grid-column: 1 / -1; }
+
+  .grupo-form { display: flex; flex-direction: column; gap: 5px; }
+  .grupo-form label {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    color: #64748b;
+  }
+  .input-form, .select-form {
+    padding: 8px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+    color: #1e293b;
+  }
+  .input-form:focus, .select-form:focus { border-color: #3b82f6; }
+
+  .rodape-modal {
+    display: flex; justify-content: flex-end; gap: 10px;
+    margin-top: 22px; padding-top: 18px;
+    border-top: 1px solid #f1f5f9;
+  }
+  .botao-cancelar {
+    padding: 9px 18px; border-radius: 8px;
+    border: 1.5px solid #e2e8f0; background: #f8fafc;
+    color: #475569; font-size: 13px; font-family: inherit;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .botao-cancelar:hover { background: #f1f5f9; }
+  .botao-salvar {
+    padding: 9px 20px; border-radius: 8px;
+    border: none; background: #0a1628;
+    color: #fff; font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .botao-salvar:hover { background: #1a3a7a; }
+
+</style>
+{% endblock %}
+
+{% block acoes_header %}
+<button class="botao-novo" onclick="abrirModalAdicionar()">
+  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  Novo Cancelado
+</button>
+{% endblock %}
+
+{% block conteudo %}
+<div class="grade-cancelados">
+
+  <!-- Coluna principal: tabela -->
+  <div>
+    <div class="card-tabela">
+
+      <!-- Barra de ferramentas -->
+      <div class="barra-ferramentas">
+        <input
+          class="campo-busca"
+          type="text"
+          id="campo-busca-texto"
+          placeholder="Buscar empresa, banco..."
+          oninput="filtrarTabela()"
+        >
+        <select class="select-filtro" id="filtro-tecnico" onchange="filtrarTabela()">
+          <option value="">Todos os técnicos</option>
+          {% for tecnico in resumo_tecnicos.keys() %}
+          <option value="{{ tecnico }}">{{ tecnico }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Tabela -->
+      <div style="overflow-x:auto;">
+        <table class="tabela-dados">
+          <thead>
+            <tr>
+              <th>Técnico</th>
+              <th>Empresa</th>
+              <th>Serviço</th>
+              <th>Banco</th>
+              <th>Carteira</th>
+              <th>Conta</th>
+              <th>Dt. Solicita</th>
+              <th>Dt. Status</th>
+              <th>Status</th>
+              <th>Retorno</th>
+              <th>Ordem Serv.</th>
+              <th>Obs</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela">
+            {% if registros %}
+              {% for reg in registros %}
+              <tr
+                data-id="{{ reg.id }}"
+                data-tecnico="{{ reg.tecnico | lower }}"
+                data-busca="{{ (reg.empresa ~ ' ' ~ reg.banco ~ ' ' ~ reg.obs ~ ' ' ~ reg.tecnico) | lower }}"
+              >
+                <td class="celula-tecnico" style="color: {{ cores_tecnicos.get(reg.tecnico, '#64748b') }};">
+                  {{ reg.tecnico or '—' }}
+                </td>
+                <td title="{{ reg.empresa }}">{{ reg.empresa or '—' }}</td>
+                <td>{{ reg.servico or '—' }}</td>
+                <td>{{ reg.banco or '—' }}</td>
+                <td>{{ reg.carteira or '—' }}</td>
+                <td>{{ reg.conta or '—' }}</td>
+                <td>{{ reg.dt_solicita or '—' }}</td>
+                <td>{{ reg.dt_status or '—' }}</td>
+                <td><span class="badge-cancelado">CANCELADO</span></td>
+                <td>{{ reg.retorno or '—' }}</td>
+                <td>{{ reg.ordem_servico or '—' }}</td>
+                <td class="celula-obs" title="{{ reg.obs }}">{{ reg.obs or '' }}</td>
+                <td>
+                  <div class="celula-acoes">
+                    <button
+                      class="botao-acao editar"
+                      title="Editar"
+                      onclick="abrirModalEditar({{ reg | tojson }})"
+                    >
+                      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
+                    <button
+                      class="botao-acao deletar"
+                      title="Deletar"
+                      onclick="confirmarDelecao({{ reg.id }}, {{ reg.empresa | tojson }})"
+                    >
+                      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="13" class="linha-vazia">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                  </svg>
+                  <p>Nenhum registro cancelado</p>
+                  <small>Os registros cancelados da aba Pendente aparecerão aqui.</small>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="rodape-tabela">
+        <span id="contador-linhas">{{ registros | length }} registros</span>
+        <span>Aba: Cancelados</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coluna direita: resumo por técnico -->
+  <div class="coluna-resumo">
+    <div class="card-resumo">
+      <div class="card-resumo-header">Resumo por Técnico</div>
+      <div class="lista-resumo">
+        {% for tecnico, quantidade in resumo_tecnicos.items() %}
+        <div class="item-resumo" onclick="filtrarPorTecnico('{{ tecnico }}')" style="cursor:pointer;">
+          <div style="display:flex;align-items:center;">
+            <span class="ponto-tecnico" style="background: {{ cores_tecnicos.get(tecnico, '#0f766e') }};"></span>
+            <span class="item-resumo-nome" style="color: {{ cores_tecnicos.get(tecnico, '#0f766e') }};">{{ tecnico }}</span>
+          </div>
+          <span class="item-resumo-cont">{{ quantidade }}</span>
+        </div>
+        {% else %}
+        <div style="padding:16px;text-align:center;color:#94a3b8;font-size:13px;">Sem dados</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ Modal de registro ══════════════════════ -->
+<div class="overlay-modal" id="overlay-modal" onclick="fecharModalSeClicarFora(event)">
+  <div class="card-modal">
+    <div class="modal-header">
+      <span class="modal-titulo" id="titulo-modal">Novo Cancelado</span>
+      <button class="botao-fechar-modal" onclick="fecharModal()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <form id="form-registro" onsubmit="salvarRegistro(event)">
+      <input type="hidden" id="campo-id" value="">
+
+      <div class="grade-form">
+
+        <div class="grupo-form">
+          <label>Técnico</label>
+          <select class="select-form" id="campo-tecnico">
+            <option value="">Selecionar...</option>
+            {% for t in lista_tecnicos %}
+            <option value="{{ t.nome }}">{{ t.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="grupo-form">
+          <label>Empresa</label>
+          <input class="input-form" type="text" id="campo-empresa" placeholder="Nome da empresa">
+        </div>
+
+        <div class="grupo-form">
+          <label>Serviço</label>
+          <select class="select-form" id="campo-servico">
+            <option value="">Selecionar...</option>
+            {% for s in lista_servicos %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="grupo-form">
+          <label>Banco</label>
+          <input class="input-form" type="text" id="campo-banco" placeholder="Ex: 341 - ITAÚ">
+        </div>
+
+        <div class="grupo-form">
+          <label>Carteira</label>
+          <input class="input-form" type="text" id="campo-carteira" placeholder="Carteira">
+        </div>
+
+        <div class="grupo-form">
+          <label>Conta</label>
+          <input class="input-form" type="text" id="campo-conta" placeholder="Conta">
+        </div>
+
+        <div class="grupo-form">
+          <label>Dt. Solicitação</label>
+          <input class="input-form" type="text" id="campo-dt-solicita" placeholder="dd/mm/aaaa">
+        </div>
+
+        <div class="grupo-form">
+          <label>Dt. Status</label>
+          <input class="input-form" type="text" id="campo-dt-status" placeholder="dd/mm/aaaa">
+        </div>
+
+        <div class="grupo-form">
+          <label>Retorno</label>
+          <input class="input-form" type="text" id="campo-retorno" placeholder="Retorno">
+        </div>
+
+        <div class="grupo-form">
+          <label>Ordem de Serviço</label>
+          <input class="input-form" type="text" id="campo-ordem-servico" placeholder="Ordem de serviço">
+        </div>
+
+        <div class="grupo-form campo-completo">
+          <label>Observação</label>
+          <input
+            class="input-form"
+            type="text"
+            id="campo-obs"
+            placeholder="DADOS NO E-MAIL:"
+            style="text-transform: uppercase;"
+            oninput="this.value = this.value.toUpperCase()"
+          >
+        </div>
+
+      </div>
+
+      <div class="rodape-modal">
+        <button type="button" class="botao-cancelar" onclick="fecharModal()">Cancelar</button>
+        <button type="submit" class="botao-salvar" id="botao-salvar-texto">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts_extras %}
+<script>
+  // ─── Filtro ──────────────────────────────────────────────────
+  function filtrarTabela() {
+    const termoBusca    = document.getElementById('campo-busca-texto').value.toLowerCase();
+    const filtroTecnico = document.getElementById('filtro-tecnico').value.toLowerCase();
+    const linhas        = document.querySelectorAll('#corpo-tabela tr[data-id]');
+    let visiveis = 0;
+
+    linhas.forEach(linha => {
+      const textoBusca = linha.dataset.busca || '';
+      const tecnico    = linha.dataset.tecnico || '';
+      const passaBusca   = termoBusca   === '' || textoBusca.includes(termoBusca);
+      const passaTecnico = filtroTecnico === '' || tecnico.includes(filtroTecnico);
+
+      if (passaBusca && passaTecnico) {
+        linha.style.display = '';
+        visiveis++;
+      } else {
+        linha.style.display = 'none';
+      }
+    });
+
+    document.getElementById('contador-linhas').textContent = `${visiveis} registros`;
+  }
+
+  function filtrarPorTecnico(tecnico) {
+    document.getElementById('filtro-tecnico').value = tecnico;
+    filtrarTabela();
+  }
+
+  function atualizarContadorLinhas() {
+    const total = document.querySelectorAll('#corpo-tabela tr[data-id]:not([style*="none"])').length;
+    document.getElementById('contador-linhas').textContent = `${total} registros`;
+  }
+
+  let modoEdicao = false;
+
+  function dataDeHoje() {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  }
+
+  function abrirModalAdicionar() {
+    modoEdicao = false;
+    document.getElementById('titulo-modal').textContent = 'Novo Cancelado';
+    document.getElementById('botao-salvar-texto').textContent = 'Adicionar';
+    document.getElementById('form-registro').reset();
+    document.getElementById('campo-id').value           = '';
+    document.getElementById('campo-tecnico').value      = 'SEM TEC.';
+    document.getElementById('campo-servico').value      = 'COBRANÇA';
+    document.getElementById('campo-dt-solicita').value  = dataDeHoje();
+    document.getElementById('campo-dt-status').value    = dataDeHoje();
+    document.getElementById('campo-obs').value          = 'DADOS NO E-MAIL:';
+    document.getElementById('overlay-modal').classList.add('aberto');
+    document.getElementById('campo-empresa').focus();
+  }
+
+  function abrirModalEditar(reg) {
+    modoEdicao = true;
+    document.getElementById('titulo-modal').textContent = 'Editar Cancelado';
+    document.getElementById('botao-salvar-texto').textContent = 'Salvar Alterações';
+    document.getElementById('campo-id').value           = reg.id;
+    document.getElementById('campo-tecnico').value      = reg.tecnico || '';
+    document.getElementById('campo-empresa').value      = reg.empresa || '';
+    document.getElementById('campo-servico').value      = reg.servico || '';
+    document.getElementById('campo-banco').value        = reg.banco || '';
+    document.getElementById('campo-carteira').value     = reg.carteira || '';
+    document.getElementById('campo-conta').value        = reg.conta || '';
+    document.getElementById('campo-dt-solicita').value  = reg.dt_solicita || '';
+    document.getElementById('campo-dt-status').value    = reg.dt_status || '';
+    document.getElementById('campo-retorno').value      = reg.retorno || '';
+    document.getElementById('campo-ordem-servico').value = reg.ordem_servico || '';
+    document.getElementById('campo-obs').value          = reg.obs || '';
+    document.getElementById('overlay-modal').classList.add('aberto');
+  }
+
+  function fecharModal() {
+    document.getElementById('overlay-modal').classList.remove('aberto');
+  }
+
+  function fecharModalSeClicarFora(event) {
+    if (event.target === document.getElementById('overlay-modal')) fecharModal();
+  }
+
+  function salvarRegistro(event) {
+    event.preventDefault();
+
+    const dados = {
+      tecnico:       document.getElementById('campo-tecnico').value,
+      empresa:       document.getElementById('campo-empresa').value,
+      servico:       document.getElementById('campo-servico').value,
+      banco:         document.getElementById('campo-banco').value,
+      carteira:      document.getElementById('campo-carteira').value,
+      conta:         document.getElementById('campo-conta').value,
+      dt_solicita:   document.getElementById('campo-dt-solicita').value,
+      dt_status:     document.getElementById('campo-dt-status').value,
+      retorno:       document.getElementById('campo-retorno').value,
+      ordem_servico: document.getElementById('campo-ordem-servico').value,
+      obs:           document.getElementById('campo-obs').value,
+      status:        'CANCELADO',
+    };
+
+    const idRegistro = document.getElementById('campo-id').value;
+    const url    = modoEdicao ? `/cancelados/atualizar/${idRegistro}` : '/cancelados/adicionar';
+    const metodo = modoEdicao ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: metodo,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados),
+    })
+    .then(r => r.json())
+    .then(resp => {
+      if (resp.sucesso) {
+        mostrarToast('sucesso', modoEdicao ? 'Registro atualizado!' : 'Registro adicionado!');
+        fecharModal();
+        setTimeout(() => location.reload(), 700);
+      } else {
+        mostrarToast('erro', resp.erro || 'Erro ao salvar.');
+      }
+    })
+    .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
+  }
+
+  function confirmarDelecao(idRegistro, nomeEmpresa) {
+    abrirDialogo({
+      titulo: 'Deletar Registro',
+      mensagem: `Deseja realmente deletar o cancelado de <strong>${nomeEmpresa}</strong>?<br>Essa ação não pode ser desfeita.`,
+      tipo: 'perigo',
+      textoBotao: 'Deletar',
+      callback: () => {
+        fetch(`/cancelados/deletar/${idRegistro}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(resp => {
+          if (resp.sucesso) {
+            mostrarToast('sucesso', 'Registro deletado.');
+            const linha = document.querySelector(`tr[data-id="${idRegistro}"]`);
+            if (linha) {
+              linha.style.transition = 'opacity 0.3s';
+              linha.style.opacity = '0';
+              setTimeout(() => { linha.remove(); atualizarContadorLinhas(); }, 300);
+            }
+          } else {
+            mostrarToast('erro', resp.erro || 'Erro ao deletar.');
+          }
+        })
+        .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
+      }
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sisplan — Entrar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset e base ─────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #eef2fb;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Canvas de partículas no fundo ───────── */
+    #canvas-fundo {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Container central ────────────────────── */
+    .container-login {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 24px;
+      perspective: 1200px; /* necessário para o efeito 3D do card */
+    }
+
+    /* ── Card de login ────────────────────────── */
+    .card-login {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 36px 40px 32px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow:
+        0 4px 24px rgba(30, 79, 196, 0.10),
+        0 1px 4px rgba(30, 79, 196, 0.06);
+      border: 1px solid rgba(37, 99, 235, 0.08);
+      transition: box-shadow 0.3s ease;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .card-login:hover {
+      box-shadow:
+        0 12px 48px rgba(30, 79, 196, 0.18),
+        0 2px 8px rgba(30, 79, 196, 0.10);
+    }
+
+    /* ── Logo ─────────────────────────────────── */
+    .area-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .icone-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #1e4fc4, #3b82f6);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icone-logo svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: #fff;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .texto-logo {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1e293b;
+      letter-spacing: -0.3px;
+    }
+
+    /* ── Título e subtítulo ───────────────────── */
+    .titulo-login {
+      font-size: 26px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+
+    .subtitulo-login {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 28px;
+    }
+
+    /* ── Mensagem de erro ─────────────────────── */
+    .mensagem-erro {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Campos do formulário ─────────────────── */
+    .grupo-campo {
+      margin-bottom: 16px;
+    }
+
+    .grupo-campo label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .wrapper-campo {
+      position: relative;
+    }
+
+    .icone-campo {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      transition: color 0.2s;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+    }
+
+    .wrapper-campo svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .campo-input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      color: #1e293b;
+      background: #f8fafc;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+
+    .campo-input::placeholder {
+      color: #c0cce0;
+    }
+
+    .campo-input:focus {
+      border-color: #3b82f6;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    .campo-input:focus + .icone-campo,
+    .wrapper-campo:focus-within .icone-campo {
+      color: #3b82f6;
+    }
+
+    /* Reordenar: o ícone vem depois do input no HTML mas fica antes visualmente */
+    .wrapper-campo { display: flex; align-items: center; }
+    .wrapper-campo .campo-input { order: 2; }
+    .wrapper-campo .icone-campo { order: 1; position: absolute; left: 12px; }
+
+    /* ── Botão entrar ─────────────────────────── */
+    .botao-entrar {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      background: linear-gradient(135deg, #1e4fc4, #3b82f6);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .botao-entrar:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(30, 79, 196, 0.30);
+    }
+
+    .botao-entrar:active {
+      transform: translateY(0px);
+      opacity: 1;
+    }
+
+    .botao-entrar svg {
+      width: 16px;
+      height: 16px;
+      stroke: #fff;
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      transition: transform 0.2s;
+    }
+
+    .botao-entrar:hover svg {
+      transform: translateX(3px);
+    }
+
+    /* ── Rodapé do card ───────────────────────── */
+    .rodape-card {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 11px;
+      color: #cbd5e1;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Linha decorativa ─────────────────────── */
+    .linha-separadora {
+      height: 1px;
+      background: #f1f5f9;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Canvas do fundo animado -->
+  <canvas id="canvas-fundo"></canvas>
+
+  <div class="container-login">
+    <div class="card-login" id="card-login">
+
+      <!-- Logo -->
+      <div class="area-logo">
+        <div class="icone-logo">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="texto-logo">Sisplan</span>
+      </div>
+
+      <!-- Título -->
+      <h1 class="titulo-login">Entrar</h1>
+      <p class="subtitulo-login">Informe suas credenciais para continuar</p>
+
+      <!-- Erro -->
+      {% if erro %}
+      <div class="mensagem-erro">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#dc2626;fill:none;stroke-width:2;flex-shrink:0;">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        {{ erro }}
+      </div>
+      {% endif %}
+
+      <!-- Formulário -->
+      <form method="POST" autocomplete="off">
+
+        <div class="grupo-campo">
+          <label for="campo-usuario">Usuário</label>
+          <div class="wrapper-campo">
+            <span class="icone-campo">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            <input
+              class="campo-input"
+              type="text"
+              id="campo-usuario"
+              name="usuario"
+              placeholder="admin"
+              required
+              autofocus
+            >
+          </div>
+        </div>
+
+        <div class="grupo-campo">
+          <label for="campo-senha">Senha</label>
+          <div class="wrapper-campo">
+            <span class="icone-campo">
+              <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </span>
+            <input
+              class="campo-input"
+              type="password"
+              id="campo-senha"
+              name="senha"
+              placeholder="••••••"
+              required
+            >
+          </div>
+        </div>
+
+        <button type="submit" class="botao-entrar">
+          Entrar na plataforma
+          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+
+      </form>
+
+      <div class="linha-separadora"></div>
+      <p class="rodape-card">* Acesso restrito a usuários autorizados *</p>
+
+    </div>
+  </div>
+
+  <script>
+    // ─── Animação de partículas no fundo ────────────────────
+    const canvas  = document.getElementById('canvas-fundo');
+    const ctx     = canvas.getContext('2d');
+    let largura, altura, particulas;
+    let posicaoMouse = { x: -999, y: -999 };
+
+    function redimensionarCanvas() {
+      largura = canvas.width  = window.innerWidth;
+      altura  = canvas.height = window.innerHeight;
+    }
+
+    function criarParticulas() {
+      const quantidade = Math.floor((largura * altura) / 14000);
+      particulas = Array.from({ length: quantidade }, () => ({
+        x:  Math.random() * largura,
+        y:  Math.random() * altura,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        raio: Math.random() * 2 + 1,
+        opacidade: Math.random() * 0.4 + 0.1,
+      }));
+    }
+
+    function animarParticulas() {
+      ctx.clearRect(0, 0, largura, altura);
+
+      particulas.forEach(p => {
+        // Movimento suave em direção ao mouse (repulsão leve)
+        const dx = p.x - posicaoMouse.x;
+        const dy = p.y - posicaoMouse.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          p.vx += (dx / dist) * 0.04;
+          p.vy += (dy / dist) * 0.04;
+        }
+
+        p.vx *= 0.98;  // atrito
+        p.vy *= 0.98;
+        p.x  += p.vx;
+        p.y  += p.vy;
+
+        // Rebater nas bordas
+        if (p.x < 0)       { p.x = 0;      p.vx *= -1; }
+        if (p.x > largura) { p.x = largura; p.vx *= -1; }
+        if (p.y < 0)       { p.y = 0;      p.vy *= -1; }
+        if (p.y > altura)  { p.y = altura;  p.vy *= -1; }
+
+        // Desenhar ponto
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.raio, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(59, 130, 246, ${p.opacidade})`;
+        ctx.fill();
+      });
+
+      // Desenhar linhas entre partículas próximas
+      for (let i = 0; i < particulas.length; i++) {
+        for (let j = i + 1; j < particulas.length; j++) {
+          const dx   = particulas[i].x - particulas[j].x;
+          const dy   = particulas[i].y - particulas[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 100) {
+            const alfa = (1 - dist / 100) * 0.15;
+            ctx.beginPath();
+            ctx.moveTo(particulas[i].x, particulas[i].y);
+            ctx.lineTo(particulas[j].x, particulas[j].y);
+            ctx.strokeStyle = `rgba(59, 130, 246, ${alfa})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
+      }
+
+      requestAnimationFrame(animarParticulas);
+    }
+
+    window.addEventListener('resize', () => {
+      redimensionarCanvas();
+      criarParticulas();
+    });
+
+    window.addEventListener('mousemove', e => {
+      posicaoMouse.x = e.clientX;
+      posicaoMouse.y = e.clientY;
+    });
+
+    redimensionarCanvas();
+    criarParticulas();
+    animarParticulas();
+
+    // ─── Efeito de inclinação 3D no card ao passar o mouse ──
+    const cardLogin = document.getElementById('card-login');
+
+    cardLogin.addEventListener('mousemove', e => {
+      const rect    = cardLogin.getBoundingClientRect();
+      const centroX = rect.left + rect.width  / 2;
+      const centroY = rect.top  + rect.height / 2;
+      const deltaX  = (e.clientX - centroX) / (rect.width  / 2);
+      const deltaY  = (e.clientY - centroY) / (rect.height / 2);
+
+      // Inclinação máxima de 6 graus
+      const inclinacaoX = deltaY * -6;
+      const inclinacaoY = deltaX *  6;
+
+      cardLogin.style.transform = `
+        rotateX(${inclinacaoX}deg)
+        rotateY(${inclinacaoY}deg)
+        scale(1.01)
+      `;
+    });
+
+    cardLogin.addEventListener('mouseleave', () => {
+      cardLogin.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1)';
+      cardLogin.style.transition = 'transform 0.5s ease';
+    });
+
+    cardLogin.addEventListener('mouseenter', () => {
+      cardLogin.style.transition = 'transform 0.1s ease';
+    });
+  </script>
+</body>
+</html>

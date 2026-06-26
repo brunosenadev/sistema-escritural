@@ -1,0 +1,1149 @@
+{% extends "base.html" %}
+
+{% block titulo %}Pendente{% endblock %}
+{% block titulo_pagina %}Pendente{% endblock %}
+{% block breadcrumb %}Controle de Escriturais / Pendente{% endblock %}
+
+{% set aba_ativa = 'pendente' %}
+{% set total_pendentes = registros | length %}
+
+{% block estilos_extras %}
+<style>
+
+  /* ── Cores de status ──────────────────────────── */
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+  }
+
+  .status-aguardando-banco       { background-color:#dbeafe; color:#1d4ed8; }
+  .status-aguardando-cliente     { background-color:#ffedd5; color:#c2410c; }
+  .status-aguardando-comercial   { background-color:#fef9c3; color:#854d0e; }
+  .status-aguardando-atualizacao { background-color:#ede9fe; color:#6d28d9; }
+  .status-homologado             { background-color:#dcfce7; color:#15803d; }
+  .status-falta-cadastrar        { background-color:#fee2e2; color:#991b1b; }
+  .status-pendente-treinamento   { background-color:#fef3c7; color:#92400e; }
+  .status-pendencia-em-prog      { background-color:#fce7f3; color:#9d174d; }
+  .status-em-processo            { background-color:#ccfbf1; color:#0f766e; }
+  .status-cancelado              { background-color:#fca5a5; color:#7f1d1d; }
+  .status-padrao                 { background-color:#f1f5f9; color:#475569; }
+
+  /* ── Select de status inline ─────────────────── */
+  .select-status-inline {
+    appearance: none;
+    -webkit-appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    padding: 3px 22px 3px 10px;
+    border-radius: 99px;
+    outline: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 10px;
+    transition: opacity 0.15s, box-shadow 0.15s;
+  }
+  .select-status-inline:hover {
+    opacity: 0.80;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.08);
+  }
+  .select-status-inline:focus {
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.25);
+  }
+  .select-status-inline option {
+    background: #ffffff;
+    color: #1e293b;
+    font-weight: 500;
+  }
+
+  /* ── Layout da aba ───────────────────────────── */
+  .grade-pendente {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── Toolbar acima da tabela ─────────────────── */
+  .toolbar-tabela {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .campo-busca {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+    max-width: 340px;
+  }
+
+  .campo-busca svg {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    stroke: #94a3b8;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    pointer-events: none;
+  }
+
+  .input-busca {
+    width: 100%;
+    padding: 8px 12px 8px 34px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .input-busca:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.10);
+  }
+
+  .select-filtro {
+    padding: 8px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: #475569;
+    background: #fff;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .select-filtro:focus { border-color: #3b82f6; }
+
+  .botao-primario {
+    padding: 8px 16px;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s, transform 0.15s;
+    white-space: nowrap;
+    margin-left: auto;
+  }
+
+  .botao-primario:hover { background: #1d4ed8; transform: translateY(-1px); }
+  .botao-primario svg {
+    width: 14px; height: 14px;
+    stroke: #fff; fill: none;
+    stroke-width: 2.5; stroke-linecap: round;
+  }
+
+  /* ── Card envolvendo a tabela ────────────────── */
+  .card-tabela {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(30,79,196,0.05);
+  }
+
+  /* ── Tabela principal ────────────────────────── */
+  .tabela-pendente {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .tabela-pendente thead tr {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .tabela-pendente th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: #64748b;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .tabela-pendente th.ordenavel {
+    cursor: pointer;
+  }
+  .tabela-pendente th.ordenavel:hover { color: #2563eb; }
+
+  .tabela-pendente tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+    animation: linha-entrar 0.25s ease forwards;
+  }
+
+  @keyframes linha-entrar {
+    from { opacity: 0; transform: translateX(-6px); }
+    to   { opacity: 1; transform: translateX(0);    }
+  }
+
+  .tabela-pendente tbody tr:hover {
+    background: #f8fbff;
+  }
+
+  .tabela-pendente tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .tabela-pendente td {
+    padding: 9px 14px;
+    color: #334155;
+    vertical-align: middle;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .celula-tecnico {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .celula-obs {
+    max-width: 160px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  /* Ações por linha */
+  .celula-acoes {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .botao-acao {
+    width: 28px; height: 28px;
+    border: none; background: none;
+    cursor: pointer; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+
+  .botao-acao svg {
+    width: 13px; height: 13px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round;
+  }
+
+  .botao-acao.editar { color: #3b82f6; }
+  .botao-acao.editar:hover { background: #eff6ff; }
+  .botao-acao.deletar { color: #ef4444; }
+  .botao-acao.deletar:hover { background: #fef2f2; }
+
+  /* Linha sem dados */
+  .linha-vazia {
+    text-align: center;
+    padding: 48px 0;
+    color: #94a3b8;
+  }
+
+  .linha-vazia svg {
+    width: 40px; height: 40px;
+    stroke: #cbd5e1; fill: none;
+    stroke-width: 1.5; stroke-linecap: round;
+    display: block; margin: 0 auto 12px;
+  }
+
+  .linha-vazia p { font-size: 14px; }
+  .linha-vazia small { font-size: 12px; color: #cbd5e1; margin-top: 4px; display: block; }
+
+  /* Rodapé da tabela */
+  .rodape-tabela {
+    padding: 10px 16px;
+    border-top: 1px solid #f1f5f9;
+    font-size: 12px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ── Coluna de resumo (direita) ──────────────── */
+  .coluna-resumo {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .card-resumo {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(30,79,196,0.05);
+  }
+
+  .card-resumo-header {
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: #64748b;
+  }
+
+  .lista-resumo {
+    padding: 8px 0;
+  }
+
+  .item-resumo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 16px;
+    transition: background 0.15s;
+    cursor: default;
+  }
+
+  .item-resumo:hover { background: #f8fafc; }
+
+  .item-resumo-nome {
+    font-size: 13px;
+    color: #334155;
+    font-weight: 500;
+  }
+
+  .item-resumo-cont {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    background: #f1f5f9;
+    padding: 1px 8px;
+    border-radius: 6px;
+    min-width: 28px;
+    text-align: center;
+  }
+
+  /* Ponto colorido do técnico no resumo */
+  .ponto-tecnico {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+
+  /* ── Modal de adicionar / editar ─────────────── */
+  .overlay-modal {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(10, 22, 40, 0.55);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+    animation: overlay-entrar 0.2s ease;
+  }
+
+  .overlay-modal.aberto { display: flex; }
+
+  @keyframes overlay-entrar {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    width: 100%;
+    max-width: 540px;
+    box-shadow: 0 20px 60px rgba(10,22,40,0.25);
+    animation: modal-entrar 0.25s cubic-bezier(.34,1.56,.64,1);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  @keyframes modal-entrar {
+    from { opacity: 0; transform: scale(0.92) translateY(12px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0);    }
+  }
+
+  .modal-titulo {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .botao-fechar-modal {
+    background: none; border: none;
+    cursor: pointer; color: #94a3b8;
+    padding: 4px; border-radius: 6px;
+    display: flex; align-items: center;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  .botao-fechar-modal:hover { color: #475569; background: #f1f5f9; }
+  .botao-fechar-modal svg {
+    width: 18px; height: 18px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round;
+  }
+
+  .grade-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .grade-form .campo-completo { grid-column: 1 / -1; }
+
+  .grupo-form label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+
+  .input-form, .select-form {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+    background: #f8fafc;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  }
+
+  .input-form:focus, .select-form:focus {
+    border-color: #3b82f6;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.10);
+  }
+
+  .rodape-modal {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .botao-cancelar {
+    padding: 9px 18px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .botao-cancelar:hover { background: #f8fafc; }
+
+  .botao-salvar {
+    padding: 9px 20px;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .botao-salvar:hover { background: #1d4ed8; }
+
+  /* ── Responsivo básico ────────────────────────── */
+  @media (max-width: 900px) {
+    .grade-pendente { grid-template-columns: 1fr; }
+    .coluna-resumo  { flex-direction: row; flex-wrap: wrap; }
+    .card-resumo    { flex: 1; min-width: 200px; }
+  }
+</style>
+{% endblock %}
+
+{% block acoes_header %}
+  <button class="botao-primario" onclick="abrirModalAdicionar()">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Novo Registro
+  </button>
+{% endblock %}
+
+{% block conteudo %}
+
+<div class="grade-pendente">
+
+  <!-- ═══ COLUNA ESQUERDA: tabela ═══════════════ -->
+  <div>
+    <div class="toolbar-tabela">
+      <!-- Busca -->
+      <div class="campo-busca">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="input-busca"
+          type="text"
+          id="campo-busca-texto"
+          placeholder="Buscar empresa, banco, obs..."
+          oninput="filtrarTabela()"
+        >
+      </div>
+
+      <!-- Filtro por técnico -->
+      <select class="select-filtro" id="filtro-tecnico" onchange="filtrarTabela()">
+        <option value="">Todos os técnicos</option>
+        {% for tecnico in resumo_tecnicos.keys() %}
+        <option value="{{ tecnico }}">{{ tecnico }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- Filtro por status -->
+      <select class="select-filtro" id="filtro-status" onchange="filtrarTabela()">
+        <option value="">Todos os status</option>
+        {% for status in resumo_status.keys() %}
+        <option value="{{ status }}">{{ status }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="card-tabela">
+      <table class="tabela-pendente" id="tabela-pendente">
+        <thead>
+          <tr>
+            <th>Técnico</th>
+            <th class="ordenavel">Empresa</th>
+            <th>Serviço</th>
+            <th>Banco</th>
+            <th class="ordenavel">Dt. Solicita</th>
+            <th class="ordenavel">Dt. Status</th>
+            <th>Status</th>
+            <th>Obs</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="corpo-tabela">
+          {% if registros %}
+            {% for reg in registros %}
+            <tr
+              data-id="{{ reg.id }}"
+              data-tecnico="{{ reg.tecnico | lower }}"
+              data-status="{{ reg.status | lower }}"
+              data-servico="{{ reg.servico | upper }}"
+              data-busca="{{ (reg.empresa ~ ' ' ~ reg.banco ~ ' ' ~ reg.obs ~ ' ' ~ reg.tecnico) | lower }}"
+            >
+              <td class="celula-tecnico" style="color: {{ cores_tecnicos.get(reg.tecnico, '#64748b') }};">
+                {{ reg.tecnico or '—' }}
+              </td>
+              <td title="{{ reg.empresa }}">{{ reg.empresa or '—' }}</td>
+              <td>{{ reg.servico or '—' }}</td>
+              <td>{{ reg.banco or '—' }}</td>
+              <td>{{ reg.dt_solicita or '—' }}</td>
+              <td>{{ reg.dt_status or '—' }}</td>
+              <td>
+                <select
+                  class="badge-status select-status-inline {{ reg.status | css_status }}"
+                  data-id="{{ reg.id }}"
+                  onchange="atualizarStatusInline(this)"
+                >
+                  {% for s in lista_status %}
+                  <option value="{{ s }}" {% if s == reg.status %}selected{% endif %}>{{ s }}</option>
+                  {% endfor %}
+                  {% if reg.status and reg.status not in lista_status %}
+                  <option value="{{ reg.status }}" selected>{{ reg.status }}</option>
+                  {% endif %}
+                </select>
+              </td>
+              <td class="celula-obs" title="{{ reg.obs }}">{{ reg.obs or '' }}</td>
+              <td>
+                <div class="celula-acoes">
+                  <button
+                    class="botao-acao editar"
+                    title="Editar"
+                    onclick="abrirModalEditar({{ reg | tojson }})"
+                  >
+                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </button>
+                  <button
+                    class="botao-acao deletar"
+                    title="Deletar"
+                    onclick="confirmarDelecao({{ reg.id }}, {{ reg.empresa | tojson }})"
+                  >
+                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="9" class="linha-vazia">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <p>Nenhum registro no banco de dados</p>
+                <small>Adicione um novo registro ou importe a planilha em Configurações.</small>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+
+      <div class="rodape-tabela">
+        <span id="contador-linhas">{{ registros | length }} registros</span>
+        <span>Aba: Pendente</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ COLUNA DIREITA: resumos ═══════════════ -->
+  <div class="coluna-resumo">
+
+    <!-- Resumo por técnico -->
+    <div class="card-resumo">
+      <div class="card-resumo-header">Resumo por Técnico</div>
+      <div class="lista-resumo">
+        {% for tecnico, quantidade in resumo_tecnicos.items() %}
+        <div class="item-resumo" onclick="filtrarPorTecnico('{{ tecnico }}')" style="cursor:pointer;" title="Filtrar por {{ tecnico }}">
+          <div style="display:flex;align-items:center;">
+            <span class="ponto-tecnico" style="background: {{ cores_tecnicos.get(tecnico, '#0f766e') }};"></span>
+            <span class="item-resumo-nome" style="color: {{ cores_tecnicos.get(tecnico, '#0f766e') }}; font-weight:700;">{{ tecnico }}</span>
+          </div>
+          <span class="item-resumo-cont">{{ quantidade }}</span>
+        </div>
+        {% else %}
+        <div style="padding:16px;text-align:center;color:#94a3b8;font-size:13px;">Sem dados</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Resumo por status -->
+    <div class="card-resumo">
+      <div class="card-resumo-header">Resumo por Status</div>
+      <div class="lista-resumo">
+        {% for status, quantidade in resumo_status.items() %}
+        <div class="item-resumo" onclick="filtrarPorStatus('{{ status }}')" style="cursor:pointer;" title="Filtrar por {{ status }}">
+          <span class="badge-status {{ status | css_status }}" style="font-size:11px;">{{ status }}</span>
+          <span class="item-resumo-cont">{{ quantidade }}</span>
+        </div>
+        {% else %}
+        <div style="padding:16px;text-align:center;color:#94a3b8;font-size:13px;">Sem dados</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div><!-- /coluna-resumo -->
+</div><!-- /grade-pendente -->
+
+<!-- ═══ Modal: Adicionar / Editar registro ════ -->
+<div class="overlay-modal" id="overlay-modal" onclick="fecharModalSeClicarFora(event)">
+  <div class="modal" id="modal-registro">
+    <div class="modal-titulo">
+      <span id="titulo-modal">Novo Registro</span>
+      <button class="botao-fechar-modal" onclick="fecharModal()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <form id="form-registro" onsubmit="salvarRegistro(event)">
+      <input type="hidden" id="campo-id" name="id" value="">
+
+      <div class="grade-form">
+
+        <div class="grupo-form">
+          <label for="campo-tecnico">Técnico</label>
+          <select class="select-form" id="campo-tecnico" name="tecnico">
+            <option value="">Selecionar...</option>
+            {% for t in lista_tecnicos %}
+            <option value="{{ t.nome }}">{{ t.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="grupo-form">
+          <label for="campo-empresa">Empresa</label>
+          <input class="input-form" type="text" id="campo-empresa" name="empresa" placeholder="Nome da empresa">
+        </div>
+
+        <div class="grupo-form">
+          <label for="campo-servico">Serviço</label>
+          <select class="select-form" id="campo-servico" name="servico">
+            <option value="">Selecionar...</option>
+            {% for s in lista_servicos %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="grupo-form">
+          <label for="campo-banco">Banco</label>
+          <input class="input-form" type="text" id="campo-banco" name="banco" placeholder="Ex: 341 - ITAÚ">
+        </div>
+
+        <div class="grupo-form">
+          <label for="campo-dt-solicita">Dt. Solicitação</label>
+          <input class="input-form" type="text" id="campo-dt-solicita" name="dt_solicita" placeholder="dd/mm/aaaa">
+        </div>
+
+        <div class="grupo-form">
+          <label for="campo-dt-status">Dt. Status</label>
+          <input class="input-form" type="text" id="campo-dt-status" name="dt_status" placeholder="dd/mm/aaaa">
+        </div>
+
+        <div class="grupo-form">
+          <label for="campo-status">Status</label>
+          <select class="select-form" id="campo-status" name="status">
+            <option value="">Selecionar...</option>
+            {% for st in lista_status %}
+            <option value="{{ st }}">{{ st }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="grupo-form campo-completo">
+          <label for="campo-obs">Observação</label>
+          <input
+            class="input-form"
+            type="text"
+            id="campo-obs"
+            name="obs"
+            placeholder="DADOS NO E-MAIL:"
+            style="text-transform: uppercase;"
+            oninput="this.value = this.value.toUpperCase()"
+          >
+        </div>
+
+      </div><!-- /grade-form -->
+
+      <div class="rodape-modal">
+        <button type="button" class="botao-cancelar" onclick="fecharModal()">Cancelar</button>
+        <button type="submit" class="botao-salvar" id="botao-salvar-texto">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts_extras %}
+<script>
+  // ─── Mapeamento de status → classe CSS ──────────────────────
+  // (complementa o filtro Jinja2 que pode não funcionar em alguns ambientes)
+  const mapaCssStatus = {
+    'aguardando banco':        'status-aguardando-banco',
+    'aguardando cliente':      'status-aguardando-cliente',
+    'aguardando comercial':    'status-aguardando-comercial',
+    'aguardando atualização':  'status-aguardando-atualizacao',
+    'aguardando atualizacao':  'status-aguardando-atualizacao',
+    'homologado':              'status-homologado',
+    'falta cadastrar':         'status-falta-cadastrar',
+    'pendente de treinamento': 'status-pendente-treinamento',
+    'pendencia em prog':       'status-pendencia-em-prog',
+    'em processo':             'status-em-processo',
+    'cancelado':               'status-cancelado',
+  };
+
+  function classeCssStatus(statusTexto) {
+    return mapaCssStatus[statusTexto.toLowerCase().trim()] || 'status-padrao';
+  }
+
+  // Aplicar classes CSS nos badges após o carregamento
+  document.querySelectorAll('.badge-status').forEach(badge => {
+    const texto = badge.textContent.trim().toLowerCase();
+    // Remover classes antigas e aplicar a correta
+    Object.values(mapaCssStatus).forEach(c => badge.classList.remove(c));
+    badge.classList.add(classeCssStatus(texto));
+  });
+
+  // ─── Filtro da tabela ────────────────────────────────────────
+  function filtrarTabela() {
+    const termoBusca     = document.getElementById('campo-busca-texto').value.toLowerCase();
+    const filtroTecnico  = document.getElementById('filtro-tecnico').value.toLowerCase();
+    const filtroStatus   = document.getElementById('filtro-status').value.toLowerCase();
+
+    const linhas = document.querySelectorAll('#corpo-tabela tr[data-id]');
+    let visiveis = 0;
+
+    linhas.forEach(linha => {
+      const textoBusca = linha.dataset.busca || '';
+      const tecnico    = linha.dataset.tecnico || '';
+      const status     = linha.dataset.status || '';
+
+      const passaBusca   = termoBusca   === '' || textoBusca.includes(termoBusca);
+      const passaTecnico = filtroTecnico === '' || tecnico.includes(filtroTecnico);
+      const passaStatus  = filtroStatus  === '' || status.includes(filtroStatus);
+
+      if (passaBusca && passaTecnico && passaStatus) {
+        linha.style.display = '';
+        visiveis++;
+      } else {
+        linha.style.display = 'none';
+      }
+    });
+
+    document.getElementById('contador-linhas').textContent = `${visiveis} registros`;
+  }
+
+  function filtrarPorTecnico(tecnico) {
+    document.getElementById('filtro-tecnico').value = tecnico;
+    filtrarTabela();
+  }
+
+  function filtrarPorStatus(status) {
+    document.getElementById('filtro-status').value = status;
+    filtrarTabela();
+  }
+
+  // ─── Modal ───────────────────────────────────────────────────
+  let modoEdicao = false;
+
+  function dataDeHoje() {
+    const d = new Date();
+    const dia = String(d.getDate()).padStart(2, '0');
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dia}/${mes}/${d.getFullYear()}`;
+  }
+
+  function abrirModalAdicionar() {
+    modoEdicao = false;
+    document.getElementById('titulo-modal').textContent = 'Novo Registro';
+    document.getElementById('botao-salvar-texto').textContent = 'Adicionar';
+    document.getElementById('form-registro').reset();
+    document.getElementById('campo-id').value          = '';
+    // Valores padrão para novo registro
+    document.getElementById('campo-tecnico').value     = 'SEM TEC.';
+    document.getElementById('campo-empresa').value     = '';
+    document.getElementById('campo-servico').value     = 'COBRANÇA';
+    document.getElementById('campo-banco').value       = '';
+    document.getElementById('campo-dt-solicita').value = dataDeHoje();
+    document.getElementById('campo-dt-status').value   = dataDeHoje();
+    document.getElementById('campo-status').value      = 'FALTA CADASTRAR';
+    document.getElementById('campo-obs').value         = 'DADOS NO E-MAIL:';
+    document.getElementById('overlay-modal').classList.add('aberto');
+    document.getElementById('campo-empresa').focus();
+  }
+
+  function abrirModalEditar(registro) {
+    modoEdicao = true;
+    document.getElementById('titulo-modal').textContent = 'Editar Registro';
+    document.getElementById('botao-salvar-texto').textContent = 'Salvar Alterações';
+    document.getElementById('campo-id').value         = registro.id;
+    document.getElementById('campo-tecnico').value    = registro.tecnico;
+    document.getElementById('campo-empresa').value    = registro.empresa;
+    document.getElementById('campo-servico').value    = registro.servico;
+    document.getElementById('campo-banco').value      = registro.banco;
+    document.getElementById('campo-dt-solicita').value = registro.dt_solicita;
+    document.getElementById('campo-dt-status').value  = registro.dt_status;
+    document.getElementById('campo-status').value     = registro.status;
+    document.getElementById('campo-obs').value        = registro.obs;
+    document.getElementById('overlay-modal').classList.add('aberto');
+  }
+
+  function fecharModal() {
+    document.getElementById('overlay-modal').classList.remove('aberto');
+  }
+
+  function fecharModalSeClicarFora(event) {
+    if (event.target === document.getElementById('overlay-modal')) {
+      fecharModal();
+    }
+  }
+
+  // ─── Salvar registro (adicionar ou editar) ───────────────────
+  function salvarRegistro(event) {
+    event.preventDefault();
+
+    const dados = {
+      tecnico:     document.getElementById('campo-tecnico').value,
+      empresa:     document.getElementById('campo-empresa').value,
+      servico:     document.getElementById('campo-servico').value,
+      banco:       document.getElementById('campo-banco').value,
+      dt_solicita: document.getElementById('campo-dt-solicita').value,
+      dt_status:   document.getElementById('campo-dt-status').value,
+      status:      document.getElementById('campo-status').value,
+      obs:         document.getElementById('campo-obs').value,
+    };
+
+    const idRegistro = document.getElementById('campo-id').value;
+
+    // Se status HOMOLOGADO e for edição, move para aba correta
+    if (modoEdicao && dados.status && dados.status.toUpperCase() === 'HOMOLOGADO') {
+      fecharModal();
+      const s = (dados.servico || '').toUpperCase();
+      let nomeAba = 'Homologados Cobrança';
+      if (s.includes('EXTRAT')) nomeAba = 'Homologados Extrato Cartão';
+      else if (!s.includes('COBR')) nomeAba = 'Homologados Pagamentos';
+      abrirDialogo({
+        titulo: 'Mover para ' + nomeAba + '?',
+        mensagem: `Esse registro será <strong>removido da aba Pendente</strong> e movido para <strong>${nomeAba}</strong>.`,
+        tipo: 'info',
+        textoBotao: 'Homologar',
+        callback: () => {
+          fetch(`/pendente/homologar/${idRegistro}`, { method: 'POST' })
+          .then(r => r.json())
+          .then(resp => {
+            if (resp.sucesso) {
+              mostrarToast('sucesso', `Registro movido para ${resp.nome_aba}!`);
+              setTimeout(() => location.reload(), 700);
+            } else {
+              mostrarToast('erro', resp.erro || 'Erro.');
+            }
+          });
+        }
+      });
+      return;
+    }
+
+    // Se status CANCELADO e for edição, move para cancelados
+    if (modoEdicao && dados.status && dados.status.toUpperCase() === 'CANCELADO') {
+      fecharModal();
+      abrirDialogo({
+        titulo: 'Mover para Cancelados?',
+        mensagem: 'Esse registro será <strong>removido da aba Pendente</strong> e movido para a aba <strong>Cancelados</strong>.',
+        tipo: 'aviso',
+        textoBotao: 'Cancelar registro',
+        callback: () => {
+          fetch(`/pendente/cancelar/${idRegistro}`, { method: 'POST' })
+          .then(r => r.json())
+          .then(resp => {
+            if (resp.sucesso) {
+              mostrarToast('sucesso', 'Registro movido para Cancelados.');
+              setTimeout(() => location.reload(), 700);
+            } else {
+              mostrarToast('erro', resp.erro || 'Erro.');
+            }
+          });
+        }
+      });
+      return;
+    }
+
+    const url    = modoEdicao ? `/pendente/atualizar/${idRegistro}` : '/pendente/adicionar';
+    const metodo = modoEdicao ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: metodo,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados),
+    })
+    .then(r => r.json())
+    .then(resp => {
+      if (resp.sucesso) {
+        mostrarToast('sucesso', modoEdicao ? 'Registro atualizado!' : 'Registro adicionado!');
+        fecharModal();
+        setTimeout(() => location.reload(), 700);
+      } else {
+        mostrarToast('erro', resp.erro || 'Erro ao salvar registro.');
+      }
+    })
+    .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
+  }
+
+  // ─── Atualizar status direto na tabela ───────────────────────
+  const _mapaClasseStatus = {
+    'aguardando banco':        'status-aguardando-banco',
+    'aguardando cliente':      'status-aguardando-cliente',
+    'aguardando comercial':    'status-aguardando-comercial',
+    'aguardando atualização':  'status-aguardando-atualizacao',
+    'aguardando atualizacao':  'status-aguardando-atualizacao',
+    'homologado':              'status-homologado',
+    'falta cadastrar':         'status-falta-cadastrar',
+    'pendente de treinamento': 'status-pendente-treinamento',
+    'pendencia em prog':       'status-pendencia-em-prog',
+    'em processo':             'status-em-processo',
+    'cancelado':               'status-cancelado',
+  };
+
+  function atualizarStatusInline(el) {
+    const id = el.dataset.id;
+    const novoStatus = el.value;
+
+    if (novoStatus.toUpperCase() === 'CANCELADO') {
+      // Reverte o select visualmente antes de confirmar
+      const statusAnterior = el.querySelector('option[selected]')?.value
+        || [...el.options].find(o => o.defaultSelected)?.value || '';
+      el.value = statusAnterior || el.options[0].value;
+
+      abrirDialogo({
+        titulo: 'Mover para Cancelados?',
+        mensagem: 'Esse registro será <strong>removido da aba Pendente</strong> e movido para a aba <strong>Cancelados</strong>.',
+        tipo: 'aviso',
+        textoBotao: 'Cancelar registro',
+        callback: () => {
+          fetch(`/pendente/cancelar/${id}`, { method: 'POST' })
+          .then(r => r.json())
+          .then(d => {
+            if (d.sucesso) {
+              mostrarToast('sucesso', 'Registro movido para Cancelados.');
+              const tr = document.querySelector(`tr[data-id="${id}"]`);
+              if (tr) {
+                tr.style.transition = 'opacity 0.3s';
+                tr.style.opacity = '0';
+                setTimeout(() => tr.remove(), 300);
+              }
+              atualizarContadorLinhas();
+            } else {
+              mostrarToast('erro', d.erro || 'Erro ao cancelar registro.');
+            }
+          })
+          .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
+        }
+      });
+      return;
+    }
+
+    if (novoStatus.toUpperCase() === 'HOMOLOGADO') {
+      const tr2 = el.closest('tr');
+      const servico = tr2 ? tr2.dataset.servico : '';
+      let nomeAba = 'Homologados Cobrança';
+      if (servico && servico.includes('EXTRAT')) nomeAba = 'Homologados Extrato Cartão';
+      else if (servico && !servico.includes('COBR')) nomeAba = 'Homologados Pagamentos';
+
+      const statusAnterior2 = [...el.options].find(o => o.defaultSelected)?.value || el.options[0].value;
+      el.value = statusAnterior2;
+
+      abrirDialogo({
+        titulo: 'Mover para ' + nomeAba + '?',
+        mensagem: `Esse registro será <strong>removido da aba Pendente</strong> e movido para <strong>${nomeAba}</strong>.`,
+        tipo: 'info',
+        textoBotao: 'Homologar',
+        callback: () => {
+          fetch(`/pendente/homologar/${id}`, { method: 'POST' })
+          .then(r => r.json())
+          .then(d => {
+            if (d.sucesso) {
+              mostrarToast('sucesso', `Registro movido para ${d.nome_aba}!`);
+              const lin = document.querySelector(`tr[data-id="${id}"]`);
+              if (lin) {
+                lin.style.transition = 'opacity 0.3s';
+                lin.style.opacity = '0';
+                setTimeout(() => lin.remove(), 300);
+              }
+              atualizarContadorLinhas();
+            } else {
+              mostrarToast('erro', d.erro || 'Erro ao homologar.');
+            }
+          })
+          .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
+        }
+      });
+      return;
+    }
+
+    // Troca a classe de cor do select
+    el.className = el.className.replace(/\bstatus-\S+/g, '').trim();
+    const novaClasse = _mapaClasseStatus[novoStatus.toLowerCase().trim()] || 'status-padrao';
+    el.classList.add(novaClasse);
+
+    // Atualiza o atributo de filtro da linha
+    const tr = el.closest('tr');
+    if (tr) tr.dataset.status = novoStatus.toLowerCase();
+
+    fetch(`/pendente/atualizar/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: novoStatus }),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) {
+        mostrarToast('sucesso', 'Status atualizado!');
+      } else {
+        mostrarToast('erro', d.erro || 'Erro ao atualizar status.');
+      }
+    })
+    .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
+  }
+
+  // ─── Confirmar e deletar ─────────────────────────────────────
+  function confirmarDelecao(idRegistro, nomeEmpresa) {
+    abrirDialogo({
+      titulo: 'Deletar Registro',
+      mensagem: `Deseja realmente deletar o registro de <strong>${nomeEmpresa}</strong>?<br>Essa ação não pode ser desfeita.`,
+      tipo: 'perigo',
+      textoBotao: 'Deletar',
+      callback: () => {
+        fetch(`/pendente/deletar/${idRegistro}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(resp => {
+          if (resp.sucesso) {
+            mostrarToast('sucesso', 'Registro deletado.');
+            const linha = document.querySelector(`tr[data-id="${idRegistro}"]`);
+            if (linha) linha.remove();
+            atualizarContadorLinhas();
+          } else {
+            mostrarToast('erro', resp.erro || 'Erro ao deletar.');
+          }
+        })
+        .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
+      }
+    });
+  }
+
+  function atualizarContadorLinhas() {
+    const total = document.querySelectorAll('#corpo-tabela tr[data-linha]').length;
+    document.getElementById('contador-linhas').textContent = `${total} registros`;
+  }
+
+  // Fechar modal com Esc
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') fecharModal();
+  });
+</script>
+
+{# Filtro Jinja2 para converter status em classe CSS (requer registro no app.py) #}
+{% endblock %}
