@@ -1,10 +1,12 @@
 """
 app.py — Ponto de entrada do Sisplan.
-Cria o app Flask, registra os blueprints e inicia o servidor.
 """
 
 import os
-from flask import Flask, session
+from dotenv import load_dotenv
+load_dotenv()
+
+from flask import Flask, session, redirect, url_for, g
 import banco
 from routes.auth        import auth_bp
 from routes.pendente    import pendente_bp
@@ -27,6 +29,55 @@ app.register_blueprint(importacao_bp)
 app.register_blueprint(config_bp)
 
 
+# ── JWT: valida em toda requisição ────────────────────────
+
+_ROTAS_PUBLICAS = {'auth.pagina_login', 'auth.sair', 'static'}
+
+@app.before_request
+def _jwt_guard():
+    from flask import request as req
+    if req.endpoint in _ROTAS_PUBLICAS or req.endpoint is None:
+        return
+
+    from utils import _payload_access, _payload_refresh, _preencher_sessao, criar_tokens
+
+    # 1. Access token válido
+    payload = _payload_access()
+    if payload:
+        _preencher_sessao(payload)
+        return
+
+    # 2. Access expirado — tentar refresh token
+    payload_r = _payload_refresh()
+    if payload_r:
+        u = banco.buscar_usuario_por_id(payload_r['sub'])
+        if u:
+            new_access, new_refresh = criar_tokens(u)
+            _preencher_sessao({
+                'usr':  u['usuario'], 'nome': u['nome'],
+                'niv':  u['nivel'],   'tec':  u.get('tecnico_vinculado') or '',
+                'tema': u.get('tema') or 'light', 'sub': u['id'], 'mp': 0,
+            })
+            g._novo_access  = new_access
+            g._novo_refresh = new_refresh
+            return
+
+    # 3. Sem token válido
+    session.clear()
+    return redirect(url_for('auth.pagina_login'))
+
+
+@app.after_request
+def _set_token_cookies(response):
+    if hasattr(g, '_novo_access'):
+        opts = dict(httponly=True, samesite='Lax', path='/')
+        response.set_cookie('access_token',  g._novo_access,  max_age=15*60,    **opts)
+        response.set_cookie('refresh_token', g._novo_refresh, max_age=7*86400,  **opts)
+    return response
+
+
+# ── Filtro de template ────────────────────────────────────
+
 @app.template_filter('css_status')
 def filtro_css_status(status_texto):
     mapa = {
@@ -48,8 +99,9 @@ def filtro_css_status(status_texto):
 @app.context_processor
 def injetar_globais():
     return {
-        'nivel_acesso': session.get('nivel_acesso', ''),
-        'nome_usuario': session.get('nome', ''),
+        'nivel_acesso':  session.get('nivel_acesso', ''),
+        'nome_usuario':  session.get('nome', ''),
+        'tema_usuario':  session.get('tema', 'light'),
     }
 
 

@@ -172,6 +172,7 @@ def inicializar_banco():
     for ddl in [
         "ALTER TABLE servicos_lista ADD COLUMN destino_homologado TEXT DEFAULT ''",
         "ALTER TABLE usuarios ADD COLUMN mudar_senha INTEGER DEFAULT 0",
+        "ALTER TABLE usuarios ADD COLUMN tema TEXT DEFAULT 'light'",
     ]:
         try:
             conn.execute(ddl)
@@ -188,6 +189,13 @@ def buscar_id_usuario(login):
     row = conn.execute("SELECT id FROM usuarios WHERE LOWER(usuario)=LOWER(?)", (login,)).fetchone()
     conn.close()
     return row['id'] if row else None
+
+
+def buscar_usuario_por_id(user_id):
+    conn = conectar()
+    row = conn.execute("SELECT * FROM usuarios WHERE id=?", (user_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
 
 
 def buscar_usuario_por_login(usuario_digitado, senha_digitada):
@@ -284,6 +292,13 @@ def resetar_senha_usuario(id_usuario):
 def limpar_mudar_senha(id_usuario):
     conn = conectar()
     conn.execute("UPDATE usuarios SET mudar_senha=0 WHERE id=?", (id_usuario,))
+    conn.commit()
+    conn.close()
+
+
+def atualizar_tema(id_usuario, tema):
+    conn = conectar()
+    conn.execute("UPDATE usuarios SET tema=? WHERE id=?", (tema, id_usuario))
     conn.commit()
     conn.close()
 

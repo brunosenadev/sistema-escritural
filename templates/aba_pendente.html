@@ -803,8 +803,9 @@
 
   // Aplicar classes CSS nos badges após o carregamento
   document.querySelectorAll('.badge-status').forEach(badge => {
-    const texto = badge.textContent.trim().toLowerCase();
-    // Remover classes antigas e aplicar a correta
+    const texto = badge.tagName === 'SELECT'
+      ? badge.value.trim().toLowerCase()
+      : badge.textContent.trim().toLowerCase();
     Object.values(mapaCssStatus).forEach(c => badge.classList.remove(c));
     badge.classList.add(classeCssStatus(texto));
   });

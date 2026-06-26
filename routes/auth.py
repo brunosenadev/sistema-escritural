@@ -1,8 +1,17 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, make_response
 import banco
-from utils import usuario_logado
+from utils import usuario_logado, criar_tokens
 
 auth_bp = Blueprint('auth', __name__)
+
+_COOKIE_OPTS = dict(httponly=True, samesite='Lax', path='/')
+
+
+def _set_tokens(response, usuario_row: dict):
+    access, refresh = criar_tokens(usuario_row)
+    response.set_cookie('access_token',  access,  max_age=15*60,   **_COOKIE_OPTS)
+    response.set_cookie('refresh_token', refresh, max_age=7*86400, **_COOKIE_OPTS)
+    return response
 
 
 @auth_bp.route('/')
@@ -29,9 +38,13 @@ def pagina_login():
             session['nivel_acesso']      = usuario['nivel']
             session['tecnico_vinculado'] = usuario.get('tecnico_vinculado') or ''
             session['id_usuario']        = usuario['id']
-            if usuario.get('mudar_senha'):
-                return redirect(url_for('auth.trocar_senha'))
-            return redirect(url_for('auth.inicio'))
+            session['tema']              = usuario.get('tema') or 'light'
+
+            destino = url_for('auth.trocar_senha') if usuario.get('mudar_senha') else url_for('auth.inicio')
+            resp = make_response(redirect(destino))
+            _set_tokens(resp, usuario)
+            return resp
+
         erro = 'Usuário ou senha incorretos.'
 
     return render_template('login.html', erro=erro)
@@ -52,8 +65,29 @@ def trocar_senha():
         else:
             id_u = session.get('id_usuario') or banco.buscar_id_usuario(session.get('usuario', ''))
             banco.alterar_minha_senha(id_u, nova)
-            return redirect(url_for('auth.inicio'))
+            u = banco.buscar_usuario_por_id(id_u)
+            resp = make_response(redirect(url_for('auth.inicio')))
+            _set_tokens(resp, u)
+            return resp
     return render_template('trocar_senha.html', erro=erro)
+
+
+@auth_bp.route('/api/meu-tema', methods=['PUT'])
+def api_meu_tema():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    tema = (request.get_json() or {}).get('tema', 'light')
+    if tema not in ('light', 'dark'):
+        return jsonify({'erro': 'Tema inválido'}), 400
+    id_usuario = session.get('id_usuario') or banco.buscar_id_usuario(session.get('usuario', ''))
+    banco.atualizar_tema(id_usuario, tema)
+    session['tema'] = tema
+    u = banco.buscar_usuario_por_id(id_usuario)
+    resp = make_response(jsonify({'sucesso': True}))
+    # Emite novo access token com tema atualizado
+    access, _ = criar_tokens(u)
+    resp.set_cookie('access_token', access, max_age=15*60, **_COOKIE_OPTS)
+    return resp
 
 
 @auth_bp.route('/api/minha-senha', methods=['PUT'])
@@ -77,4 +111,7 @@ def api_minha_senha():
 @auth_bp.route('/sair')
 def sair():
     session.clear()
-    return redirect(url_for('auth.pagina_login'))
+    resp = make_response(redirect(url_for('auth.pagina_login')))
+    resp.delete_cookie('access_token',  path='/')
+    resp.delete_cookie('refresh_token', path='/')
+    return resp
