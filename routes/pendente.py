@@ -3,7 +3,7 @@ import banco
 from utils import usuario_logado, checar_login
 
 pendente_bp = Blueprint('pendente', __name__)
-# v2.2
+# v2.3
 
 
 @pendente_bp.route('/pendente')
