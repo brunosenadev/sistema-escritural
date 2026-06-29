@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
-from utils import usuario_logado, checar_login, pode_editar
+from utils import usuario_logado, pode_editar, checar_tela
 
 
 def _sem_permissao():
@@ -30,7 +30,8 @@ def _chave_data(s):
 
 
 def _render(tipo):
-    bloqueio = checar_login()
+    tela_map = {'cobranca': 'homologados_cobranca', 'pagamentos': 'homologados_pagamentos', 'extrato': 'homologados_extrato'}
+    bloqueio = checar_tela(tela_map.get(tipo, tipo))
     if bloqueio:
         return bloqueio
     listar_fn, nome_aba, aba_ativa = _CONFIGS[tipo]

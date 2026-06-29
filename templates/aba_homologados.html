@@ -181,7 +181,7 @@
           <thead>
             <tr>
               <th>Técnico</th><th>Empresa</th><th>Serviço</th><th>Dt. Solicita</th>
-              <th>Dt. Homologação</th><th>Dt. Status</th><th class="th-status">Status</th><th>Obs</th><th></th>
+              <th>Dt. Homologação</th><th class="th-status">Status</th><th>Obs</th><th></th>
             </tr>
           </thead>
           <tbody id="corpo-tabela">
@@ -194,7 +194,6 @@
                 <td>{{ reg.servico or '—' }}</td>
                 <td>{{ reg.banco | fmt_data }}</td>
                 <td>{{ reg.dt_solicita or '—' }}</td>
-                <td>{{ reg.dt_status or '—' }}</td>
                 <td class="celula-status">
                   <select class="select-status-inline" data-id="{{ reg.id }}" onchange="alterarStatusHom(this)"
                     {% if not pode_editar %}disabled style="pointer-events:none;opacity:0.7;"{% endif %}>
@@ -237,7 +236,7 @@
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="9" class="linha-vazia">
+                <td colspan="8" class="linha-vazia">
                   <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                   <p>Nenhum registro homologado</p>
                   <small>Registros com status HOMOLOGADO e serviço compatível aparecerão aqui.</small>

@@ -1,25 +1,25 @@
 from datetime import date
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
-from utils import usuario_logado, checar_admin
+from utils import checar_admin, checar_tela
 
 hub_bp = Blueprint('hub', __name__)
 
 
 @hub_bp.route('/hub')
 def aba_hub():
-    if not usuario_logado():
-        from flask import redirect, url_for
-        return redirect(url_for('auth.pagina_login'))
+    bloqueio = checar_tela('hub')
+    if bloqueio:
+        return bloqueio
     bancos = banco.hub_listar_bancos()
     return render_template('aba_hub.html', bancos=bancos)
 
 
 @hub_bp.route('/hub/print')
 def hub_print():
-    if not usuario_logado():
-        from flask import redirect, url_for
-        return redirect(url_for('auth.pagina_login'))
+    bloqueio = checar_tela('hub')
+    if bloqueio:
+        return bloqueio
     ids_raw = request.args.get('ids', '')
     ids = [int(x) for x in ids_raw.split(',') if x.strip().isdigit()]
     todos = banco.hub_listar_bancos()

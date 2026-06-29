@@ -71,8 +71,8 @@ def _preencher_sessao(payload: dict):
 
 
 def pode_editar() -> bool:
-    """True se o usuário pode fazer alterações (admin ou tem técnico vinculado)."""
-    return session.get('nivel_acesso') == 'admin' or bool(session.get('tecnico_vinculado'))
+    """True se o usuário pode fazer alterações (admin/master ou tem técnico vinculado)."""
+    return session.get('nivel_acesso') in ('admin', 'master') or bool(session.get('tecnico_vinculado'))
 
 def usuario_logado() -> bool:
     return 'usuario' in session
@@ -88,6 +88,32 @@ def checar_admin():
     bloqueio = checar_login()
     if bloqueio:
         return bloqueio
-    if session.get('nivel_acesso') != 'admin':
+    if session.get('nivel_acesso') not in ('admin', 'master'):
+        return redirect(url_for('auth.inicio'))
+    return None
+
+
+def tem_acesso_tela(tela: str) -> bool:
+    """Master tem acesso a tudo; demais usuários consultam a sessão."""
+    if session.get('nivel_acesso') == 'master':
+        return True
+    return tela in (session.get('telas') or [])
+
+
+def checar_tela(tela: str):
+    """Combina checar_login + tem_acesso_tela. Retorna redirect ou None."""
+    bloqueio = checar_login()
+    if bloqueio:
+        return bloqueio
+    if not tem_acesso_tela(tela):
+        return redirect(url_for('auth.inicio'))
+    return None
+
+
+def checar_master():
+    bloqueio = checar_login()
+    if bloqueio:
+        return bloqueio
+    if session.get('nivel_acesso') != 'master':
         return redirect(url_for('auth.inicio'))
     return None

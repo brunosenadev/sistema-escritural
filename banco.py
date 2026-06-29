@@ -96,6 +96,20 @@ HUB_INSTRUCOES_INICIAIS = {
     ],
 }
 
+# ── Telas do sistema ─────────────────────────────────────
+
+TELAS_SISTEMA = [
+    ('pendente',               'Pendente'),
+    ('homologados_cobranca',   'Homologados Cobrança'),
+    ('homologados_pagamentos', 'Homologados Pagamentos'),
+    ('homologados_extrato',    'Homologados Extrato Cartão'),
+    ('cancelados',             'Cancelados'),
+    ('melhorias',              'Melhorias'),
+    ('hub',                    'Hub Bancário'),
+    ('importacao',             'Importação'),
+    ('config',                 'Configurações'),
+]
+
 # ── Conexão ───────────────────────────────────────────────
 
 def conectar():
@@ -168,6 +182,11 @@ def inicializar_banco():
             descricao TEXT    NOT NULL,
             ordem     INTEGER DEFAULT 99,
             FOREIGN KEY (banco_id) REFERENCES hub_bancos(id)
+        );
+        CREATE TABLE IF NOT EXISTS permissoes_telas (
+            usuario_id INTEGER NOT NULL,
+            tela       TEXT    NOT NULL,
+            PRIMARY KEY (usuario_id, tela)
         );
         CREATE TABLE IF NOT EXISTS pendentes (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -282,6 +301,10 @@ def inicializar_banco():
                         (bid[0], cod, desc, ord_)
                     )
 
+    conn.commit()
+
+    # Promoção do usuário master
+    conn.execute("UPDATE usuarios SET nivel='master' WHERE usuario='bruno' AND nivel IN ('normal','admin')")
     conn.commit()
 
     # Migrações para bancos já existentes
@@ -710,6 +733,51 @@ def hub_atualizar_instrucao(instrucao_id: int, codigo: str, descricao: str, orde
 def hub_remover_instrucao(instrucao_id: int):
     conn = conectar()
     conn.execute("DELETE FROM hub_instrucoes WHERE id=?", (instrucao_id,))
+    conn.commit()
+    conn.close()
+
+
+# ── Controle de acesso por tela ───────────────────────────
+
+def listar_usuarios_permissoes():
+    """Retorna todos os usuários não-master com suas telas permitidas."""
+    conn = conectar()
+    usuarios = conn.execute(
+        "SELECT id, usuario, nome, nivel, setor FROM usuarios WHERE nivel != 'master' ORDER BY nome"
+    ).fetchall()
+    rows = conn.execute("SELECT usuario_id, tela FROM permissoes_telas").fetchall()
+    conn.close()
+    perms = {}
+    for r in rows:
+        perms.setdefault(r['usuario_id'], set()).add(r['tela'])
+    return [{'id': u['id'], 'usuario': u['usuario'], 'nome': u['nome'],
+             'nivel': u['nivel'], 'setor': u['setor'] or '',
+             'telas': perms.get(u['id'], set())} for u in usuarios]
+
+
+def listar_telas_usuario(usuario_id: int) -> list:
+    conn = conectar()
+    rows = conn.execute("SELECT tela FROM permissoes_telas WHERE usuario_id=?", (usuario_id,)).fetchall()
+    conn.close()
+    return [r['tela'] for r in rows]
+
+
+def toggle_permissao(usuario_id: int, tela: str, permitido: bool):
+    conn = conectar()
+    if permitido:
+        conn.execute("INSERT OR IGNORE INTO permissoes_telas (usuario_id, tela) VALUES (?,?)", (usuario_id, tela))
+    else:
+        conn.execute("DELETE FROM permissoes_telas WHERE usuario_id=? AND tela=?", (usuario_id, tela))
+    conn.commit()
+    conn.close()
+
+
+def salvar_permissoes_usuario(usuario_id: int, telas: list):
+    """Substitui todas as permissões de um usuário."""
+    conn = conectar()
+    conn.execute("DELETE FROM permissoes_telas WHERE usuario_id=?", (usuario_id,))
+    for tela in telas:
+        conn.execute("INSERT INTO permissoes_telas (usuario_id, tela) VALUES (?,?)", (usuario_id, tela))
     conn.commit()
     conn.close()
 

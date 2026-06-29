@@ -12,7 +12,7 @@ _PASTA_UPLOADS = '/tmp' if os.environ.get('RENDER') else os.path.join(os.path.di
 def _checar_admin():
     if not usuario_logado():
         return jsonify({'erro': 'Não autenticado'}), 401
-    if session.get('nivel_acesso') != 'admin':
+    if session.get('nivel_acesso') not in ('admin', 'master'):
         return jsonify({'erro': 'Sem permissão.'}), 403
     return None
 

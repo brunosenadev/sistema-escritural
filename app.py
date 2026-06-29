@@ -16,6 +16,7 @@ from routes.importacao  import importacao_bp
 from routes.config      import config_bp
 from routes.melhorias   import melhorias_bp
 from routes.hub         import hub_bp
+from routes.acesso      import acesso_bp
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
@@ -31,6 +32,7 @@ app.register_blueprint(importacao_bp)
 app.register_blueprint(config_bp)
 app.register_blueprint(melhorias_bp)
 app.register_blueprint(hub_bp)
+app.register_blueprint(acesso_bp)
 
 
 # ── JWT: valida em toda requisição ────────────────────────
@@ -60,8 +62,10 @@ def _jwt_guard():
             _preencher_sessao({
                 'usr':  u['usuario'], 'nome': u['nome'],
                 'niv':  u['nivel'],   'tec':  u.get('tecnico_vinculado') or '',
+                'setor': u.get('setor') or '',
                 'tema': u.get('tema') or 'light', 'sub': u['id'], 'mp': 0,
             })
+            session['telas'] = '__all__' if u['nivel'] == 'master' else banco.listar_telas_usuario(u['id'])
             g._novo_access  = new_access
             g._novo_refresh = new_refresh
             return
@@ -112,13 +116,16 @@ def filtro_css_status(status_texto):
 @app.context_processor
 def injetar_globais():
     logado = 'usuario' in session
-    _pe = logado and (session.get('nivel_acesso') == 'admin' or bool(session.get('tecnico_vinculado')))
+    nivel  = session.get('nivel_acesso', '')
+    _pe    = logado and (nivel in ('admin', 'master') or bool(session.get('tecnico_vinculado')))
+    telas  = session.get('telas') or []
     return {
-        'nivel_acesso':  session.get('nivel_acesso', ''),
+        'nivel_acesso':  nivel,
         'nome_usuario':  session.get('nome', ''),
         'tema_usuario':  session.get('tema', 'light'),
         'pode_editar':   _pe,
         'setor_usuario': session.get('setor', ''),
+        'telas_acesso':  telas,
     }
 
 

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
-from utils import usuario_logado, checar_login, pode_editar
+from utils import usuario_logado, pode_editar, checar_tela
 
 pendente_bp = Blueprint('pendente', __name__)
 
@@ -15,7 +15,7 @@ def _sem_permissao():
 
 @pendente_bp.route('/pendente')
 def aba_pendente():
-    bloqueio = checar_login()
+    bloqueio = checar_tela('pendente')
     if bloqueio:
         return bloqueio
 

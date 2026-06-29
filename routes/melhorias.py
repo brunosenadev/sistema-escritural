@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 import banco
-from utils import usuario_logado
+from utils import usuario_logado, checar_tela
 
 melhorias_bp = Blueprint('melhorias', __name__)
 
@@ -14,22 +14,16 @@ def _setor():
 def _nivel():
     return session.get('nivel_acesso', '')
 
-def _pode_ver():
-    return _nivel() == 'admin' or _setor() in _SETORES_VISUALIZACAO
-
 def _pode_criar():
-    return _nivel() == 'admin' or _setor() in _SETORES_VISUALIZACAO
+    return _nivel() in ('admin', 'master') or _setor() in _SETORES_VISUALIZACAO
 
 def _pode_mover():
-    return _nivel() == 'admin' or _setor() in _SETORES_EDICAO
+    return _nivel() in ('admin', 'master') or _setor() in _SETORES_EDICAO
 
 
 def _guard_ver():
-    if not usuario_logado():
-        return redirect(url_for('auth.login'))
-    if not _pode_ver():
-        return redirect(url_for('pendente.aba_pendente'))
-    return None
+    bloqueio = checar_tela('melhorias')
+    return bloqueio
 
 def _guard_criar():
     if not usuario_logado():
