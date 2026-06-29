@@ -724,12 +724,14 @@
       </a>
       {% endif %}
 
+      {% if _eh_master or 'sispbol' in _ta %}
       <a href="#" class="nav-item {% if aba_ativa == 'sispbol' %}ativo{% endif %}">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
         </svg>
         SispBol
       </a>
+      {% endif %}
 
       {% if _eh_master or 'melhorias' in _ta or 'config' in _ta %}
       <div class="nav-secao-titulo" style="margin-top:8px;">Sistema</div>
@@ -776,11 +778,13 @@
         Hub Bancário
       </a>
 
+      {% if _eh_master or 'api_pagamentos' in _ta %}
       <a href="#" class="nav-item {% if aba_ativa == 'api_pagamentos' %}ativo{% endif %}">
         <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
         </svg>
         API Pagamentos
       </a>
+      {% endif %}
       {% endif %}
 
     </nav>
@@ -788,7 +792,7 @@
     <!-- Rodapé: info do usuário -->
     <div class="sidebar-rodape">
       <div class="info-usuario">
-        <div class="avatar-usuario">
+        <div class="avatar-usuario" {% if cor_usuario %}style="background:{{ cor_usuario }};"{% endif %}>
           {{ session.nome[0] | upper }}
         </div>
         <div>

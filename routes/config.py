@@ -40,7 +40,7 @@ def api_adicionar_tecnico():
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
     d  = request.get_json()
-    ok = banco.adicionar_tecnico(d.get('nome', ''), d.get('cor', '#64748b'))
+    ok = banco.adicionar_tecnico(d.get('nome', ''), '#64748b')
     return jsonify({'sucesso': True}) if ok else (jsonify({'erro': 'Técnico já cadastrado.'}), 409)
 
 
@@ -49,7 +49,7 @@ def api_atualizar_tecnico(nome):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
     d = request.get_json()
-    banco.atualizar_tecnico(nome, d.get('nome', nome), d.get('cor', '#64748b'))
+    banco.atualizar_tecnico(nome, d.get('nome', nome), '#64748b')
     return jsonify({'sucesso': True})
 
 
@@ -75,6 +75,9 @@ def api_adicionar_usuario():
 def api_atualizar_usuario(id_usuario):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
+    alvo = banco.buscar_usuario_por_id(id_usuario)
+    if alvo and alvo.get('nivel') == 'master':
+        return jsonify({'erro': 'Usuário master não pode ser editado.'}), 403
     banco.atualizar_usuario(id_usuario, request.get_json())
     # Se atualizou o próprio usuário, renova o token com dados frescos
     if id_usuario == session.get('id_usuario'):
@@ -111,6 +114,9 @@ def api_limpar_troca(id_usuario):
 def api_remover_usuario(id_usuario):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
+    alvo = banco.buscar_usuario_por_id(id_usuario)
+    if alvo and alvo.get('nivel') == 'master':
+        return jsonify({'erro': 'Usuário master não pode ser removido.'}), 403
     ok = banco.remover_usuario(id_usuario)
     return jsonify({'sucesso': True}) if ok else (jsonify({'erro': 'Não é possível remover o único administrador.'}), 400)
 

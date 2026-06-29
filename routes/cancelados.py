@@ -22,7 +22,7 @@ def aba_cancelados():
     registros       = banco.listar_cancelados()
     registros.sort(key=lambda r: r.get('id', 0), reverse=True)
     lista_tecnicos  = banco.listar_tecnicos()
-    cores_tecnicos  = {t['nome']: t['cor'] for t in lista_tecnicos}
+    cores_tecnicos  = banco.cores_por_tecnico()
     resumo_tecnicos = {}
     for reg in registros:
         tecnico = reg.get('tecnico') or 'SEM TEC.'

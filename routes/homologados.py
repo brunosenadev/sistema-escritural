@@ -37,7 +37,7 @@ def _render(tipo):
     listar_fn, nome_aba, aba_ativa = _CONFIGS[tipo]
     registros      = getattr(banco, listar_fn)()
     lista_tecnicos = banco.listar_tecnicos()
-    cores_tecnicos = {t['nome']: t['cor'] for t in lista_tecnicos}
+    cores_tecnicos = banco.cores_por_tecnico()
 
     # Ordena: registro mais recente (maior id) primeiro — reflete a ordem da planilha invertida
     registros.sort(key=lambda r: r.get('id', 0), reverse=True)

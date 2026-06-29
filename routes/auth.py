@@ -57,6 +57,7 @@ def pagina_login():
             session['tecnico_vinculado'] = usuario.get('tecnico_vinculado') or ''
             session['id_usuario']        = usuario['id']
             session['tema']              = usuario.get('tema') or 'light'
+            session['cor']               = usuario.get('cor') or ''
             session['telas']             = '__all__' if usuario['nivel'] == 'master' else banco.listar_telas_usuario(usuario['id'])
 
             destino = url_for('auth.trocar_senha') if usuario.get('mudar_senha') else url_for('auth.inicio')

@@ -35,12 +35,19 @@ def aba_pendente():
 
     tecnico_logado = session.get('tecnico_vinculado', '') or ''
     if tecnico_logado:
-        registros.sort(key=lambda r: (0 if (r.get('tecnico') or '') == tecnico_logado else 1))
+        registros.sort(key=lambda r: (
+            0 if (r.get('tecnico') or '') == tecnico_logado else 1,
+            (r.get('tecnico') or 'ZZZ'),
+            r.get('id', 0),
+        ))
     else:
-        registros.sort(key=lambda r: (0 if not (r.get('tecnico') or '').strip()
-                                          or (r.get('tecnico') or '').upper() == 'SEM TEC.' else 1))
+        def _sort_sem_logado(r):
+            tec = (r.get('tecnico') or '').strip().upper()
+            sem = not tec or tec == 'SEM TEC.'
+            return (1 if sem else 0, r.get('tecnico') or '', r.get('id', 0))
+        registros.sort(key=_sort_sem_logado)
 
-    cores_tecnicos = {t['nome']: t['cor'] for t in lista_tecnicos}
+    cores_tecnicos = banco.cores_por_tecnico()
 
     return render_template(
         'aba_pendente.html',

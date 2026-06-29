@@ -137,6 +137,7 @@
 
   .badge-admin  { background: #dbeafe; color: #1d4ed8; }
   .badge-normal { background: #f1f5f9; color: #475569; }
+  .badge-master { background: #fae8ff; color: #7e22ce; }
 
   /* ── Botões de ação pequenos ────────────────── */
   .btn-acao-mini {
@@ -608,21 +609,16 @@
       <thead>
         <tr>
           <th>Nome</th>
-          <th>Cor</th>
           <th style="width:120px;">Ações</th>
         </tr>
       </thead>
       <tbody id="tbody-tecnicos">
         {% for tecnico in tecnicos %}
         <tr id="row-tecnico-{{ loop.index }}">
-          <td class="celula-tecnico" style="font-weight:600;color:{{ tecnico.cor }};">{{ tecnico.nome }}</td>
-          <td>
-            <span class="swatch-cor" style="background:{{ tecnico.cor }};"></span>
-            <span style="font-size:12px;color:#64748b;">{{ tecnico.cor }}</span>
-          </td>
+          <td class="celula-tecnico" style="font-weight:600;">{{ tecnico.nome }}</td>
           <td>
             <div style="display:flex;gap:6px;">
-              <button class="btn-acao-mini btn-editar-mini" onclick="abrirModalEditarTecnico('{{ tecnico.nome }}', '{{ tecnico.cor }}')">
+              <button class="btn-acao-mini btn-editar-mini" onclick="abrirModalEditarTecnico('{{ tecnico.nome }}')">
                 <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
@@ -638,7 +634,7 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="3" style="text-align:center;padding:24px;color:#94a3b8;">Nenhum técnico cadastrado.</td></tr>
+        <tr><td colspan="2" style="text-align:center;padding:24px;color:#94a3b8;">Nenhum técnico cadastrado.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -672,6 +668,7 @@
           <th>Nível</th>
           <th>Técnico Vinculado</th>
           <th>Setor</th>
+          <th style="width:52px;">Cor</th>
           <th style="width:110px;text-align:center;">Ações</th>
         </tr>
       </thead>
@@ -694,8 +691,16 @@
           <td style="color:{% if usuario.setor %}#334155{% else %}#cbd5e1{% endif %};font-size:12px;">
             {{ usuario.setor or '—' }}
           </td>
+          <td style="text-align:center;">
+            {% if usuario.cor %}
+            <span class="swatch-cor" style="background:{{ usuario.cor }};display:inline-block;" title="{{ usuario.cor }}"></span>
+            {% else %}
+            <span style="color:#cbd5e1;font-size:11px;">—</span>
+            {% endif %}
+          </td>
           <td>
             <div style="display:flex;gap:4px;justify-content:center;flex-wrap:nowrap;">
+              {% if usuario.nivel != 'master' %}
               <button class="btn-acao-mini btn-editar-mini" title="Editar" onclick='abrirModalEditarUsuario({{ usuario | tojson }})'>
                 <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -712,6 +717,9 @@
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
                 </svg>
               </button>
+              {% else %}
+              <span style="font-size:11px;color:#94a3b8;font-style:italic;">protegido</span>
+              {% endif %}
             </div>
           </td>
         </tr>
@@ -879,13 +887,6 @@
       <label>Nome do técnico</label>
       <input class="input-modal" type="text" id="campo-tecnico-nome" placeholder="Ex: HEITOR" oninput="this.value=this.value.toUpperCase()">
     </div>
-    <div class="grupo-modal">
-      <label>Cor de identificação</label>
-      <div class="wrapper-cor">
-        <input type="color" id="campo-tecnico-cor" value="#2563eb" oninput="document.getElementById('preview-cor').style.color=this.value">
-        <span id="preview-cor" class="preview-cor-nome" style="color:#2563eb;font-weight:600;">Prévia do nome</span>
-      </div>
-    </div>
     <input type="hidden" id="campo-tecnico-nome-original">
     <div class="rodape-modal">
       <button class="btn-cancelar-modal" onclick="fecharModal('overlay-tecnico')">Cancelar</button>
@@ -943,6 +944,16 @@
           <option value="{{ setor }}">{{ setor }}</option>
           {% endfor %}
         </select>
+      </div>
+      <div class="grupo-modal" style="grid-column:span 2;">
+        <label>Cor de identificação <span style="color:#94a3b8;font-weight:400;">(sidebar e destaque nos grids)</span></label>
+        <div class="wrapper-cor">
+          <input type="color" id="campo-usuario-cor" value="#2563eb" oninput="document.getElementById('preview-cor-usuario').style.color=this.value">
+          <span id="preview-cor-usuario" class="preview-cor-nome" style="color:#2563eb;font-weight:600;">Prévia do nome</span>
+          <label style="display:flex;align-items:center;gap:6px;margin-left:12px;font-size:12px;color:#64748b;cursor:pointer;">
+            <input type="checkbox" id="campo-usuario-sem-cor" onchange="toggleSemCor(this)"> Sem cor (usar padrão)
+          </label>
+        </div>
       </div>
     </div>
     <input type="hidden" id="campo-usuario-id">
@@ -1042,25 +1053,20 @@
     modoEdicaoTecnico = false;
     document.getElementById('titulo-modal-tecnico').textContent = 'Novo Técnico';
     document.getElementById('campo-tecnico-nome').value = '';
-    document.getElementById('campo-tecnico-cor').value = '#2563eb';
     document.getElementById('campo-tecnico-nome-original').value = '';
-    document.getElementById('preview-cor').style.color = '#2563eb';
     abrirModal('overlay-tecnico');
   }
 
-  function abrirModalEditarTecnico(nome, cor) {
+  function abrirModalEditarTecnico(nome) {
     modoEdicaoTecnico = true;
     document.getElementById('titulo-modal-tecnico').textContent = 'Editar Técnico';
     document.getElementById('campo-tecnico-nome').value = nome;
-    document.getElementById('campo-tecnico-cor').value = cor;
     document.getElementById('campo-tecnico-nome-original').value = nome;
-    document.getElementById('preview-cor').style.color = cor;
     abrirModal('overlay-tecnico');
   }
 
   function salvarTecnico() {
     const nome   = document.getElementById('campo-tecnico-nome').value.trim();
-    const cor    = document.getElementById('campo-tecnico-cor').value;
     const nomeOriginal = document.getElementById('campo-tecnico-nome-original').value;
 
     if (!nome) { mostrarToast('erro', 'Informe o nome do técnico.'); return; }
@@ -1071,7 +1077,7 @@
     fetch(url, {
       method: metodo,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, cor }),
+      body: JSON.stringify({ nome }),
     })
     .then(r => r.json())
     .then(d => {
@@ -1109,6 +1115,24 @@
   // ─── Usuários ────────────────────────────────────────────────
   let modoEdicaoUsuario = false;
 
+  function toggleSemCor(cb) {
+    const inp = document.getElementById('campo-usuario-cor');
+    const prev = document.getElementById('preview-cor-usuario');
+    inp.disabled = cb.checked;
+    if (cb.checked) { prev.style.color = '#94a3b8'; prev.textContent = 'Sem cor (padrão do sistema)'; }
+    else { prev.style.color = inp.value; prev.textContent = 'Prévia do nome'; }
+  }
+
+  function _setCorUsuario(cor) {
+    const temCor = !!cor;
+    document.getElementById('campo-usuario-sem-cor').checked = !temCor;
+    document.getElementById('campo-usuario-cor').disabled    = !temCor;
+    document.getElementById('campo-usuario-cor').value       = cor || '#2563eb';
+    const prev = document.getElementById('preview-cor-usuario');
+    if (temCor) { prev.style.color = cor; prev.textContent = 'Prévia do nome'; }
+    else        { prev.style.color = '#94a3b8'; prev.textContent = 'Sem cor (padrão do sistema)'; }
+  }
+
   function abrirModalNovoUsuario() {
     modoEdicaoUsuario = false;
     document.getElementById('titulo-modal-usuario').textContent = 'Novo Usuário';
@@ -1122,6 +1146,7 @@
     document.getElementById('campo-usuario-setor').value = '';
     document.getElementById('hint-login').style.display = 'none';
     document.getElementById('dica-senha').textContent = 'Mínimo 6 caracteres.';
+    _setCorUsuario('');
     abrirModal('overlay-usuario');
   }
 
@@ -1131,13 +1156,14 @@
     document.getElementById('campo-usuario-id').value      = usuario.id;
     document.getElementById('campo-usuario-nome').value    = usuario.nome;
     document.getElementById('campo-usuario-login').value   = usuario.usuario;
-    document.getElementById('campo-usuario-login').disabled = true; // Login não é editável
+    document.getElementById('campo-usuario-login').disabled = true;
     document.getElementById('campo-usuario-senha').value   = '';
     document.getElementById('campo-usuario-nivel').value   = usuario.nivel;
     document.getElementById('campo-usuario-tecnico').value = usuario.tecnico_vinculado || '';
-    document.getElementById('campo-usuario-setor').value = usuario.setor || '';
+    document.getElementById('campo-usuario-setor').value   = usuario.setor || '';
     document.getElementById('hint-login').style.display = 'inline';
     document.getElementById('dica-senha').textContent = 'Deixe em branco para manter a senha atual.';
+    _setCorUsuario(usuario.cor || '');
     abrirModal('overlay-usuario');
   }
 
@@ -1149,12 +1175,14 @@
     const nivel   = document.getElementById('campo-usuario-nivel').value;
     const tecnico = document.getElementById('campo-usuario-tecnico').value;
     const setor   = document.getElementById('campo-usuario-setor').value;
+    const semCor  = document.getElementById('campo-usuario-sem-cor').checked;
+    const cor     = semCor ? '' : document.getElementById('campo-usuario-cor').value;
 
     if (!nome) { mostrarToast('erro', 'Informe o nome.'); return; }
     if (!modoEdicaoUsuario && !login) { mostrarToast('erro', 'Informe o login.'); return; }
     if (!modoEdicaoUsuario && senha.length < 6) { mostrarToast('erro', 'Senha deve ter pelo menos 6 caracteres.'); return; }
 
-    const dados  = { nome, nivel, tecnico_vinculado: tecnico || null, setor: setor || '' };
+    const dados  = { nome, nivel, tecnico_vinculado: tecnico || null, setor: setor || '', cor };
     if (senha) dados.senha = senha;
 
     const url    = modoEdicaoUsuario ? `/api/usuarios/${id}` : '/api/usuarios';

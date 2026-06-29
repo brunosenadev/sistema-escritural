@@ -106,6 +106,8 @@ TELAS_SISTEMA = [
     ('cancelados',             'Cancelados'),
     ('melhorias',              'Melhorias'),
     ('hub',                    'Hub Bancário'),
+    ('sispbol',                'SispBol'),
+    ('api_pagamentos',         'API Pagamentos'),
     ('importacao',             'Importação'),
     ('config',                 'Configurações'),
 ]
@@ -317,6 +319,7 @@ def inicializar_banco():
         "ALTER TABLE usuarios ADD COLUMN mudar_senha INTEGER DEFAULT 0",
         "ALTER TABLE usuarios ADD COLUMN tema TEXT DEFAULT 'light'",
         "ALTER TABLE usuarios ADD COLUMN setor TEXT DEFAULT ''",
+        "ALTER TABLE usuarios ADD COLUMN cor  TEXT DEFAULT ''",
     ]:
         try:
             conn.execute(ddl)
@@ -407,9 +410,10 @@ def adicionar_usuario(dados):
     try:
         conn = conectar()
         conn.execute(
-            "INSERT INTO usuarios (usuario,senha,nome,nivel,tecnico_vinculado,setor,mudar_senha) VALUES (?,?,?,?,?,?,1)",
+            "INSERT INTO usuarios (usuario,senha,nome,nivel,tecnico_vinculado,setor,cor,mudar_senha) VALUES (?,?,?,?,?,?,?,1)",
             (dados['usuario'].strip().lower(), dados['senha'], dados['nome'].strip(),
-             dados['nivel'], dados.get('tecnico_vinculado') or None, dados.get('setor') or '')
+             dados['nivel'], dados.get('tecnico_vinculado') or None,
+             dados.get('setor') or '', dados.get('cor') or '')
         )
         conn.commit()
         conn.close()
@@ -420,20 +424,31 @@ def adicionar_usuario(dados):
 
 def atualizar_usuario(id_usuario, campos):
     conn = conectar()
+    cor = campos.get('cor') or ''
     if campos.get('senha'):
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=? WHERE id=?",
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=?,cor=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             campos['senha'], campos.get('setor') or '', id_usuario)
+             campos['senha'], campos.get('setor') or '', cor, id_usuario)
         )
     else:
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,setor=? WHERE id=?",
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,setor=?,cor=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             campos.get('setor') or '', id_usuario)
+             campos.get('setor') or '', cor, id_usuario)
         )
     conn.commit()
     conn.close()
+
+
+def cores_por_tecnico() -> dict:
+    """Retorna {tecnico_vinculado: cor} baseado nos usuários cadastrados."""
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT tecnico_vinculado, cor FROM usuarios WHERE tecnico_vinculado IS NOT NULL AND tecnico_vinculado != ''"
+    ).fetchall()
+    conn.close()
+    return {r['tecnico_vinculado']: (r['cor'] or '') for r in rows}
 
 
 def resetar_senha_usuario(id_usuario):

@@ -65,6 +65,7 @@ def _jwt_guard():
                 'setor': u.get('setor') or '',
                 'tema': u.get('tema') or 'light', 'sub': u['id'], 'mp': 0,
             })
+            session['cor']   = u.get('cor') or ''
             session['telas'] = '__all__' if u['nivel'] == 'master' else banco.listar_telas_usuario(u['id'])
             g._novo_access  = new_access
             g._novo_refresh = new_refresh
@@ -123,6 +124,7 @@ def injetar_globais():
         'nivel_acesso':  nivel,
         'nome_usuario':  session.get('nome', ''),
         'tema_usuario':  session.get('tema', 'light'),
+        'cor_usuario':   session.get('cor', ''),
         'pode_editar':   _pe,
         'setor_usuario': session.get('setor', ''),
         'telas_acesso':  telas,
