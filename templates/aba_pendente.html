@@ -231,10 +231,15 @@
   }
 
   .celula-status {
-    overflow: visible;
     max-width: none;
     white-space: nowrap;
-    padding-right: 8px;
+    padding: 9px 6px;
+  }
+  .celula-status .select-status-inline {
+    width: 100%;
+  }
+  .tabela-pendente th.th-status {
+    min-width: 230px;
   }
 
   .celula-tecnico {
@@ -575,7 +580,7 @@
             <th>Banco</th>
             <th class="ordenavel">Dt. Solicita</th>
             <th class="ordenavel">Dt. Status</th>
-            <th>Status</th>
+            <th class="th-status">Status</th>
             <th>Obs</th>
             <th></th>
           </tr>

@@ -76,6 +76,11 @@
     vertical-align: middle; max-width: 160px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  .tabela-dados td.celula-status {
+    max-width: none; overflow: visible; padding: 9px 6px; white-space: nowrap;
+  }
+  .tabela-dados td.celula-status .select-status-inline { width: 100%; }
+  .tabela-dados th.th-status { min-width: 230px; }
   .tabela-dados tr:last-child td { border-bottom: none; }
   .tabela-dados tr:hover td { background: #f8fbff; }
 
@@ -176,7 +181,7 @@
           <thead>
             <tr>
               <th>Técnico</th><th>Empresa</th><th>Serviço</th><th>Dt. Solicita</th>
-              <th>Dt. Homologação</th><th>Dt. Status</th><th>Status</th><th>Obs</th><th></th>
+              <th>Dt. Homologação</th><th>Dt. Status</th><th class="th-status">Status</th><th>Obs</th><th></th>
             </tr>
           </thead>
           <tbody id="corpo-tabela">
@@ -190,7 +195,7 @@
                 <td>{{ reg.banco | fmt_data }}</td>
                 <td>{{ reg.dt_solicita or '—' }}</td>
                 <td>{{ reg.dt_status or '—' }}</td>
-                <td>
+                <td class="celula-status">
                   <select class="select-status-inline" data-id="{{ reg.id }}" onchange="alterarStatusHom(this)"
                     {% if not pode_editar %}disabled style="pointer-events:none;opacity:0.7;"{% endif %}>
                     <option value="HOMOLOGADO" selected>HOMOLOGADO</option>
