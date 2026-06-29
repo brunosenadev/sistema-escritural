@@ -1103,6 +1103,23 @@
         })
         .catch(function() {});
     })();
+
+    // ─── Tecla T preenche data atual em campos de data ───────
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 't' && e.key !== 'T') return;
+      var el = document.activeElement;
+      if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) return;
+      var ph = (el.placeholder || '').toLowerCase();
+      if (!ph.includes('dd/mm') && !ph.includes('aaaa')) return;
+      e.preventDefault();
+      var hoje = new Date();
+      var dd   = String(hoje.getDate()).padStart(2, '0');
+      var mm   = String(hoje.getMonth() + 1).padStart(2, '0');
+      var aaaa = hoje.getFullYear();
+      el.value = dd + '/' + mm + '/' + aaaa;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
   </script>
 </body>
 </html>
