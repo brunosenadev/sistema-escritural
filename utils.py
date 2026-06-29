@@ -74,9 +74,6 @@ def pode_editar() -> bool:
     """True se o usuário pode fazer alterações (admin ou tem técnico vinculado)."""
     return session.get('nivel_acesso') == 'admin' or bool(session.get('tecnico_vinculado'))
 
-
-# ── Guards usados nas rotas ───────────────────────────────
-
 def usuario_logado() -> bool:
     return 'usuario' in session
 

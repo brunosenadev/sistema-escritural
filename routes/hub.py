@@ -27,9 +27,6 @@ def hub_print():
     data_emissao = date.today().strftime('%d/%m/%Y')
     return render_template('hub_print.html', bancos=bancos_sel, data_emissao=data_emissao)
 
-
-# ── CRUD (admin only) ─────────────────────────────────────
-
 @hub_bp.route('/api/hub/bancos', methods=['POST'])
 def api_hub_adicionar_banco():
     if checar_admin():
