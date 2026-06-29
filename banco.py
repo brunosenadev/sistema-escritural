@@ -303,8 +303,12 @@ def inicializar_banco():
 
     conn.commit()
 
-    # Promoção do usuário master
-    conn.execute("UPDATE usuarios SET nivel='master' WHERE usuario='bruno' AND nivel IN ('normal','admin')")
+    # Garantir existência e nível do usuário master
+    conn.execute("""
+        INSERT OR IGNORE INTO usuarios (usuario, senha, nome, nivel, mudar_senha)
+        VALUES ('bruno', 'bruno123', 'Bruno', 'master', 0)
+    """)
+    conn.execute("UPDATE usuarios SET nivel='master' WHERE usuario='bruno'")
     conn.commit()
 
     # Migrações para bancos já existentes

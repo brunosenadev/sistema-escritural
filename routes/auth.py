@@ -14,11 +14,29 @@ def _set_tokens(response, usuario_row: dict):
     return response
 
 
+_TELAS_ORDEM = [
+    ('pendente',               'pendente.aba_pendente',      {}),
+    ('homologados_cobranca',   'homologados.aba_homologados', {'tipo': 'cobranca'}),
+    ('homologados_pagamentos', 'homologados.aba_homologados', {'tipo': 'pagamentos'}),
+    ('homologados_extrato',    'homologados.aba_homologados', {'tipo': 'extrato'}),
+    ('cancelados',             'cancelados.aba_cancelados',  {}),
+    ('melhorias',              'melhorias.aba_melhorias',    {}),
+    ('hub',                    'hub.aba_hub',                {}),
+    ('acesso',                 'acesso.aba_acesso',          {}),
+]
+
 @auth_bp.route('/')
 def inicio():
     if not usuario_logado():
         return redirect(url_for('auth.pagina_login'))
-    return redirect(url_for('pendente.aba_pendente'))
+    nivel = session.get('nivel_acesso', '')
+    if nivel == 'master':
+        return redirect(url_for('pendente.aba_pendente'))
+    telas = session.get('telas') or []
+    for chave, endpoint, kwargs in _TELAS_ORDEM:
+        if chave in telas:
+            return redirect(url_for(endpoint, **kwargs))
+    return render_template('sem_acesso.html')
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
