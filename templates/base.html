@@ -792,7 +792,7 @@
     <!-- Rodapé: info do usuário -->
     <div class="sidebar-rodape">
       <div class="info-usuario">
-        <div class="avatar-usuario">
+        <div class="avatar-usuario" {% if cor_usuario %}style="background:{{ cor_usuario }};"{% endif %}>
           {{ session.nome[0] | upper }}
         </div>
         <div>
