@@ -41,6 +41,61 @@ SETORES_INICIAIS = [
     'GESTOR SUPORTE', 'GESTOR PROGRAMAÇÃO', 'PROGRAMAÇÃO', 'SUPORTE',
 ]
 
+HUB_BANCOS_INICIAIS = [
+    # (nome, envio, instrucao, retorno, bol, pix, extrato, dda, ordem)
+    ('Ailos',          1, 0, 1, 0, 0, 0, 0, 1),
+    ('Banco do Brasil',1, 1, 1, 1, 0, 0, 0, 2),
+    ('Banrisul',       1, 0, 1, 0, 0, 0, 0, 3),
+    ('Bradesco',       1, 1, 1, 0, 1, 1, 0, 4),
+    ('Itaú',           1, 1, 1, 0, 0, 0, 0, 5),
+    ('Santander',      1, 1, 1, 1, 0, 0, 1, 6),
+    ('Sicredi',        1, 1, 1, 0, 0, 0, 0, 7),
+    ('Sicoob',         1, 1, 1, 0, 0, 0, 0, 8),
+]
+
+# banco_nome -> [(codigo, descricao, ordem), ...]
+HUB_INSTRUCOES_INICIAIS = {
+    'Banco do Brasil': [
+        ('02','Baixa de Boleto',1),('04','Concessão de Abatimento',2),
+        ('06','Alteração de Vencimento',3),('09','Protestar',4),
+        ('10','Sustar o Protesto',5),('11','Dispensar Juros',6),
+        ('19','Dispensar Multa',7),('24','Cancelar o Protesto',8),
+        ('25','Alterar os Dias de Protesto',9),
+    ],
+    'Bradesco': [
+        ('02','Baixa de Boleto',1),('04','Concessão de Abatimento',2),
+        ('05','Cancelar o Abatimento',3),('06','Alteração de Vencimento',4),
+        ('09','Protestar',5),('11','Dispensar Juros',6),
+        ('19','Dispensar Multa',7),('24','Cancelar o Protesto',8),
+    ],
+    'Itaú': [
+        ('02','Baixa de Boleto',1),('04','Concessão de Abatimento',2),
+        ('05','Cancelar o Abatimento',3),('06','Alteração de Vencimento',4),
+        ('09','Protestar',5),('11','Dispensar Juros',6),
+        ('19','Dispensar Multa',7),('24','Cancelar o Protesto',8),
+    ],
+    'Santander': [
+        ('02','Baixa de Boleto',1),('04','Concessão de Abatimento',2),
+        ('05','Cancelar o Abatimento',3),('06','Alteração de Vencimento',4),
+        ('09','Protestar',5),('11','Dispensar Juros',6),
+        ('19','Dispensar Multa',7),('24','Cancelar o Protesto',8),
+        ('25','Alterar os Dias de Protesto',9),
+    ],
+    'Sicredi': [
+        ('02','Baixa de Boleto',1),('04','Concessão de Abatimento',2),
+        ('05','Cancelar o Abatimento',3),('06','Alteração de Vencimento',4),
+        ('09','Protestar',5),('10','Sustar o Protesto',6),
+        ('13','Alterar Juros Mora',7),('11','Dispensar Juros',8),
+        ('24','Cancelar o Protesto',9),
+    ],
+    'Sicoob': [
+        ('02','Baixa de Boleto',1),('04','Concessão de Abatimento',2),
+        ('06','Alteração de Vencimento',3),('09','Protestar',4),
+        ('10','Sustar o Protesto',5),('11','Dispensar Juros',6),
+        ('19','Dispensar Multa',7),('24','Cancelar o Protesto',8),
+    ],
+}
+
 # ── Conexão ───────────────────────────────────────────────
 
 def conectar():
@@ -93,6 +148,26 @@ def inicializar_banco():
             criado_por      TEXT    DEFAULT '',
             criado_em       TEXT    DEFAULT (datetime('now','localtime')),
             atualizado_em   TEXT    DEFAULT (datetime('now','localtime'))
+        );
+        CREATE TABLE IF NOT EXISTS hub_bancos (
+            id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome               TEXT    UNIQUE NOT NULL,
+            cobranca_envio     INTEGER DEFAULT 0,
+            cobranca_instrucao INTEGER DEFAULT 0,
+            cobranca_retorno   INTEGER DEFAULT 0,
+            pagamento_boleto   INTEGER DEFAULT 0,
+            pagamento_pix      INTEGER DEFAULT 0,
+            extrato_consulta   INTEGER DEFAULT 0,
+            dda_consulta       INTEGER DEFAULT 0,
+            ordem              INTEGER DEFAULT 99
+        );
+        CREATE TABLE IF NOT EXISTS hub_instrucoes (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            banco_id  INTEGER NOT NULL,
+            codigo    TEXT    NOT NULL,
+            descricao TEXT    NOT NULL,
+            ordem     INTEGER DEFAULT 99,
+            FOREIGN KEY (banco_id) REFERENCES hub_bancos(id)
         );
         CREATE TABLE IF NOT EXISTS pendentes (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -190,6 +265,22 @@ def inicializar_banco():
 
     for s in SETORES_INICIAIS:
         conn.execute("INSERT OR IGNORE INTO setores_lista (texto) VALUES (?)", (s,))
+
+    # Hub bancário — seed apenas se vazio
+    if conn.execute("SELECT COUNT(*) FROM hub_bancos").fetchone()[0] == 0:
+        for b in HUB_BANCOS_INICIAIS:
+            conn.execute(
+                "INSERT INTO hub_bancos (nome,cobranca_envio,cobranca_instrucao,cobranca_retorno,"
+                "pagamento_boleto,pagamento_pix,extrato_consulta,dda_consulta,ordem) VALUES (?,?,?,?,?,?,?,?,?)", b
+            )
+        for nome_banco, instrucoes in HUB_INSTRUCOES_INICIAIS.items():
+            bid = conn.execute("SELECT id FROM hub_bancos WHERE nome=?", (nome_banco,)).fetchone()
+            if bid:
+                for cod, desc, ord_ in instrucoes:
+                    conn.execute(
+                        "INSERT INTO hub_instrucoes (banco_id,codigo,descricao,ordem) VALUES (?,?,?,?)",
+                        (bid[0], cod, desc, ord_)
+                    )
 
     conn.commit()
 
@@ -531,6 +622,96 @@ def buscar_melhoria(id_melhoria: int):
     row = conn.execute("SELECT * FROM melhorias WHERE id=?", (id_melhoria,)).fetchone()
     conn.close()
     return dict(row) if row else None
+
+
+# ── Hub Bancário ─────────────────────────────────────────
+
+def hub_listar_bancos():
+    conn = conectar()
+    bancos = conn.execute("SELECT * FROM hub_bancos ORDER BY ordem, nome").fetchall()
+    result = []
+    for b in bancos:
+        b = dict(b)
+        b['instrucoes'] = [dict(r) for r in conn.execute(
+            "SELECT * FROM hub_instrucoes WHERE banco_id=? ORDER BY ordem", (b['id'],)
+        ).fetchall()]
+        result.append(b)
+    conn.close()
+    return result
+
+
+def hub_adicionar_banco(dados: dict) -> int:
+    conn = conectar()
+    cur = conn.execute(
+        "INSERT INTO hub_bancos (nome,cobranca_envio,cobranca_instrucao,cobranca_retorno,"
+        "pagamento_boleto,pagamento_pix,extrato_consulta,dda_consulta,ordem) VALUES (?,?,?,?,?,?,?,?,?)",
+        (dados['nome'], int(dados.get('cobranca_envio',0)), int(dados.get('cobranca_instrucao',0)),
+         int(dados.get('cobranca_retorno',0)), int(dados.get('pagamento_boleto',0)),
+         int(dados.get('pagamento_pix',0)), int(dados.get('extrato_consulta',0)),
+         int(dados.get('dda_consulta',0)), int(dados.get('ordem', 99)))
+    )
+    novo_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return novo_id
+
+
+def hub_atualizar_banco(banco_id: int, dados: dict):
+    conn = conectar()
+    conn.execute(
+        "UPDATE hub_bancos SET nome=?,cobranca_envio=?,cobranca_instrucao=?,cobranca_retorno=?,"
+        "pagamento_boleto=?,pagamento_pix=?,extrato_consulta=?,dda_consulta=?,ordem=? WHERE id=?",
+        (dados['nome'], int(dados.get('cobranca_envio',0)), int(dados.get('cobranca_instrucao',0)),
+         int(dados.get('cobranca_retorno',0)), int(dados.get('pagamento_boleto',0)),
+         int(dados.get('pagamento_pix',0)), int(dados.get('extrato_consulta',0)),
+         int(dados.get('dda_consulta',0)), int(dados.get('ordem', 99)), banco_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def hub_remover_banco(banco_id: int):
+    conn = conectar()
+    conn.execute("DELETE FROM hub_instrucoes WHERE banco_id=?", (banco_id,))
+    conn.execute("DELETE FROM hub_bancos WHERE id=?", (banco_id,))
+    conn.commit()
+    conn.close()
+
+
+def hub_listar_instrucoes(banco_id: int):
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT * FROM hub_instrucoes WHERE banco_id=? ORDER BY ordem", (banco_id,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def hub_adicionar_instrucao(banco_id: int, codigo: str, descricao: str, ordem: int = 99):
+    conn = conectar()
+    conn.execute(
+        "INSERT INTO hub_instrucoes (banco_id,codigo,descricao,ordem) VALUES (?,?,?,?)",
+        (banco_id, codigo, descricao, ordem)
+    )
+    conn.commit()
+    conn.close()
+
+
+def hub_atualizar_instrucao(instrucao_id: int, codigo: str, descricao: str, ordem: int = 99):
+    conn = conectar()
+    conn.execute(
+        "UPDATE hub_instrucoes SET codigo=?,descricao=?,ordem=? WHERE id=?",
+        (codigo, descricao, ordem, instrucao_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def hub_remover_instrucao(instrucao_id: int):
+    conn = conectar()
+    conn.execute("DELETE FROM hub_instrucoes WHERE id=?", (instrucao_id,))
+    conn.commit()
+    conn.close()
 
 
 # ── Contadores (sidebar) ──────────────────────────────────

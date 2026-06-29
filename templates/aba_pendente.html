@@ -857,6 +857,23 @@
     badge.classList.add(classeCssStatus(texto));
   });
 
+  // ─── Reload parcial do tbody ─────────────────────────────────
+  function recarregarTabela() {
+    fetch(window.location.href)
+      .then(r => r.text())
+      .then(html => {
+        const doc  = new DOMParser().parseFromString(html, 'text/html');
+        const novo = doc.getElementById('corpo-tabela');
+        const atual = document.getElementById('corpo-tabela');
+        if (novo && atual) {
+          atual.innerHTML = novo.innerHTML;
+          filtrarTabela();
+          atualizarContadorLinhas();
+        }
+      })
+      .catch(() => {});
+  }
+
   // ─── Filtro da tabela ────────────────────────────────────────
   function filtrarTabela() {
     const termoBusca     = document.getElementById('campo-busca-texto').value.toLowerCase();
@@ -1150,9 +1167,7 @@
     .then(d => {
       if (d.sucesso) {
         mostrarToast('sucesso', 'Status atualizado!');
-        if (d.dt_status && tr && tr.cells[5]) {
-          tr.cells[5].textContent = d.dt_status;
-        }
+        recarregarTabela();
       } else {
         mostrarToast('erro', d.erro || 'Erro ao atualizar status.');
       }

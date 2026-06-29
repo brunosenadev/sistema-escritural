@@ -15,6 +15,7 @@ from routes.cancelados  import cancelados_bp
 from routes.importacao  import importacao_bp
 from routes.config      import config_bp
 from routes.melhorias   import melhorias_bp
+from routes.hub         import hub_bp
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
@@ -29,6 +30,7 @@ app.register_blueprint(cancelados_bp)
 app.register_blueprint(importacao_bp)
 app.register_blueprint(config_bp)
 app.register_blueprint(melhorias_bp)
+app.register_blueprint(hub_bp)
 
 
 # ── JWT: valida em toda requisição ────────────────────────

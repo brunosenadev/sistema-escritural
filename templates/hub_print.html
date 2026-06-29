@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hub Bancário — Sisplan</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 10.5pt;
+      color: #1a1a2e;
+      background: #fff;
+      padding: 28px 32px;
+    }
+
+    /* ── Cabeçalho ── */
+    .print-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 14px;
+      border-bottom: 2.5px solid #1a1a2e;
+    }
+
+    .print-header-left h1 {
+      font-size: 18pt;
+      font-weight: 800;
+      color: #1a1a2e;
+      letter-spacing: -0.3px;
+    }
+
+    .print-header-left p {
+      font-size: 8.5pt;
+      color: #64748b;
+      margin-top: 3px;
+    }
+
+    .print-header-right {
+      text-align: right;
+      font-size: 8pt;
+      color: #64748b;
+    }
+
+    .sisplan-badge {
+      display: inline-block;
+      font-size: 7.5pt;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6366f1;
+      border: 1.5px solid #6366f1;
+      border-radius: 4px;
+      padding: 2px 7px;
+      margin-bottom: 4px;
+    }
+
+    /* ── Grid de bancos ── */
+    .bancos-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .banco-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      overflow: hidden;
+      break-inside: avoid;
+    }
+
+    .banco-card-header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .banco-nome {
+      font-size: 11pt;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .banco-card-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ── Seções ── */
+    .secao-titulo {
+      font-size: 7pt;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 5px;
+    }
+
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .chip {
+      font-size: 7.5pt;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .chip-envio     { background: #dbeafe; color: #1d4ed8; }
+    .chip-retorno   { background: #dcfce7; color: #15803d; }
+    .chip-instrucao { background: #ede9fe; color: #6d28d9; }
+    .chip-boleto    { background: #fef3c7; color: #92400e; }
+    .chip-pix       { background: #d1fae5; color: #065f46; }
+    .chip-consulta  { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+
+    /* ── Tabela de instruções ── */
+    .instr-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 8.5pt;
+    }
+
+    .instr-table th {
+      background: #f8fafc;
+      text-align: left;
+      padding: 4px 8px;
+      font-size: 7pt;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #64748b;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .instr-table td {
+      padding: 4px 8px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #374151;
+    }
+
+    .instr-table tr:last-child td { border-bottom: none; }
+
+    .cod-badge {
+      display: inline-block;
+      font-weight: 700;
+      font-size: 7.5pt;
+      color: #6366f1;
+      background: rgba(99,102,241,0.10);
+      border-radius: 4px;
+      padding: 1px 6px;
+      min-width: 26px;
+      text-align: center;
+    }
+
+    /* ── Rodapé ── */
+    .print-footer {
+      margin-top: 32px;
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 7.5pt;
+      color: #94a3b8;
+    }
+
+    /* ── Botão imprimir (escondido na impressão) ── */
+    .btn-imprimir {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 100;
+    }
+    .btn-imprimir:hover { background: #4f46e5; }
+
+    @media print {
+      body { padding: 16px 20px; }
+      .btn-imprimir { display: none !important; }
+      .bancos-grid { gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<button class="btn-imprimir" onclick="window.print()">
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  Imprimir / Salvar PDF
+</button>
+
+<div class="print-header">
+  <div class="print-header-left">
+    <h1>Hub Bancário</h1>
+    <p>Serviços disponíveis por banco — Sisplan Escritural</p>
+  </div>
+  <div class="print-header-right">
+    <div class="sisplan-badge">Sisplan</div>
+    <div>Emitido em {{ data_emissao }}</div>
+    <div>{{ bancos | length }} banco{{ 's' if bancos | length != 1 else '' }}</div>
+  </div>
+</div>
+
+<div class="bancos-grid">
+  {% for b in bancos %}
+  <div class="banco-card">
+    <div class="banco-card-header">
+      <span class="banco-nome">{{ b.nome }}</span>
+    </div>
+
+    <div class="banco-card-body">
+
+      {# Cobrança #}
+      {% if b.cobranca_envio or b.cobranca_instrucao or b.cobranca_retorno %}
+      <div>
+        <div class="secao-titulo">Cobrança</div>
+        <div class="chips-row">
+          {% if b.cobranca_envio %}<span class="chip chip-envio">Envio</span>{% endif %}
+          {% if b.cobranca_instrucao %}<span class="chip chip-instrucao">Instrução</span>{% endif %}
+          {% if b.cobranca_retorno %}<span class="chip chip-retorno">Retorno</span>{% endif %}
+        </div>
+
+        {% if b.cobranca_instrucao and b.instrucoes %}
+        <table class="instr-table">
+          <thead><tr><th>Código</th><th>Descrição</th></tr></thead>
+          <tbody>
+            {% for instr in b.instrucoes %}
+            <tr>
+              <td><span class="cod-badge">{{ instr.codigo }}</span></td>
+              <td>{{ instr.descricao }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {# Pagamento #}
+      {% if b.pagamento_boleto or b.pagamento_pix %}
+      <div>
+        <div class="secao-titulo">Pagamento</div>
+        <div class="chips-row">
+          {% if b.pagamento_boleto %}<span class="chip chip-boleto">Boleto</span>{% endif %}
+          {% if b.pagamento_pix %}<span class="chip chip-pix">PIX</span>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# Extrato / DDA #}
+      {% if b.extrato_consulta or b.dda_consulta %}
+      <div>
+        <div class="secao-titulo">{% if b.extrato_consulta and b.dda_consulta %}Extrato / DDA{% elif b.extrato_consulta %}Extrato{% else %}DDA{% endif %}</div>
+        <div class="chips-row">
+          {% if b.extrato_consulta %}<span class="chip chip-consulta">Consulta Extrato</span>{% endif %}
+          {% if b.dda_consulta %}<span class="chip chip-consulta">Consulta DDA</span>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="print-footer">
+  <span>Sisplan Escritural — Gestão de Serviços Bancários</span>
+  <span>{{ data_emissao }}</span>
+</div>
+
+</body>
+</html>
