@@ -82,6 +82,15 @@ def _set_token_cookies(response):
 
 # ── Filtro de template ────────────────────────────────────
 
+@app.template_filter('fmt_data')
+def filtro_fmt_data(valor):
+    """Converte ISO datetime ('2026-01-12 00:00:00') para 'dd/mm/yyyy'. Passa strings não-ISO intactas."""
+    s = str(valor).strip() if valor else ''
+    if len(s) >= 10 and s[4:5] == '-' and s[7:8] == '-':
+        return f'{s[8:10]}/{s[5:7]}/{s[0:4]}'
+    return s or '—'
+
+
 @app.template_filter('css_status')
 def filtro_css_status(status_texto):
     mapa = {

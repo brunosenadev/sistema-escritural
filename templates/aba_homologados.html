@@ -187,7 +187,7 @@
                 <td class="celula-tecnico" style="color: {{ cores_tecnicos.get(reg.tecnico, '#64748b') }};">{{ reg.tecnico or '—' }}</td>
                 <td title="{{ reg.empresa }}">{{ reg.empresa or '—' }}</td>
                 <td>{{ reg.servico or '—' }}</td>
-                <td>{{ reg.banco or '—' }}</td>
+                <td>{{ reg.banco | fmt_data }}</td>
                 <td>{{ reg.dt_solicita or '—' }}</td>
                 <td>{{ reg.dt_status or '—' }}</td>
                 <td>
