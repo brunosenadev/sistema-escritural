@@ -1104,22 +1104,35 @@
         .catch(function() {});
     })();
 
-    // ─── Tecla T preenche data atual em campos de data ───────
+    // ─── Campos de data: máscara + tecla T ───────────────────
+    function _ehCampoData(el) {
+      return el && el.tagName === 'INPUT' && (el.placeholder || '').toLowerCase().includes('dd/mm');
+    }
+
+    // Máscara automática DD/MM/AAAA (fase de captura para garantir prioridade)
+    document.addEventListener('input', function(e) {
+      var el = e.target;
+      if (!_ehCampoData(el)) return;
+      var digits = el.value.replace(/\D/g, '').substring(0, 8);
+      var out = digits.substring(0, 2);
+      if (digits.length > 2) out += '/' + digits.substring(2, 4);
+      if (digits.length > 4) out += '/' + digits.substring(4, 8);
+      el.value = out;
+    }, true);
+
+    // Tecla T = data de hoje (fase de captura)
     document.addEventListener('keydown', function(e) {
       if (e.key !== 't' && e.key !== 'T') return;
       var el = document.activeElement;
-      if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) return;
-      var ph = (el.placeholder || '').toLowerCase();
-      if (!ph.includes('dd/mm') && !ph.includes('aaaa')) return;
+      if (!_ehCampoData(el)) return;
       e.preventDefault();
-      var hoje = new Date();
-      var dd   = String(hoje.getDate()).padStart(2, '0');
-      var mm   = String(hoje.getMonth() + 1).padStart(2, '0');
-      var aaaa = hoje.getFullYear();
-      el.value = dd + '/' + mm + '/' + aaaa;
-      el.dispatchEvent(new Event('input', { bubbles: true }));
+      e.stopImmediatePropagation();
+      var h = new Date();
+      el.value = String(h.getDate()).padStart(2,'0') + '/' +
+                 String(h.getMonth()+1).padStart(2,'0') + '/' +
+                 h.getFullYear();
       el.dispatchEvent(new Event('change', { bubbles: true }));
-    });
+    }, true);
   </script>
 </body>
 </html>
