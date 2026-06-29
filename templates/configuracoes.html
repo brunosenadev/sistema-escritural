@@ -700,12 +700,14 @@
           </td>
           <td>
             <div style="display:flex;gap:4px;justify-content:center;flex-wrap:nowrap;">
-              {% if usuario.nivel != 'master' %}
+              {% set eh_proprio_master = usuario.nivel == 'master' and usuario.usuario == session.usuario %}
+              {% if usuario.nivel != 'master' or eh_proprio_master %}
               <button class="btn-acao-mini btn-editar-mini" title="Editar" onclick='abrirModalEditarUsuario({{ usuario | tojson }})'>
                 <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
               </button>
+              {% if usuario.nivel != 'master' %}
               <button class="btn-acao-mini" style="background:#fefce8;color:#a16207;border:1.5px solid #fde68a;padding:5px 8px;" title="Resetar Senha (123456 + exige troca)" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fefce8'" onclick='resetarSenha({{ usuario.id }}, {{ usuario.nome | tojson }})'>
                 <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -717,6 +719,7 @@
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
                 </svg>
               </button>
+              {% endif %}
               {% else %}
               <span style="font-size:11px;color:#94a3b8;font-style:italic;">protegido</span>
               {% endif %}
