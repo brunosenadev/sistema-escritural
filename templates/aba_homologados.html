@@ -162,7 +162,7 @@
   <div>
     <div class="card-tabela">
       <div class="barra-ferramentas">
-        <input class="campo-busca" type="text" id="campo-busca-texto" placeholder="Buscar empresa, banco..." oninput="filtrarTabela()">
+        <input class="campo-busca" type="text" id="campo-busca-texto" placeholder="Buscar empresa, serviço..." oninput="filtrarTabela()">
         <select class="select-filtro" id="filtro-tecnico" onchange="filtrarTabela()">
           <option value="">Todos os técnicos</option>
           {% for tecnico in resumo_tecnicos.keys() %}
@@ -175,8 +175,8 @@
         <table class="tabela-dados">
           <thead>
             <tr>
-              <th>Técnico</th><th>Empresa</th><th>Serviço</th><th>Banco</th>
-              <th>Dt. Solicita</th><th>Dt. Status</th><th>Status</th><th>Obs</th><th></th>
+              <th>Técnico</th><th>Empresa</th><th>Serviço</th><th>Dt. Solicita</th>
+              <th>Dt. Homologação</th><th>Dt. Status</th><th>Status</th><th>Obs</th><th></th>
             </tr>
           </thead>
           <tbody id="corpo-tabela">
@@ -302,8 +302,8 @@
           </select>
         </div>
         <div class="grupo-form">
-          <label>Banco</label>
-          <input class="input-form" type="text" id="campo-banco" placeholder="Ex: 341 - ITAÚ">
+          <label>Dt. Solicita</label>
+          <input class="input-form" type="text" id="campo-banco" placeholder="dd/mm/aaaa">
         </div>
         <div class="grupo-form">
           <label>Dt. Solicitação</label>
