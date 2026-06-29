@@ -928,6 +928,7 @@
         <select class="select-modal" id="campo-usuario-nivel">
           <option value="normal">Normal</option>
           <option value="admin">Admin</option>
+          <option value="master" disabled style="color:#7e22ce;">Master (não editável)</option>
         </select>
       </div>
       <div class="grupo-modal">
@@ -1144,7 +1145,8 @@
     document.getElementById('campo-usuario-login').value = '';
     document.getElementById('campo-usuario-login').disabled = false;
     document.getElementById('campo-usuario-senha').value = '';
-    document.getElementById('campo-usuario-nivel').value = 'normal';
+    document.getElementById('campo-usuario-nivel').value    = 'normal';
+    document.getElementById('campo-usuario-nivel').disabled = false;
     document.getElementById('campo-usuario-tecnico').value = '';
     document.getElementById('campo-usuario-setor').value = '';
     document.getElementById('hint-login').style.display = 'none';
@@ -1161,7 +1163,8 @@
     document.getElementById('campo-usuario-login').value   = usuario.usuario;
     document.getElementById('campo-usuario-login').disabled = true;
     document.getElementById('campo-usuario-senha').value   = '';
-    document.getElementById('campo-usuario-nivel').value   = usuario.nivel;
+    document.getElementById('campo-usuario-nivel').value    = usuario.nivel;
+    document.getElementById('campo-usuario-nivel').disabled = usuario.nivel === 'master';
     document.getElementById('campo-usuario-tecnico').value = usuario.tecnico_vinculado || '';
     document.getElementById('campo-usuario-setor').value   = usuario.setor || '';
     document.getElementById('hint-login').style.display = 'inline';

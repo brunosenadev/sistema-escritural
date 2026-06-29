@@ -78,7 +78,10 @@ def api_atualizar_usuario(id_usuario):
     alvo = banco.buscar_usuario_por_id(id_usuario)
     if alvo and alvo.get('nivel') == 'master' and id_usuario != session.get('id_usuario'):
         return jsonify({'erro': 'Usuário master não pode ser editado.'}), 403
-    banco.atualizar_usuario(id_usuario, request.get_json())
+    dados = request.get_json()
+    if alvo and alvo.get('nivel') == 'master':
+        dados['nivel'] = 'master'  # nível master nunca pode ser rebaixado via edição
+    banco.atualizar_usuario(id_usuario, dados)
     # Se atualizou o próprio usuário, renova o token com dados frescos
     if id_usuario == session.get('id_usuario'):
         u = banco.buscar_usuario_por_id(id_usuario)
