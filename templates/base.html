@@ -644,7 +644,7 @@
 <body>
 
   <!-- ═══ Sidebar ═══════════════════════════════ -->
-  <aside class="sidebar">
+  <aside class="sidebar" {% if cor_usuario %}style="background:{{ cor_usuario }} !important;"{% endif %}>
 
     <!-- Logo -->
     <div class="sidebar-logo">
@@ -792,7 +792,7 @@
     <!-- Rodapé: info do usuário -->
     <div class="sidebar-rodape">
       <div class="info-usuario">
-        <div class="avatar-usuario" {% if cor_usuario %}style="background:{{ cor_usuario }};"{% endif %}>
+        <div class="avatar-usuario">
           {{ session.nome[0] | upper }}
         </div>
         <div>
