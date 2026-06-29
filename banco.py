@@ -622,10 +622,11 @@ def atualizar_pendente(id_registro, dados):
 
 def atualizar_status_pendente(id_registro, novo_status):
     agora = datetime.now().strftime('%d/%m/%Y %H:%M')
-    conn = conectar()
+    hoje  = datetime.now().strftime('%d/%m/%Y')
+    conn  = conectar()
     conn.execute(
-        "UPDATE pendentes SET status=?, atualizado_em=? WHERE id=?",
-        (novo_status, agora, id_registro)
+        "UPDATE pendentes SET status=?, dt_status=?, atualizado_em=? WHERE id=?",
+        (novo_status, hoje, agora, id_registro)
     )
     conn.commit()
     conn.close()

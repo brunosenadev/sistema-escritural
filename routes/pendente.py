@@ -77,8 +77,9 @@ def atualizar_status_pendente(id_registro):
     novo_status = (request.get_json() or {}).get('status', '')
     if not novo_status:
         return jsonify({'erro': 'Status não informado'}), 400
+    from datetime import datetime as _dt
     banco.atualizar_status_pendente(id_registro, novo_status)
-    return jsonify({'sucesso': True})
+    return jsonify({'sucesso': True, 'dt_status': _dt.now().strftime('%d/%m/%Y')})
 
 
 @pendente_bp.route('/pendente/deletar/<int:id_registro>', methods=['DELETE'])

@@ -1150,6 +1150,9 @@
     .then(d => {
       if (d.sucesso) {
         mostrarToast('sucesso', 'Status atualizado!');
+        if (d.dt_status && tr && tr.cells[5]) {
+          tr.cells[5].textContent = d.dt_status;
+        }
       } else {
         mostrarToast('erro', d.erro || 'Erro ao atualizar status.');
       }
