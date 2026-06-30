@@ -12,14 +12,6 @@ escritural_bp = Blueprint('escritural', __name__)
 
 _PASTA_UPLOADS = '/tmp' if os.environ.get('RENDER') else os.path.join(os.path.dirname(__file__), '..', 'uploads')
 
-
-# ── Formulário público de solicitação (sem login) ─────────
-# Substitui o Google Forms externo: qualquer pessoa pode enviar uma
-# solicitação de "Novos Escriturais" sem autenticação. Como não há login,
-# os cuidados de segurança ficam todos aqui: validação estrita de cada
-# campo, parametrização das queries (feita em banco.adicionar_escritural)
-# e contenção de abuso (honeypot + limite de envios por IP).
-
 _CAMPOS_BASE_OBRIGATORIOS = (
     'empresa', 'cnpj', 'responsavel', 'fone_responsavel', 'email_responsavel',
     'banco', 'conta_corrente', 'agencia', 'convenio',

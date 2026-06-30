@@ -6,9 +6,6 @@ from utils import checar_tela
 
 discord_bp = Blueprint('discord', __name__)
 
-# Configuração via variáveis de ambiente (.env):
-#   DISCORD_BOT_TOKEN  — token do bot (começa com "Bot ...")
-#   DISCORD_CANAL_ID   — ID numérico do canal de texto
 _token_override = None
 _canal_override = None
 
@@ -30,7 +27,7 @@ def _enviar_bg(token, canal_id, mensagem):
             timeout=5,
         )
     except Exception:
-        pass  # notificação é best-effort; falha silenciosa
+        pass 
 
 
 def notificar_nova_homologacao(cliente):
@@ -51,9 +48,6 @@ def notificar_discord(mensagem):
         return
     threading.Thread(target=_enviar_bg, args=(token, canal_id, mensagem), daemon=True).start()
 
-
-# ── Rotas de configuração (protegidas por login de admin) ──
-
 @discord_bp.route('/discord/config', methods=['GET'])
 def discord_config_get():
     if checar_tela('config'):
@@ -63,7 +57,6 @@ def discord_config_get():
         'canal_configurado': bool(_canal()),
         'canal_id': _canal(),
     })
-
 
 @discord_bp.route('/discord/config', methods=['POST'])
 def discord_config_set():
@@ -78,7 +71,6 @@ def discord_config_set():
     if novo_canal:
         _canal_override = novo_canal
     return jsonify({'sucesso': True})
-
 
 @discord_bp.route('/discord/testar', methods=['POST'])
 def discord_testar():
