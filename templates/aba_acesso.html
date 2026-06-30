@@ -79,54 +79,59 @@
   .ac-tudo-btn.revogar  { background: #fee2e2; color: #dc2626; }
   .ac-tudo-btn.revogar:hover { background: #fecaca; }
 
-  /* ── Telas dentro do card ── */
-  .ac-telas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  /* ── Telas dentro do card, agrupadas como a sidebar ── */
+  .ac-grupos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px 28px;
     padding: 14px 18px;
   }
+  @media (max-width: 860px) {
+    .ac-grupos { grid-template-columns: 1fr; }
+  }
+
+  .ac-grupo-titulo {
+    font-size: 0.65rem; font-weight: 700; color: #a3acba;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    margin: 10px 0 2px; padding: 0 2px;
+  }
+  .ac-grupo:first-child .ac-grupo-titulo { margin-top: 0; }
 
   .ac-tela-item {
     display: flex;
     align-items: center;
-    gap: 7px;
+    justify-content: space-between;
+    gap: 10px;
     cursor: pointer;
     user-select: none;
-    padding: 6px 12px 6px 8px;
-    border-radius: 8px;
-    border: 1.5px solid #e2e8f0;
-    background: #fafafa;
-    transition: border-color 0.13s, background 0.13s;
-    min-width: 160px;
+    padding: 6px 2px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: opacity 0.13s;
   }
-  .ac-tela-item:hover { border-color: #94a3b8; background: #f1f5f9; }
-  .ac-tela-item.ativo {
-    border-color: #22c55e;
-    background: #f0fdf4;
-  }
-  .ac-tela-item.salvando { opacity: 0.6; pointer-events: none; }
+  .ac-grupo .ac-tela-item:last-child { border-bottom: none; }
+  .ac-tela-item:hover .ac-tela-nome { color: #1e293b; }
+  .ac-tela-item.salvando { opacity: 0.5; pointer-events: none; }
 
   .ac-toggle {
-    width: 34px; height: 18px; border-radius: 99px;
+    width: 28px; height: 16px; border-radius: 99px;
     background: #e2e8f0; position: relative; flex-shrink: 0;
     transition: background 0.15s;
   }
   .ac-toggle::after {
     content: '';
     position: absolute; top: 2px; left: 2px;
-    width: 14px; height: 14px; border-radius: 50%;
+    width: 12px; height: 12px; border-radius: 50%;
     background: #fff; transition: left 0.15s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.18);
   }
   .ac-tela-item.ativo .ac-toggle { background: #22c55e; }
-  .ac-tela-item.ativo .ac-toggle::after { left: 18px; }
+  .ac-tela-item.ativo .ac-toggle::after { left: 14px; }
 
   .ac-tela-nome {
-    font-size: 0.79rem; font-weight: 600; color: #374151;
-    flex: 1;
+    font-size: 0.76rem; font-weight: 500; color: #64748b;
+    transition: color 0.13s;
   }
-  .ac-tela-item.ativo .ac-tela-nome { color: #15803d; }
+  .ac-tela-item.ativo .ac-tela-nome { color: #16a34a; font-weight: 600; }
 
   /* ── Empty state ── */
   .ac-empty {
@@ -143,10 +148,11 @@
   [data-tema="dark"] .dot-off         { background: var(--z-border); }
   [data-tema="dark"] .nivel-admin     { background: rgba(29,78,216,.15); color: #93c5fd; }
   [data-tema="dark"] .nivel-normal    { background: var(--z-elevated); color: var(--z-text-2); }
-  [data-tema="dark"] .ac-tela-item    { background: var(--z-elevated); border-color: var(--z-border-s); }
-  [data-tema="dark"] .ac-tela-item:hover { border-color: var(--z-border); background: var(--z-bg); }
-  [data-tema="dark"] .ac-tela-item.ativo { background: rgba(34,197,94,.08); border-color: #22c55e; }
+  [data-tema="dark"] .ac-grupo-titulo { color: var(--z-text-3); }
+  [data-tema="dark"] .ac-tela-item    { border-color: var(--z-border-s); }
+  [data-tema="dark"] .ac-toggle       { background: var(--z-border); }
   [data-tema="dark"] .ac-tela-nome    { color: var(--z-text-2); }
+  [data-tema="dark"] .ac-tela-item:hover .ac-tela-nome { color: var(--z-text-1); }
   [data-tema="dark"] .ac-tela-item.ativo .ac-tela-nome { color: #4ade80; }
   [data-tema="dark"] .ac-tudo-btn.liberar { background: rgba(34,197,94,.15); color: #4ade80; }
   [data-tema="dark"] .ac-tudo-btn.revogar { background: rgba(220,38,38,.15); color: #f87171; }
@@ -179,14 +185,19 @@
         <button class="ac-tudo-btn revogar" onclick="revogarTudo({{ u.id }})">Revogar tudo</button>
       </div>
 
-      <div class="ac-telas" id="ac-telas-{{ u.id }}">
-        {% for chave, label in telas %}
-        {% set ativo = chave in u.telas %}
-        <div class="ac-tela-item {% if ativo %}ativo{% endif %}"
-             id="ac-item-{{ u.id }}-{{ chave }}"
-             onclick="toggleTela({{ u.id }}, '{{ chave }}', this)">
-          <span class="ac-toggle"></span>
-          <span class="ac-tela-nome">{{ label }}</span>
+      <div class="ac-grupos" id="ac-telas-{{ u.id }}">
+        {% for grupo_nome, grupo_telas in grupos %}
+        <div class="ac-grupo">
+          <div class="ac-grupo-titulo">{{ grupo_nome }}</div>
+          {% for chave, label in grupo_telas %}
+          {% set ativo = chave in u.telas %}
+          <div class="ac-tela-item {% if ativo %}ativo{% endif %}"
+               id="ac-item-{{ u.id }}-{{ chave }}"
+               onclick="toggleTela({{ u.id }}, '{{ chave }}', this)">
+            <span class="ac-tela-nome">{{ label }}</span>
+            <span class="ac-toggle"></span>
+          </div>
+          {% endfor %}
         </div>
         {% endfor %}
       </div>

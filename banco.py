@@ -97,22 +97,32 @@ HUB_INSTRUCOES_INICIAIS = {
 }
 
 # ── Telas do sistema ─────────────────────────────────────
+# Agrupadas espelhando as seções da sidebar (Abas / Sistema / Referência),
+# para a tela de Controle de Acesso exibir os toggles na mesma organização.
 
-TELAS_SISTEMA = [
-    ('pendente',               'Pendente'),
-    ('homologados_cobranca',   'Homologados Cobrança'),
-    ('homologados_pagamentos', 'Homologados Pagamentos'),
-    ('homologados_extrato',    'Homologados Extrato Cartão'),
-    ('cancelados',             'Cancelados'),
-    ('melhorias',              'Melhorias'),
-    ('hub',                    'Hub Bancário'),
-    ('sispbol',                'SispBol'),
-    ('api_pagamentos',         'API Pagamentos'),
-    ('ajuda',                  'Ajuda'),
-    ('ajuda_gerenciar',        'Gerenciar Ajuda'),
-    ('importacao',             'Importação'),
-    ('config',                 'Configurações'),
+TELAS_AGRUPADAS = [
+    ('Abas', [
+        ('pendente',               'Pendente'),
+        ('homologados_cobranca',   'Homologados Cobrança'),
+        ('homologados_pagamentos', 'Homologados Pagamentos'),
+        ('homologados_extrato',    'Homologados Extrato Cartão'),
+        ('cancelados',             'Cancelados'),
+        ('sispbol',                'SispBol'),
+    ]),
+    ('Sistema', [
+        ('melhorias',              'Melhorias'),
+        ('config',                 'Configurações'),
+        ('importacao',             'Importação'),
+    ]),
+    ('Referência', [
+        ('hub',                    'Hub Bancário'),
+        ('api_pagamentos',         'API Pagamentos'),
+        ('ajuda',                  'Ajuda'),
+        ('ajuda_gerenciar',        'Gerenciar Ajuda'),
+    ]),
 ]
+
+TELAS_SISTEMA = [tela for _, telas in TELAS_AGRUPADAS for tela in telas]
 
 # ── Conexão ───────────────────────────────────────────────
 

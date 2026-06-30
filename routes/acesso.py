@@ -11,8 +11,7 @@ def aba_acesso():
     if bloqueio:
         return bloqueio
     usuarios = banco.listar_usuarios_permissoes()
-    telas    = banco.TELAS_SISTEMA
-    return render_template('aba_acesso.html', usuarios=usuarios, telas=telas)
+    return render_template('aba_acesso.html', usuarios=usuarios, grupos=banco.TELAS_AGRUPADAS, telas=banco.TELAS_SISTEMA)
 
 
 @acesso_bp.route('/api/acesso/usuario/<int:usuario_id>/toggle', methods=['POST'])
