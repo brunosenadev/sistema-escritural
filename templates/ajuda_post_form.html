@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+{% set aba_ativa = 'ajuda' %}
+
+{% block titulo %}{{ 'Editar Manual' if post else 'Novo Manual' }} — Sisplan{% endblock %}
+{% block titulo_pagina %}{{ 'Editar Manual' if post else 'Novo Manual' }}{% endblock %}
+{% block breadcrumb %}Referência / Ajuda / Gerenciar / {{ 'Editar' if post else 'Novo' }}{% endblock %}
+
+{% block acoes_header %}{% endblock %}
+
+{% block estilos_extras %}
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+<style>
+  .apf-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 880px) { .apf-grid { grid-template-columns: 1fr; } }
+
+  .apf-toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
+
+  .btn-secundario-mini { padding: 9px 16px; background: #f8fafc; color: #475569; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+  .btn-secundario-mini:hover { background: #f1f5f9; }
+  .btn-secundario-mini svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+  .btn-primario-config { padding: 9px 18px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; text-decoration: none; }
+  .btn-primario-config:hover { background: #1d4ed8; }
+  .btn-primario-config svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+
+  .card-config { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  .card-config-titulo-bloco { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: #64748b; margin-bottom: 14px; }
+
+  .grupo-campo { margin-bottom: 16px; }
+  .grupo-campo:last-child { margin-bottom: 0; }
+  .grupo-campo label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
+  .input-config { width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13.5px; font-family: 'Inter', sans-serif; color: #1e293b; background: #f8fafc; outline: none; box-sizing: border-box; }
+  .input-config:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
+  textarea.input-config { resize: vertical; min-height: 64px; font-family: inherit; }
+  select.input-config { cursor: pointer; }
+
+  .apf-upload-pdf {
+    border: 1.5px dashed #c7d7fe;
+    background: #f8faff;
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  }
+  .apf-upload-pdf:hover { background: #eef2ff; border-color: #93c5fd; }
+  .apf-upload-pdf:active { transform: scale(0.99); }
+  .apf-upload-pdf-icone {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, #2563eb, #4f8cf7);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.25);
+  }
+  .apf-upload-pdf-icone svg { width: 21px; height: 21px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; margin: 0; }
+  .apf-upload-pdf-titulo { font-size: 13px; font-weight: 700; color: #1e293b; }
+  .apf-upload-pdf-titulo span { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
+  .apf-upload-pdf-sub { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+  .apf-upload-pdf.carregando { opacity: 0.65; pointer-events: none; }
+  .apf-upload-pdf.arrastando { background: #e0e9ff; border-color: #2563eb; border-style: solid; }
+
+  .apf-html-toggle {
+    width: 100%; box-sizing: border-box;
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; border: 1.5px dashed #e2e8f0; border-radius: 9px;
+    background: #f8fafc; color: #475569; font-size: 12.5px; font-weight: 600;
+    font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .apf-html-toggle:hover { background: #f1f5f9; border-color: #cbd5e1; }
+  .apf-html-toggle svg { width: 15px; height: 15px; stroke: #64748b; fill: none; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; }
+  .apf-html-toggle.aberto { background: #eff6ff; border-color: #93c5fd; color: #2563eb; }
+  .apf-html-toggle.aberto svg { stroke: #2563eb; }
+
+  .apf-html-area { display: none; margin-top: 10px; }
+  .apf-html-area.aberta { display: block; }
+  .apf-html-textarea {
+    min-height: 130px; resize: vertical; font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 11.5px; line-height: 1.5; margin-bottom: 8px;
+  }
+  #botao-inserir-html { width: 100%; justify-content: center; }
+  #botao-inserir-html svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+
+  #campo-quill { background: #fff; border-radius: 0 0 10px 10px; }
+  .ql-toolbar.ql-snow { border-radius: 10px 10px 0 0; border-color: #e2e8f0 !important; background: #f8fafc; }
+  .ql-container.ql-snow { border-color: #e2e8f0 !important; font-size: 13.5px; min-height: 380px; }
+  .ql-editor { min-height: 380px; }
+
+  [data-tema="dark"] .card-config             { background: var(--z-surface); border-color: var(--z-border-s); }
+  [data-tema="dark"] .card-config-titulo-bloco { color: var(--z-text-3); }
+  [data-tema="dark"] .grupo-campo label        { color: var(--z-text-3); }
+  [data-tema="dark"] .input-config             { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .apf-upload-pdf           { background: rgba(99,102,241,0.08); border-color: var(--z-border); }
+  [data-tema="dark"] .apf-upload-pdf:hover     { background: rgba(99,102,241,0.14); }
+  [data-tema="dark"] .apf-upload-pdf-titulo    { color: var(--z-text-1); }
+  [data-tema="dark"] .apf-upload-pdf-titulo span { color: var(--z-accent-t); }
+  [data-tema="dark"] .apf-upload-pdf-sub       { color: var(--z-text-3); }
+  [data-tema="dark"] .apf-html-toggle          { background: var(--z-elevated); color: var(--z-text-2); border-color: var(--z-border); }
+  [data-tema="dark"] .apf-html-toggle:hover    { background: var(--z-border-s); }
+  [data-tema="dark"] .apf-html-toggle.aberto   { background: rgba(99,102,241,0.12); border-color: var(--z-accent); color: var(--z-accent-t); }
+  [data-tema="dark"] .apf-html-textarea        { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .btn-secundario-mini      { background: var(--z-elevated); color: var(--z-text-2); border-color: var(--z-border); }
+  [data-tema="dark"] .btn-secundario-mini:hover { background: var(--z-border-s); }
+  [data-tema="dark"] #campo-quill,
+  [data-tema="dark"] .ql-toolbar.ql-snow,
+  [data-tema="dark"] .ql-container.ql-snow     { background: var(--z-elevated); border-color: var(--z-border) !important; }
+  [data-tema="dark"] .ql-editor                { color: var(--z-text-1); }
+  [data-tema="dark"] .ql-snow .ql-stroke       { stroke: var(--z-text-2); }
+  [data-tema="dark"] .ql-snow .ql-fill         { fill: var(--z-text-2); }
+  [data-tema="dark"] .ql-snow .ql-picker       { color: var(--z-text-2); }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+
+<div class="apf-toolbar">
+  <a href="/ajuda/gerenciar" class="btn-secundario-mini">
+    <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Cancelar
+  </a>
+  <button class="btn-primario-config" onclick="salvarPost()">
+    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    Salvar Manual
+  </button>
+</div>
+
+<div class="apf-grid">
+  <div>
+    <div class="card-config">
+      <div class="card-config-titulo-bloco">Conteúdo do manual</div>
+      <div id="campo-quill">{{ post.conteudo | safe if post else '' }}</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card-config">
+      <div class="card-config-titulo-bloco">Detalhes</div>
+      <div class="grupo-campo">
+        <label>Título</label>
+        <input class="input-config" type="text" id="campo-titulo" placeholder="Ex: Como cadastrar um cliente" value="{{ post.titulo if post else '' }}">
+      </div>
+      <div class="grupo-campo">
+        <label>Tópico</label>
+        <select class="input-config" id="campo-topico">
+          <option value="">Selecione...</option>
+          {% for t in topicos %}
+          <option value="{{ t.id }}" {% if (post and post.topico_id == t.id) or (topico_id_preselecionado and topico_id_preselecionado == t.id) %}selected{% endif %}>{{ t.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="grupo-campo">
+        <label>Descrição curta</label>
+        <textarea class="input-config" id="campo-descricao" placeholder="Aparece no card da lista de manuais">{{ post.descricao if post else '' }}</textarea>
+      </div>
+      <div class="grupo-campo">
+        <label>Ordem de exibição</label>
+        <input class="input-config" type="number" id="campo-ordem" value="{{ post.ordem if post else 99 }}">
+      </div>
+    </div>
+
+    <div class="card-config">
+      <div class="card-config-titulo-bloco">Importar de PDF</div>
+      <label class="apf-upload-pdf" id="area-upload-pdf" for="campo-arquivo-pdf">
+        <div class="apf-upload-pdf-icone">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+        </div>
+        <div class="apf-upload-pdf-titulo" id="texto-upload-pdf">Arraste um PDF ou <span>selecione o arquivo</span></div>
+        <div class="apf-upload-pdf-sub">O conteúdo extraído abrirá no editor para revisão</div>
+      </label>
+      <input type="file" id="campo-arquivo-pdf" accept="application/pdf" style="display:none;" onchange="carregarPdf(this)">
+    </div>
+
+    <div class="card-config">
+      <div class="card-config-titulo-bloco">Colar HTML pronto</div>
+      <button type="button" class="apf-html-toggle" id="botao-toggle-html" onclick="alternarColarHtml()">
+        <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <span id="texto-toggle-html">Colar HTML de fora (ex: gerado por IA)</span>
+      </button>
+      <div id="area-colar-html" class="apf-html-area">
+        <textarea class="input-config apf-html-textarea" id="campo-html-bruto" placeholder="Cole aqui o código HTML do manual..."></textarea>
+        <button type="button" class="btn-primario-config" id="botao-inserir-html" onclick="inserirHtmlNoEditor()">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Inserir no editor
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extras %}
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script>
+  const quill = new Quill('#campo-quill', {
+    theme: 'snow',
+    placeholder: 'Escreva o conteúdo do manual...',
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['blockquote', 'code-block'],
+        ['link', 'image'],
+        ['clean'],
+      ],
+    },
+  });
+
+  const TEXTO_UPLOAD_PDF_PADRAO = 'Arraste um PDF ou <span>selecione o arquivo</span>';
+
+  function carregarPdf(input) {
+    const arquivo = input.files[0];
+    if (!arquivo) return;
+
+    const area  = document.getElementById('area-upload-pdf');
+    const texto = document.getElementById('texto-upload-pdf');
+    area.classList.add('carregando');
+    texto.textContent = 'Lendo PDF...';
+
+    const dados = new FormData();
+    dados.append('arquivo', arquivo);
+
+    fetch('/api/ajuda/upload-pdf', { method: 'POST', body: dados })
+      .then(r => r.json())
+      .then(d => {
+        area.classList.remove('carregando');
+        texto.innerHTML = TEXTO_UPLOAD_PDF_PADRAO;
+        input.value = '';
+
+        if (!d.sucesso) {
+          mostrarToast('erro', d.erro || 'Erro ao processar o PDF.');
+          return;
+        }
+
+        quill.clipboard.dangerouslyPasteHTML(d.html);
+
+        const campoTitulo = document.getElementById('campo-titulo');
+        if (!campoTitulo.value.trim() && d.titulo_sugerido) {
+          campoTitulo.value = d.titulo_sugerido;
+        }
+
+        mostrarToast('sucesso', 'PDF importado! Revise o conteúdo antes de salvar.');
+      })
+      .catch(() => {
+        area.classList.remove('carregando');
+        texto.innerHTML = TEXTO_UPLOAD_PDF_PADRAO;
+        mostrarToast('erro', 'Erro ao enviar o PDF.');
+      });
+  }
+
+  function alternarColarHtml() {
+    const botao = document.getElementById('botao-toggle-html');
+    const area  = document.getElementById('area-colar-html');
+    const abrindo = !area.classList.contains('aberta');
+    area.classList.toggle('aberta', abrindo);
+    botao.classList.toggle('aberto', abrindo);
+    if (abrindo) document.getElementById('campo-html-bruto').focus();
+  }
+
+  function inserirHtmlNoEditor() {
+    const campo = document.getElementById('campo-html-bruto');
+    const html  = campo.value.trim();
+    if (!html) { mostrarToast('erro', 'Cole o HTML antes de inserir.'); return; }
+
+    quill.clipboard.dangerouslyPasteHTML(html);
+    campo.value = '';
+    alternarColarHtml();
+    mostrarToast('sucesso', 'HTML inserido! Revise o conteúdo antes de salvar.');
+  }
+
+  (function configurarDragDropPdf() {
+    const area  = document.getElementById('area-upload-pdf');
+    const input = document.getElementById('campo-arquivo-pdf');
+
+    ['dragenter', 'dragover'].forEach(evento => {
+      area.addEventListener(evento, e => {
+        e.preventDefault();
+        area.classList.add('arrastando');
+      });
+    });
+    ['dragleave', 'dragend'].forEach(evento => {
+      area.addEventListener(evento, () => area.classList.remove('arrastando'));
+    });
+    area.addEventListener('drop', e => {
+      e.preventDefault();
+      area.classList.remove('arrastando');
+      const arquivo = e.dataTransfer.files[0];
+      if (!arquivo) return;
+      if (arquivo.type !== 'application/pdf') {
+        mostrarToast('erro', 'Envie um arquivo PDF.');
+        return;
+      }
+      input.files = e.dataTransfer.files;
+      carregarPdf(input);
+    });
+  })();
+
+  function salvarPost() {
+    const titulo    = document.getElementById('campo-titulo').value.trim();
+    const topico_id = document.getElementById('campo-topico').value;
+    const descricao = document.getElementById('campo-descricao').value.trim();
+    const ordem     = document.getElementById('campo-ordem').value || 99;
+    const conteudo  = quill.root.innerHTML;
+
+    if (!titulo)    { mostrarToast('erro', 'Informe o título do manual.'); return; }
+    if (!topico_id) { mostrarToast('erro', 'Selecione um tópico.'); return; }
+
+    const idPost = {{ post.id if post else 'null' }};
+    const url    = idPost ? `/api/ajuda/posts/${idPost}` : '/api/ajuda/posts';
+    const metodo = idPost ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: metodo,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, topico_id, descricao, conteudo, ordem }),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) {
+        mostrarToast('sucesso', idPost ? 'Manual atualizado!' : 'Manual criado!');
+        setTimeout(() => { window.location.href = '/ajuda/gerenciar'; }, 500);
+      } else {
+        mostrarToast('erro', d.erro || 'Erro ao salvar.');
+      }
+    });
+  }
+</script>
+{% endblock %}

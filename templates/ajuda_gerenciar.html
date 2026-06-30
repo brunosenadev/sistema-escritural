@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% set aba_ativa = 'ajuda' %}
+
+{% block titulo %}Gerenciar Ajuda — Sisplan{% endblock %}
+{% block titulo_pagina %}Gerenciar Manuais{% endblock %}
+{% block breadcrumb %}Referência / Ajuda / Gerenciar{% endblock %}
+
+{% block acoes_header %}{% endblock %}
+
+{% block estilos_extras %}
+<style>
+  /* Reaproveita estilos de configuracoes.html */
+  .card-config { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(30,79,196,0.05); margin-bottom: 20px; }
+  .card-config-header { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .card-config-titulo { font-size: 14px; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+  .card-config-titulo svg { width: 15px; height: 15px; stroke: #3b82f6; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .card-config-acoes { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+  .card-config-body { padding: 0; }
+
+  .tabela-config { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tabela-config th { padding: 8px 14px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; color: #64748b; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+  .tabela-config td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
+  .tabela-config tr:last-child td { border-bottom: none; }
+  .tabela-config tr:hover td { background: #f8fbff; }
+
+  .btn-acao-mini { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer; border: 1.5px solid transparent; transition: background 0.15s; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
+  .btn-acao-mini svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .btn-editar-mini  { background: #eff6ff; color: #3b82f6; border-color: #bfdbfe; }
+  .btn-editar-mini:hover  { background: #dbeafe; }
+  .btn-deletar-mini { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+  .btn-deletar-mini:hover { background: #fee2e2; }
+
+  .btn-primario-config { padding: 8px 16px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; text-decoration: none; }
+  .btn-primario-config:hover { background: #1d4ed8; }
+  .btn-primario-config svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+
+  .btn-secundario-mini { padding: 7px 14px; background: #f8fafc; color: #475569; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+  .btn-secundario-mini:hover { background: #f1f5f9; }
+  .btn-secundario-mini svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+  .overlay-modal { display: none; position: fixed; inset: 0; background: rgba(10,22,40,0.55); z-index: 500; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+  .overlay-modal.aberto { display: flex; }
+  .modal-config { background: #fff; border-radius: 16px; padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(10,22,40,0.25); animation: modal-entrar 0.25s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes modal-entrar { from { opacity: 0; transform: scale(0.92) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal-titulo { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+  .btn-fechar-modal { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; border-radius: 6px; display: flex; align-items: center; }
+  .btn-fechar-modal:hover { color: #475569; background: #f1f5f9; }
+  .btn-fechar-modal svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .grupo-modal { margin-bottom: 14px; }
+  .grupo-modal label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: #64748b; margin-bottom: 5px; }
+  .input-modal { width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: 'Inter', sans-serif; color: #1e293b; background: #f8fafc; outline: none; }
+  .input-modal:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
+  .rodape-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .btn-cancelar-modal { padding: 9px 18px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #fff; color: #475569; font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer; }
+  .btn-cancelar-modal:hover { background: #f8fafc; }
+  .btn-salvar-modal { padding: 9px 20px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; }
+  .btn-salvar-modal:hover { background: #1d4ed8; }
+
+  .aj-empty-topico { text-align: center; padding: 28px; color: #94a3b8; font-size: 12.5px; }
+
+  .aj-toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 18px; }
+  .aj-toolbar .btn-secundario-mini { padding: 9px 16px; }
+
+  [data-tema="dark"] .card-config        { background: var(--z-surface); border-color: var(--z-border-s); }
+  [data-tema="dark"] .card-config-header { background: var(--z-surface); border-color: var(--z-border-s); }
+  [data-tema="dark"] .card-config-titulo { color: var(--z-text-1); }
+  [data-tema="dark"] .tabela-config th   { background: var(--z-elevated); color: var(--z-text-1); border-color: var(--z-border-s); }
+  [data-tema="dark"] .tabela-config td   { color: var(--z-text-1); border-color: var(--z-border-s); }
+  [data-tema="dark"] .tabela-config tr:hover td { background: var(--z-elevated); }
+  [data-tema="dark"] .btn-secundario-mini { background: var(--z-elevated); color: var(--z-text-2); border-color: var(--z-border); }
+  [data-tema="dark"] .modal-config       { background: var(--z-surface); border: 1px solid var(--z-border-s); }
+  [data-tema="dark"] .modal-titulo       { color: var(--z-text-1); }
+  [data-tema="dark"] .input-modal        { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .grupo-modal label  { color: var(--z-text-3); }
+  [data-tema="dark"] .btn-cancelar-modal { background: var(--z-elevated); color: var(--z-text-2); border-color: var(--z-border); }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+
+<div class="aj-toolbar">
+  <a href="/ajuda" class="btn-secundario-mini">
+    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    Ver Ajuda
+  </a>
+  <button class="btn-primario-config" onclick="abrirModalNovoTopico()">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Novo Tópico
+  </button>
+</div>
+
+{% if not topicos %}
+<div class="aj-empty-topico" style="background:#fff;border:1px dashed #e2e8f0;border-radius:14px;padding:50px 20px;">
+  Nenhum tópico cadastrado. Crie o primeiro tópico para começar a adicionar manuais.
+</div>
+{% endif %}
+
+{% for topico in topicos %}
+<div class="card-config">
+  <div class="card-config-header">
+    <span class="card-config-titulo">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      {{ topico.nome }}
+      <span style="font-size:11px;font-weight:500;color:#94a3b8;">({{ topico.posts | length }} manual{{ 'is' if topico.posts | length != 1 else '' }})</span>
+    </span>
+    <div class="card-config-acoes">
+      <a href="/ajuda/gerenciar/post/novo?topico_id={{ topico.id }}" class="btn-acao-mini btn-editar-mini">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo Post
+      </a>
+      <button class="btn-acao-mini btn-editar-mini" onclick='abrirModalEditarTopico({{ topico.id }}, {{ topico.nome | tojson }}, {{ topico.ordem }})'>
+        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar
+      </button>
+      <button class="btn-acao-mini btn-deletar-mini" onclick="removerTopico({{ topico.id }}, {{ topico.nome | tojson }})">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+        Remover
+      </button>
+    </div>
+  </div>
+  <div class="card-config-body">
+    {% if topico.posts %}
+    <table class="tabela-config">
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th>Descrição</th>
+          <th style="width:140px;">Atualizado em</th>
+          <th style="width:160px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for post in topico.posts %}
+        <tr>
+          <td style="font-weight:500;">{{ post.titulo }}</td>
+          <td style="color:#64748b;">{{ post.descricao or '—' }}</td>
+          <td style="color:#94a3b8;font-size:12px;">{{ post.atualizado_em }}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="/ajuda/gerenciar/post/{{ post.id }}/editar" class="btn-acao-mini btn-editar-mini">
+                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Editar
+              </a>
+              <button class="btn-acao-mini btn-deletar-mini" onclick="removerPost({{ post.id }}, {{ post.titulo | tojson }})">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="aj-empty-topico">Nenhum manual neste tópico ainda.</div>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+
+<!-- Modal: Tópico -->
+<div class="overlay-modal" id="overlay-topico" onclick="fecharModalSeClicarFora(event,'overlay-topico')">
+  <div class="modal-config">
+    <div class="modal-titulo">
+      <span id="titulo-modal-topico">Novo Tópico</span>
+      <button class="btn-fechar-modal" onclick="fecharModal('overlay-topico')">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="grupo-modal">
+      <label>Nome do tópico</label>
+      <input class="input-modal" type="text" id="campo-topico-nome" placeholder="Ex: Cobrança">
+    </div>
+    <div class="grupo-modal">
+      <label>Ordem de exibição</label>
+      <input class="input-modal" type="number" id="campo-topico-ordem" value="99">
+    </div>
+    <input type="hidden" id="campo-topico-id">
+    <div class="rodape-modal">
+      <button class="btn-cancelar-modal" onclick="fecharModal('overlay-topico')">Cancelar</button>
+      <button class="btn-salvar-modal" onclick="salvarTopico()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+  function abrirModal(id) { document.getElementById(id).classList.add('aberto'); }
+  function fecharModal(id) { document.getElementById(id).classList.remove('aberto'); }
+  function fecharModalSeClicarFora(event, id) { if (event.target === document.getElementById(id)) fecharModal(id); }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelectorAll('.overlay-modal.aberto').forEach(m => m.classList.remove('aberto'));
+  });
+
+  function abrirModalNovoTopico() {
+    document.getElementById('titulo-modal-topico').textContent = 'Novo Tópico';
+    document.getElementById('campo-topico-id').value = '';
+    document.getElementById('campo-topico-nome').value = '';
+    document.getElementById('campo-topico-ordem').value = 99;
+    abrirModal('overlay-topico');
+  }
+
+  function abrirModalEditarTopico(id, nome, ordem) {
+    document.getElementById('titulo-modal-topico').textContent = 'Editar Tópico';
+    document.getElementById('campo-topico-id').value = id;
+    document.getElementById('campo-topico-nome').value = nome;
+    document.getElementById('campo-topico-ordem').value = ordem;
+    abrirModal('overlay-topico');
+  }
+
+  function salvarTopico() {
+    const id    = document.getElementById('campo-topico-id').value;
+    const nome  = document.getElementById('campo-topico-nome').value.trim();
+    const ordem = document.getElementById('campo-topico-ordem').value || 99;
+    if (!nome) { mostrarToast('erro', 'Informe o nome do tópico.'); return; }
+
+    const url    = id ? `/api/ajuda/topicos/${id}` : '/api/ajuda/topicos';
+    const metodo = id ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: metodo,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, ordem }),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) {
+        mostrarToast('sucesso', id ? 'Tópico atualizado!' : 'Tópico criado!');
+        fecharModal('overlay-topico');
+        setTimeout(() => location.reload(), 500);
+      } else {
+        mostrarToast('erro', d.erro || 'Erro ao salvar.');
+      }
+    });
+  }
+
+  function removerTopico(id, nome) {
+    abrirDialogo({
+      titulo: 'Remover Tópico',
+      mensagem: `Remover o tópico <strong>${nome}</strong>? Todos os manuais dentro dele também serão removidos.`,
+      tipo: 'perigo',
+      textoBotao: 'Remover',
+      callback: () => {
+        fetch(`/api/ajuda/topicos/${id}`, { method: 'DELETE' })
+          .then(r => r.json())
+          .then(d => {
+            if (d.sucesso) {
+              mostrarToast('sucesso', 'Tópico removido.');
+              setTimeout(() => location.reload(), 500);
+            } else {
+              mostrarToast('erro', d.erro || 'Erro ao remover.');
+            }
+          });
+      }
+    });
+  }
+
+  function removerPost(id, titulo) {
+    abrirDialogo({
+      titulo: 'Remover Manual',
+      mensagem: `Remover o manual <strong>${titulo}</strong>?`,
+      tipo: 'perigo',
+      textoBotao: 'Remover',
+      callback: () => {
+        fetch(`/api/ajuda/posts/${id}`, { method: 'DELETE' })
+          .then(r => r.json())
+          .then(d => {
+            if (d.sucesso) {
+              mostrarToast('sucesso', 'Manual removido.');
+              setTimeout(() => location.reload(), 500);
+            } else {
+              mostrarToast('erro', d.erro || 'Erro ao remover.');
+            }
+          });
+      }
+    });
+  }
+</script>
+{% endblock %}

@@ -299,6 +299,17 @@
       align-items: center;
     }
     .btn-header-action:hover { color: #1e293b; background: #f1f5f9; }
+
+    .btn-header-pill {
+      gap: 6px; width: auto; padding: 7px 14px;
+      border: 1.5px solid #e2e8f0; border-radius: 8px;
+      font-size: 12px; font-weight: 600; color: #475569;
+      text-decoration: none; display: inline-flex; align-items: center;
+    }
+    .btn-header-pill:hover { color: #1e293b; background: #f1f5f9; border-color: #cbd5e1; }
+    [data-tema="dark"] .btn-header-pill { color: var(--z-text-1) !important; border-color: var(--z-border) !important; background: var(--z-elevated) !important; }
+    [data-tema="dark"] .btn-header-pill:hover { color: var(--z-text-1) !important; background: var(--z-border-s) !important; border-color: var(--z-text-2) !important; }
+
     .btn-header-action svg {
       width: 16px; height: 16px;
       stroke: currentColor; fill: none;
@@ -569,8 +580,8 @@
     [data-tema="dark"] .toast.info    { background: #1e1b4b; color: #818cf8; border-color: #312e81; }
 
     /* Botões de ação no header em dark mode */
-    [data-tema="dark"] .btn-header-action { color: var(--z-text-3) !important; }
-    [data-tema="dark"] .btn-header-action:hover { color: var(--z-text-1) !important; background: rgba(255,255,255,0.06) !important; }
+    [data-tema="dark"] .btn-header-action { color: var(--z-text-1) !important; }
+    [data-tema="dark"] .btn-header-action:hover { color: var(--z-text-1) !important; background: rgba(255,255,255,0.10) !important; }
     /* ── Configuracoes: tabs ──────────────────── */
     [data-tema="dark"] .tabs-config { border-bottom-color: var(--z-border-s) !important; }
     [data-tema="dark"] .tab-btn { color: var(--z-text-3) !important; }
@@ -767,9 +778,10 @@
 
       {% endif %}
 
-      {% if _eh_master or 'hub' in _ta %}
+      {% if _eh_master or 'hub' in _ta or 'api_pagamentos' in _ta or 'ajuda' in _ta %}
       <div class="nav-secao-titulo" style="margin-top:8px;">Referência</div>
 
+      {% if _eh_master or 'hub' in _ta %}
       <a href="/hub" class="nav-item {% if aba_ativa == 'hub' %}ativo{% endif %}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
@@ -777,12 +789,22 @@
         </svg>
         Hub Bancário
       </a>
+      {% endif %}
 
       {% if _eh_master or 'api_pagamentos' in _ta %}
       <a href="#" class="nav-item {% if aba_ativa == 'api_pagamentos' %}ativo{% endif %}">
         <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
         </svg>
         API Pagamentos
+      </a>
+      {% endif %}
+
+      {% if _eh_master or 'ajuda' in _ta %}
+      <a href="/ajuda" class="nav-item {% if aba_ativa == 'ajuda' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        Ajuda
       </a>
       {% endif %}
       {% endif %}

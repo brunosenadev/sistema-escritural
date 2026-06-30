@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% set aba_ativa = 'ajuda' %}
+
+{% block titulo %}{{ post.titulo }} — Ajuda{% endblock %}
+{% block titulo_pagina %}{{ post.titulo }}{% endblock %}
+{% block breadcrumb %}Referência / Ajuda{% if topico %} / {{ topico.nome }}{% endif %}{% endblock %}
+
+{% block acoes_header %}
+{% if nivel_acesso in ('admin', 'master') %}
+<a href="/ajuda/gerenciar/post/{{ post.id }}/editar" class="btn-header-pill" title="Editar manual">
+  <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  Editar
+</a>
+{% endif %}
+{% endblock %}
+
+{% block estilos_extras %}
+<style>
+  .ajv-voltar {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 600; color: #64748b;
+    text-decoration: none; margin-bottom: 18px;
+  }
+  .ajv-voltar:hover { color: #2563eb; }
+  .ajv-voltar svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+  .ajv-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 32px 36px;
+    max-width: 860px;
+  }
+
+  .ajv-meta {
+    font-size: 11.5px; color: #94a3b8;
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 18px; padding-bottom: 18px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .ajv-meta svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+  .ajv-conteudo { font-size: 14px; line-height: 1.75; color: #334155; }
+  .ajv-conteudo h1, .ajv-conteudo h2, .ajv-conteudo h3 { color: #1e293b; margin: 22px 0 10px; line-height: 1.35; }
+  .ajv-conteudo h1 { font-size: 20px; }
+  .ajv-conteudo h2 { font-size: 17px; }
+  .ajv-conteudo h3 { font-size: 15px; }
+  .ajv-conteudo p  { margin-bottom: 12px; }
+  .ajv-conteudo ul, .ajv-conteudo ol { margin: 0 0 12px 22px; }
+  .ajv-conteudo li { margin-bottom: 4px; }
+  .ajv-conteudo img { max-width: 100%; border-radius: 8px; margin: 10px 0; }
+  .ajv-conteudo a { color: #2563eb; }
+  .ajv-conteudo strong { color: #1e293b; }
+  .ajv-conteudo blockquote { border-left: 3px solid #bfdbfe; padding-left: 14px; color: #64748b; margin: 12px 0; }
+  .ajv-conteudo code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12.5px; }
+  .ajv-conteudo pre { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 8px; overflow-x: auto; margin-bottom: 12px; }
+
+  [data-tema="dark"] .ajv-card     { background: var(--z-surface); border-color: var(--z-border-s); }
+  [data-tema="dark"] .ajv-meta     { color: var(--z-text-3); border-color: var(--z-border-s); }
+  [data-tema="dark"] .ajv-conteudo { color: var(--z-text-2); }
+  [data-tema="dark"] .ajv-conteudo h1, [data-tema="dark"] .ajv-conteudo h2, [data-tema="dark"] .ajv-conteudo h3,
+  [data-tema="dark"] .ajv-conteudo strong { color: var(--z-text-1); }
+  [data-tema="dark"] .ajv-conteudo code { background: var(--z-elevated); }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+
+<a href="/ajuda" class="ajv-voltar">
+  <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+  Voltar para Ajuda
+</a>
+
+<div class="ajv-card">
+  <div class="ajv-meta">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Atualizado em {{ post.atualizado_em }}
+    {% if topico %} · {{ topico.nome }}{% endif %}
+  </div>
+  <div class="ajv-conteudo">{{ post.conteudo | safe }}</div>
+</div>
+
+{% endblock %}

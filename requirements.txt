@@ -3,3 +3,4 @@ openpyxl==3.1.5
 gunicorn==22.0.0
 python-dotenv==1.0.1
 PyJWT==2.9.0
+pymupdf==1.28.0

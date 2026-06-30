@@ -108,6 +108,7 @@ TELAS_SISTEMA = [
     ('hub',                    'Hub Bancário'),
     ('sispbol',                'SispBol'),
     ('api_pagamentos',         'API Pagamentos'),
+    ('ajuda',                  'Ajuda'),
     ('importacao',             'Importação'),
     ('config',                 'Configurações'),
 ]
@@ -189,6 +190,23 @@ def inicializar_banco():
             usuario_id INTEGER NOT NULL,
             tela       TEXT    NOT NULL,
             PRIMARY KEY (usuario_id, tela)
+        );
+        CREATE TABLE IF NOT EXISTS ajuda_topicos (
+            id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome  TEXT    NOT NULL,
+            ordem INTEGER DEFAULT 99
+        );
+        CREATE TABLE IF NOT EXISTS ajuda_posts (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            topico_id     INTEGER NOT NULL,
+            titulo        TEXT    NOT NULL,
+            descricao     TEXT    DEFAULT '',
+            conteudo      TEXT    DEFAULT '',
+            ordem         INTEGER DEFAULT 99,
+            criado_por    TEXT    DEFAULT '',
+            criado_em     TEXT    DEFAULT (datetime('now','localtime')),
+            atualizado_em TEXT    DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (topico_id) REFERENCES ajuda_topicos(id)
         );
         CREATE TABLE IF NOT EXISTS pendentes (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1311,3 +1329,92 @@ def importar_homologados_extrato(lista_registros, substituir=True):
     conn.commit()
     conn.close()
     return total
+
+# ── Ajuda (manuais) ───────────────────────────────────────
+
+def listar_ajuda_topicos():
+    conn = conectar()
+    rows = conn.execute("SELECT * FROM ajuda_topicos ORDER BY ordem, nome").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def listar_ajuda_completo():
+    """Tópicos com seus posts aninhados, na ordem de exibição."""
+    conn = conectar()
+    topicos = conn.execute("SELECT * FROM ajuda_topicos ORDER BY ordem, nome").fetchall()
+    result = []
+    for t in topicos:
+        t = dict(t)
+        t['posts'] = [dict(r) for r in conn.execute(
+            "SELECT * FROM ajuda_posts WHERE topico_id=? ORDER BY ordem, titulo", (t['id'],)
+        ).fetchall()]
+        result.append(t)
+    conn.close()
+    return result
+
+
+def adicionar_ajuda_topico(nome, ordem=99):
+    conn = conectar()
+    cur = conn.execute("INSERT INTO ajuda_topicos (nome,ordem) VALUES (?,?)", (nome.strip(), int(ordem or 99)))
+    novo_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return novo_id
+
+
+def atualizar_ajuda_topico(id_topico, nome, ordem=99):
+    conn = conectar()
+    conn.execute("UPDATE ajuda_topicos SET nome=?,ordem=? WHERE id=?", (nome.strip(), int(ordem or 99), id_topico))
+    conn.commit()
+    conn.close()
+
+
+def remover_ajuda_topico(id_topico):
+    conn = conectar()
+    conn.execute("DELETE FROM ajuda_posts WHERE topico_id=?", (id_topico,))
+    conn.execute("DELETE FROM ajuda_topicos WHERE id=?", (id_topico,))
+    conn.commit()
+    conn.close()
+
+
+def buscar_ajuda_post(id_post):
+    conn = conectar()
+    row = conn.execute("SELECT * FROM ajuda_posts WHERE id=?", (id_post,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def adicionar_ajuda_post(dados, criado_por=''):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    conn = conectar()
+    cur = conn.execute(
+        """INSERT INTO ajuda_posts (topico_id,titulo,descricao,conteudo,ordem,criado_por,criado_em,atualizado_em)
+           VALUES (?,?,?,?,?,?,?,?)""",
+        (int(dados['topico_id']), dados.get('titulo','').strip(), dados.get('descricao','').strip(),
+         dados.get('conteudo',''), int(dados.get('ordem', 99) or 99), criado_por, agora, agora)
+    )
+    novo_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return novo_id
+
+
+def atualizar_ajuda_post(id_post, dados):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    conn = conectar()
+    conn.execute(
+        """UPDATE ajuda_posts SET topico_id=?,titulo=?,descricao=?,conteudo=?,ordem=?,atualizado_em=?
+           WHERE id=?""",
+        (int(dados['topico_id']), dados.get('titulo','').strip(), dados.get('descricao','').strip(),
+         dados.get('conteudo',''), int(dados.get('ordem', 99) or 99), agora, id_post)
+    )
+    conn.commit()
+    conn.close()
+
+
+def remover_ajuda_post(id_post):
+    conn = conectar()
+    conn.execute("DELETE FROM ajuda_posts WHERE id=?", (id_post,))
+    conn.commit()
+    conn.close()
