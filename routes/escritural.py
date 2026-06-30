@@ -1,4 +1,8 @@
 import os
+import re
+import time
+from collections import defaultdict
+from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
 from planilha import ler_escritural_do_excel
@@ -9,11 +13,173 @@ escritural_bp = Blueprint('escritural', __name__)
 _PASTA_UPLOADS = '/tmp' if os.environ.get('RENDER') else os.path.join(os.path.dirname(__file__), '..', 'uploads')
 
 
+# ── Formulário público de solicitação (sem login) ─────────
+# Substitui o Google Forms externo: qualquer pessoa pode enviar uma
+# solicitação de "Novos Escriturais" sem autenticação. Como não há login,
+# os cuidados de segurança ficam todos aqui: validação estrita de cada
+# campo, parametrização das queries (feita em banco.adicionar_escritural)
+# e contenção de abuso (honeypot + limite de envios por IP).
+
+_CAMPOS_BASE_OBRIGATORIOS = (
+    'empresa', 'cnpj', 'responsavel', 'fone_responsavel', 'email_responsavel',
+    'banco', 'conta_corrente', 'agencia', 'convenio',
+)
+_CAMPOS_BOLETOS_OBRIGATORIOS = (
+    'carteira', 'desc_carteira', 'variacao', 'juros', 'multa',
+    'protesto', 'emissor', 'ultima_numeracao', 'solicitante', 'nome_solicitante',
+)
+_CAMPOS_BOLETOS_OPCIONAIS = ('cnab', 'obs_emissao')
+_CAMPOS_FORNECEDORES_OBRIGATORIOS = ('modalidades', 'solicitante_pagto', 'nome_solicitante_pagto')
+_CAMPOS_FORNECEDORES_OPCIONAIS = ('obs_pagto',)
+
+_TAMANHO_MAX_CAMPO = 200
+_TAMANHO_MAX_CAMPO_LONGO = 1000  # campos de texto livre/observações/checkboxes combinados
+_CAMPOS_LONGOS = {'protesto', 'modalidades', 'obs_emissao', 'obs_pagto'}
+
+_REGEX_EMAIL = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+_SERVICOS_PUBLICOS_VALIDOS = ('Emissão de Boletos.', 'Pagamento de Fornecedores.')
+_EMISSOR_VALIDOS = ('Banco', 'Empresa')
+_SOLICITANTE_BOLETOS_VALIDOS = ('Cliente Sisplan', 'Consultor Externo')
+_SOLICITANTE_FORNECEDORES_VALIDOS = ('Cliente Sisplan', 'Consultores Externos')
+
+_LIMITE_ENVIOS_POR_IP = 5
+_JANELA_LIMITE_SEGUNDOS = 3600
+_envios_por_ip = defaultdict(list)
+
+
+def _ip_excedeu_limite(ip):
+    agora = time.time()
+    historico = [t for t in _envios_por_ip[ip] if agora - t < _JANELA_LIMITE_SEGUNDOS]
+    _envios_por_ip[ip] = historico
+    if len(historico) >= _LIMITE_ENVIOS_POR_IP:
+        return True
+    historico.append(agora)
+    return False
+
+
+def _ler_campo(dados, campo, obrigatorio):
+    valor = dados.get(campo, '')
+    if not isinstance(valor, str):
+        return None, f'Campo inválido: {campo}.'
+    valor = valor.strip()
+    limite = _TAMANHO_MAX_CAMPO_LONGO if campo in _CAMPOS_LONGOS else _TAMANHO_MAX_CAMPO
+    if obrigatorio and not valor:
+        return None, f'Preencha o campo "{banco.LABELS_ESCRITURAL.get(campo, campo)}".'
+    if len(valor) > limite:
+        return None, f'O campo "{banco.LABELS_ESCRITURAL.get(campo, campo)}" é muito longo.'
+    return valor, None
+
+
+def _validar_formulario_publico(dados):
+    """Valida e sanitiza o payload do formulário público (2 etapas, ramificado por
+    serviço, igual ao Google Forms original). Retorna (dados_limpos, erro)."""
+    if not isinstance(dados, dict):
+        return None, 'Dados inválidos.'
+
+    limpos = {}
+
+    for campo in _CAMPOS_BASE_OBRIGATORIOS:
+        valor, erro = _ler_campo(dados, campo, obrigatorio=True)
+        if erro:
+            return None, erro
+        limpos[campo] = valor
+
+    digitos_cnpj = re.sub(r'\D', '', limpos['cnpj'])
+    if len(digitos_cnpj) != 14:
+        return None, 'CNPJ inválido — informe os 14 dígitos.'
+
+    if not _REGEX_EMAIL.match(limpos['email_responsavel']):
+        return None, 'E-mail do responsável inválido.'
+
+    digitos_fone = re.sub(r'\D', '', limpos['fone_responsavel'])
+    if len(digitos_fone) < 8:
+        return None, 'Telefone do responsável inválido.'
+
+    servico, erro = _ler_campo(dados, 'servico', obrigatorio=True)
+    if erro:
+        return None, erro
+    if servico not in _SERVICOS_PUBLICOS_VALIDOS:
+        return None, 'Selecione um serviço válido.'
+    limpos['servico'] = servico
+
+    if servico == 'Emissão de Boletos.':
+        for campo in _CAMPOS_BOLETOS_OBRIGATORIOS:
+            valor, erro = _ler_campo(dados, campo, obrigatorio=True)
+            if erro:
+                return None, erro
+            limpos[campo] = valor
+        for campo in _CAMPOS_BOLETOS_OPCIONAIS:
+            valor, erro = _ler_campo(dados, campo, obrigatorio=False)
+            if erro:
+                return None, erro
+            limpos[campo] = valor
+        if limpos['emissor'] not in _EMISSOR_VALIDOS:
+            return None, 'Selecione o responsável pela emissão dos boletos.'
+        if limpos['solicitante'] not in _SOLICITANTE_BOLETOS_VALIDOS:
+            return None, 'Selecione quem está realizando a solicitação.'
+        for campo in _CAMPOS_FORNECEDORES_OBRIGATORIOS + _CAMPOS_FORNECEDORES_OPCIONAIS:
+            limpos[campo] = ''
+    else:
+        for campo in _CAMPOS_FORNECEDORES_OBRIGATORIOS:
+            valor, erro = _ler_campo(dados, campo, obrigatorio=True)
+            if erro:
+                return None, erro
+            limpos[campo] = valor
+        for campo in _CAMPOS_FORNECEDORES_OPCIONAIS:
+            valor, erro = _ler_campo(dados, campo, obrigatorio=False)
+            if erro:
+                return None, erro
+            limpos[campo] = valor
+        if limpos['solicitante_pagto'] not in _SOLICITANTE_FORNECEDORES_VALIDOS:
+            return None, 'Selecione quem está realizando a solicitação.'
+        for campo in _CAMPOS_BOLETOS_OBRIGATORIOS + _CAMPOS_BOLETOS_OPCIONAIS:
+            limpos[campo] = ''
+
+    return limpos, None
+
+
+@escritural_bp.route('/escritural/publico', methods=['GET'])
+def formulario_publico():
+    return render_template('escritural_publico.html')
+
+
+@escritural_bp.route('/escritural/publico/enviar', methods=['POST'])
+def enviar_formulario_publico():
+    corpo = request.get_json(silent=True) or {}
+
+    # Honeypot: campo invisível que só bots preenchem. Se vier preenchido,
+    # finge sucesso (não denuncia ao bot que foi detectado) mas não grava nada.
+    if (corpo.get('confirmacao_contato') or '').strip():
+        return jsonify({'sucesso': True})
+
+    dados, erro = _validar_formulario_publico(corpo)
+    if erro:
+        return jsonify({'erro': erro}), 400
+
+    # O limite só conta tentativas que passaram na validação: erros de digitação
+    # não devem travar o usuário, mas uma onda de gravações reais sim.
+    ip = request.remote_addr or 'desconhecido'
+    if _ip_excedeu_limite(ip):
+        return jsonify({'erro': 'Muitas solicitações enviadas recentemente. Tente novamente mais tarde.'}), 429
+
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+    status_lista = banco.listar_status_escritural()
+    status_inicial = 'AGUARDANDO' if 'AGUARDANDO' in status_lista else (status_lista[0] if status_lista else 'AGUARDANDO')
+
+    dados['status'] = status_inicial
+    dados['data_solicitacao'] = agora
+    dados['dt_status'] = agora
+
+    banco.adicionar_escritural(dados, criado_por='Formulário público')
+    return jsonify({'sucesso': True})
+
+
 @escritural_bp.route('/escritural')
 def aba_escritural():
     bloqueio = checar_tela('escritural')
     if bloqueio:
         return bloqueio
+    from flask import url_for
     registros = banco.listar_escritural()
     return render_template(
         'aba_escritural.html',
@@ -21,6 +187,7 @@ def aba_escritural():
         campos=banco.CAMPOS_ESCRITURAL,
         labels=banco.LABELS_ESCRITURAL,
         lista_status=banco.listar_status_escritural(),
+        link_publico=url_for('escritural.formulario_publico', _external=True),
     )
 
 

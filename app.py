@@ -41,7 +41,10 @@ app.register_blueprint(escritural_bp)
 
 # ── JWT: valida em toda requisição ────────────────────────
 
-_ROTAS_PUBLICAS = {'auth.pagina_login', 'auth.sair', 'static'}
+_ROTAS_PUBLICAS = {
+    'auth.pagina_login', 'auth.sair', 'static',
+    'escritural.formulario_publico', 'escritural.enviar_formulario_publico',
+}
 
 @app.before_request
 def _jwt_guard():

@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solicitação de Escritural — Sisplan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #eef2fb;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .container-pub { width: 100%; max-width: 620px; }
+
+    .area-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+    .icone-logo {
+      width: 36px; height: 36px; background: linear-gradient(135deg, #1e4fc4, #3b82f6);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    }
+    .icone-logo svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
+    .texto-logo { font-size: 15px; font-weight: 600; color: #1e293b; letter-spacing: -0.3px; }
+
+    .card-pub {
+      background: #ffffff; border-radius: 20px; padding: 32px 36px;
+      box-shadow: 0 4px 24px rgba(30,79,196,0.10), 0 1px 4px rgba(30,79,196,0.06);
+      border: 1px solid rgba(37,99,235,0.08);
+    }
+
+    .titulo-pub { font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.4px; margin-bottom: 14px; }
+
+    .aviso-pub {
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+      padding: 12px 14px; font-size: 12.5px; color: #1e3a8a; line-height: 1.6; margin-bottom: 24px;
+    }
+    .aviso-pub a { color: #1d4ed8; font-weight: 600; }
+
+    .aviso-pub.aviso-importante {
+      background: #fffbeb; border-color: #fde68a; color: #78350f; margin-bottom: 4px; margin-top: 22px;
+    }
+    .aviso-pub.aviso-importante strong { display: block; margin-bottom: 4px; font-size: 13px; }
+
+    .secao-titulo {
+      font-size: 11px; font-weight: 700; color: #2563eb; text-transform: uppercase;
+      letter-spacing: 0.6px; margin: 22px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #f1f5f9;
+    }
+    .secao-titulo:first-of-type { margin-top: 0; }
+
+    .grade-pub { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .campo-completo { grid-column: 1 / -1; }
+
+    .grupo-campo label {
+      display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.6px;
+      color: #64748b; text-transform: uppercase; margin-bottom: 6px;
+    }
+    .grupo-campo small { display: block; font-size: 11px; color: #94a3b8; margin: -3px 0 6px; font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+    .campo-input, textarea.campo-input {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+      font-size: 13.5px; font-family: 'Inter', sans-serif; color: #1e293b; background: #f8fafc;
+      outline: none; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    textarea.campo-input { resize: vertical; min-height: 64px; }
+    .campo-input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+
+    .opcoes-servico, .opcoes-lista { display: flex; flex-direction: column; gap: 8px; }
+    .opcao-servico {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      border: 1.5px solid #e2e8f0; border-radius: 10px; cursor: pointer; font-size: 13.5px; color: #1e293b;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .opcao-servico:has(input:checked) { border-color: #3b82f6; background: #eff6ff; }
+    .opcao-servico input { accent-color: #2563eb; }
+
+    .campo-outro-texto {
+      margin-top: 6px; margin-left: 28px;
+    }
+
+    .campo-honeypot { position: absolute; left: -9999px; top: -9999px; opacity: 0; height: 0; width: 0; }
+
+    .mensagem-erro {
+      background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; border-radius: 8px;
+      padding: 10px 14px; font-size: 13px; margin-top: 18px; display: none; align-items: center; gap: 8px;
+    }
+    .mensagem-erro.visivel { display: flex; }
+
+    .linha-botoes { display: flex; gap: 10px; margin-top: 24px; }
+
+    .botao-enviar, .botao-voltar {
+      padding: 13px; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .botao-enviar { flex: 1; background: linear-gradient(135deg, #1e4fc4, #3b82f6); color: #fff; }
+    .botao-enviar:hover { opacity: 0.92; transform: translateY(-1px); }
+    .botao-enviar:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .botao-voltar { flex: 0 0 auto; padding: 13px 18px; background: #f1f5f9; color: #475569; }
+    .botao-voltar:hover { background: #e2e8f0; }
+
+    .tela-sucesso { text-align: center; padding: 20px 10px; display: none; }
+    .tela-sucesso.visivel { display: block; }
+    .tela-sucesso svg { width: 48px; height: 48px; stroke: #16a34a; fill: none; stroke-width: 2; margin-bottom: 14px; }
+    .tela-sucesso h2 { font-size: 18px; color: #0f172a; margin-bottom: 8px; }
+    .tela-sucesso p { font-size: 13px; color: #64748b; line-height: 1.6; }
+
+    .etapa { display: none; }
+    .etapa.ativa { display: block; }
+    #form-pub.escondido { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="container-pub">
+
+    <div class="area-logo">
+      <div class="icone-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <span class="texto-logo">Sisplan</span>
+    </div>
+
+    <div class="card-pub">
+      <h1 class="titulo-pub">Escritural — Solicitação</h1>
+      <div class="aviso-pub">
+        A homologação será iniciada somente após a aprovação do serviço, que deve ser solicitado via e-mail
+        (<a href="mailto:escritural@sisplansistemas.com.br">escritural@sisplansistemas.com.br</a>).<br><br>
+        A configuração de escritural é realizada remotamente, porém existe um custo para este serviço.
+        Estimamos de 1 a 4 horas técnicas necessárias, dependendo da instituição financeira e do serviço solicitado.
+        O atendimento ocorre em partes e pode levar até 7 dias para ser totalmente homologado.
+      </div>
+
+      <form id="form-pub" autocomplete="off">
+        <input type="text" name="confirmacao_contato" id="campo-honeypot" class="campo-honeypot" tabindex="-1" autocomplete="off">
+
+        <!-- ───────── Etapa 1: dados da empresa/banco + escolha do serviço ───────── -->
+        <div class="etapa ativa" id="etapa-1">
+          <div class="secao-titulo">Dados da empresa solicitante</div>
+          <div class="grade-pub">
+            <div class="grupo-campo campo-completo">
+              <label for="campo-empresa">Nome ou razão social da empresa</label>
+              <input class="campo-input" id="campo-empresa" required maxlength="200">
+            </div>
+            <div class="grupo-campo">
+              <label for="campo-cnpj">CNPJ da empresa</label>
+              <input class="campo-input" id="campo-cnpj" required maxlength="20" placeholder="00.000.000/0000-00">
+            </div>
+            <div class="grupo-campo">
+              <label for="campo-responsavel">Responsável pelo escritural</label>
+              <input class="campo-input" id="campo-responsavel" required maxlength="200">
+            </div>
+            <div class="grupo-campo">
+              <label for="campo-fone_responsavel">Telefone do responsável</label>
+              <input class="campo-input" id="campo-fone_responsavel" required maxlength="30" placeholder="(47) 3380-6100">
+            </div>
+            <div class="grupo-campo">
+              <label for="campo-email_responsavel">E-mail do responsável</label>
+              <input class="campo-input" type="email" id="campo-email_responsavel" required maxlength="200">
+            </div>
+          </div>
+
+          <div class="secao-titulo">Dados bancários</div>
+          <div class="grade-pub">
+            <div class="grupo-campo campo-completo">
+              <label for="campo-banco">Nome e código do banco</label>
+              <small>Exemplo: 001 - Banco do Brasil.</small>
+              <input class="campo-input" id="campo-banco" required maxlength="200">
+            </div>
+            <div class="grupo-campo">
+              <label for="campo-conta_corrente">Número da conta corrente</label>
+              <small>Com dígito. Exemplo: 000000-0.</small>
+              <input class="campo-input" id="campo-conta_corrente" required maxlength="30">
+            </div>
+            <div class="grupo-campo">
+              <label for="campo-agencia">Número da agência</label>
+              <small>Com dígito. Exemplo: 0000-0.</small>
+              <input class="campo-input" id="campo-agencia" required maxlength="30">
+            </div>
+            <div class="grupo-campo campo-completo">
+              <label for="campo-convenio">Código do cedente no banco (convênio)</label>
+              <small>Caso seu banco seja Itaú, preencher com "0".</small>
+              <input class="campo-input" id="campo-convenio" required maxlength="30">
+            </div>
+          </div>
+
+          <div class="secao-titulo">Serviço</div>
+          <div class="grupo-campo">
+            <label>Qual o serviço a ser homologado?</label>
+            <div class="opcoes-servico">
+              <label class="opcao-servico">
+                <input type="radio" name="servico" value="Emissão de Boletos." required>
+                Emissão de Boletos.
+              </label>
+              <label class="opcao-servico">
+                <input type="radio" name="servico" value="Pagamento de Fornecedores." required>
+                Pagamento de Fornecedores.
+              </label>
+            </div>
+          </div>
+
+          <div class="linha-botoes">
+            <button type="button" class="botao-enviar" id="botao-avancar-pub">Avançar</button>
+          </div>
+        </div>
+
+        <!-- ───────── Etapa 2 — ramo "Emissão de Boletos" ───────── -->
+        <div class="etapa" id="etapa-2-boletos">
+          <div class="secao-titulo">Emissão de boletos</div>
+          <div class="grade-pub">
+            <div class="grupo-campo">
+              <label for="campo-carteira">Carteira</label>
+              <small>Código da carteira no banco. Exemplo: 17.</small>
+              <input class="campo-input" id="campo-carteira" required maxlength="200">
+            </div>
+            <div class="grupo-campo">
+              <label for="campo-desc_carteira">Descrição da carteira</label>
+              <small>Exemplo: Com registro, Sem registro, Direta, etc.</small>
+              <input class="campo-input" id="campo-desc_carteira" required maxlength="200">
+            </div>
+
+            <div class="grupo-campo campo-completo">
+              <label>Layout de remessa (CNAB)</label>
+              <small>Formato do arquivo de remessa enviado ao banco.</small>
+              <div class="opcoes-lista">
+                <label class="opcao-servico">
+                  <input type="radio" name="cnab" value="CNAB400">
+                  CNAB400
+                </label>
+                <label class="opcao-servico">
+                  <input type="radio" name="cnab" value="CNAB240">
+                  CNAB240
+                </label>
+                <label class="opcao-servico">
+                  <input type="radio" name="cnab" value="__outro__" id="radio-cnab-outro">
+                  Outro
+                </label>
+              </div>
+              <input class="campo-input campo-outro-texto" id="campo-cnab-outro-texto" maxlength="200" placeholder="Especifique" style="display:none;">
+            </div>
+
+            <div class="grupo-campo">
+              <label for="campo-variacao">Variação da carteira</label>
+              <small>Aplicável a bancos como BB, Caixa, Sicredi.</small>
+              <input class="campo-input" id="campo-variacao" required maxlength="200">
+            </div>
+            <div class="grupo-campo">
+              <label for="campo-ultima_numeracao">Última numeração de boleto utilizada</label>
+              <small>Se for conta nova preencher com 0.</small>
+              <input class="campo-input" id="campo-ultima_numeracao" required maxlength="200">
+            </div>
+
+            <div class="grupo-campo">
+              <label for="campo-juros">Juros ao dia (%)</label>
+              <small>Preencher com "0" caso não houver.</small>
+              <input class="campo-input" id="campo-juros" required maxlength="200">
+            </div>
+            <div class="grupo-campo">
+              <label for="campo-multa">Multa (%)</label>
+              <small>Preencher com "0" caso não houver.</small>
+              <input class="campo-input" id="campo-multa" required maxlength="200">
+            </div>
+
+            <div class="grupo-campo campo-completo">
+              <label>Protesto / negativação</label>
+              <small>Se escolher "Outro", informe os dias para protesto no campo de texto.</small>
+              <div class="opcoes-lista" id="grupo-protesto">
+                <label class="opcao-servico"><input type="checkbox" value="Protesto"> Protesto</label>
+                <label class="opcao-servico"><input type="checkbox" value="Negativação"> Negativação</label>
+                <label class="opcao-servico"><input type="checkbox" value="Devolução de título"> Devolução de título</label>
+                <label class="opcao-servico"><input type="checkbox" value="Não utilizar protesto automático"> Não utilizar protesto automático</label>
+                <label class="opcao-servico">
+                  <input type="checkbox" value="__outro__" id="check-protesto-outro">
+                  Outro
+                </label>
+              </div>
+              <input class="campo-input campo-outro-texto" id="campo-protesto-outro-texto" maxlength="200" placeholder="Especifique (ex.: dias para protesto)" style="display:none;">
+              <small class="erro-grupo" id="erro-protesto" style="display:none;color:#dc2626;margin-top:6px;">Selecione ao menos uma opção.</small>
+            </div>
+
+            <div class="grupo-campo campo-completo">
+              <label>Quem irá emitir os boletos?</label>
+              <div class="opcoes-lista">
+                <label class="opcao-servico"><input type="radio" name="emissor" value="Banco" required> Banco</label>
+                <label class="opcao-servico"><input type="radio" name="emissor" value="Empresa" required> Empresa</label>
+              </div>
+            </div>
+
+            <div class="grupo-campo campo-completo">
+              <label>Quem está realizando a solicitação?</label>
+              <div class="opcoes-lista">
+                <label class="opcao-servico"><input type="radio" name="solicitante" value="Cliente Sisplan" required> Cliente Sisplan</label>
+                <label class="opcao-servico"><input type="radio" name="solicitante" value="Consultor Externo" required> Consultor Externo</label>
+              </div>
+            </div>
+            <div class="grupo-campo campo-completo">
+              <label for="campo-nome_solicitante">Nome de quem está solicitando</label>
+              <input class="campo-input" id="campo-nome_solicitante" required maxlength="200">
+            </div>
+
+            <div class="grupo-campo campo-completo">
+              <label for="campo-obs_emissao">Observações</label>
+              <textarea class="campo-input" id="campo-obs_emissao" maxlength="1000"></textarea>
+            </div>
+          </div>
+
+          <div class="aviso-pub aviso-importante">
+            <strong>Importante!</strong>
+            Para bancos Itaú, Santander, Safra, Caixa, Ailos, Unicredi, Sicredi e SICOOB, o protocolo de homologação
+            segue um processo próprio do banco e pode levar mais tempo. Em caso de dúvidas sobre o preenchimento,
+            entre em contato com o treinamento pelo telefone (47) 3380-6100 ou pelo e-mail
+            isa@sisplansistemas.com.br (responsável: Taysa).
+          </div>
+
+          <div class="linha-botoes">
+            <button type="button" class="botao-voltar botao-voltar-etapa">Voltar</button>
+            <button type="submit" class="botao-enviar botao-enviar-pub">Enviar solicitação</button>
+          </div>
+        </div>
+
+        <!-- ───────── Etapa 2 — ramo "Pagamento de Fornecedores" ───────── -->
+        <div class="etapa" id="etapa-2-fornecedores">
+          <div class="secao-titulo">Pagamento de fornecedores</div>
+          <div class="grade-pub">
+            <div class="grupo-campo campo-completo">
+              <label>Modalidades de pagamento</label>
+              <div class="opcoes-lista" id="grupo-modalidades">
+                <label class="opcao-servico"><input type="checkbox" value="Pagamento de AP"> Pagamento de AP</label>
+                <label class="opcao-servico"><input type="checkbox" value="Crédito em Conta Corrente-Salário"> Crédito em Conta Corrente-Salário</label>
+                <label class="opcao-servico"><input type="checkbox" value="TED-Transferência Eletrônica Disponível"> TED-Transferência Eletrônica Disponível</label>
+                <label class="opcao-servico"><input type="checkbox" value="DOC-Documento de Ordem de Crédito"> DOC-Documento de Ordem de Crédito</label>
+                <label class="opcao-servico">
+                  <input type="checkbox" value="__outro__" id="check-modalidades-outro">
+                  Outro
+                </label>
+              </div>
+              <input class="campo-input campo-outro-texto" id="campo-modalidades-outro-texto" maxlength="200" placeholder="Especifique" style="display:none;">
+              <small class="erro-grupo" id="erro-modalidades" style="display:none;color:#dc2626;margin-top:6px;">Selecione ao menos uma opção.</small>
+            </div>
+
+            <div class="grupo-campo campo-completo">
+              <label>Quem está realizando a solicitação?</label>
+              <div class="opcoes-lista">
+                <label class="opcao-servico"><input type="radio" name="solicitante_pagto" value="Cliente Sisplan" required> Cliente Sisplan</label>
+                <label class="opcao-servico"><input type="radio" name="solicitante_pagto" value="Consultores Externos" required> Consultores Externos</label>
+              </div>
+            </div>
+            <div class="grupo-campo campo-completo">
+              <label for="campo-nome_solicitante_pagto">Nome de quem está solicitando</label>
+              <input class="campo-input" id="campo-nome_solicitante_pagto" required maxlength="200">
+            </div>
+
+            <div class="grupo-campo campo-completo">
+              <label for="campo-obs_pagto">Observações</label>
+              <textarea class="campo-input" id="campo-obs_pagto" maxlength="1000"></textarea>
+            </div>
+          </div>
+
+          <div class="aviso-pub aviso-importante">
+            <strong>Importante!</strong>
+            Para bancos Itaú, Santander, Safra, Caixa, Ailos, Unicredi, Sicredi e SICOOB, o protocolo de homologação
+            segue um processo próprio do banco e pode levar mais tempo. Em caso de dúvidas sobre o preenchimento,
+            entre em contato com o treinamento pelo telefone (47) 3380-6100 ou pelo e-mail
+            isa@sisplansistemas.com.br (responsável: Taysa).
+          </div>
+
+          <div class="linha-botoes">
+            <button type="button" class="botao-voltar botao-voltar-etapa">Voltar</button>
+            <button type="submit" class="botao-enviar botao-enviar-pub">Enviar solicitação</button>
+          </div>
+        </div>
+
+        <div class="mensagem-erro" id="mensagem-erro-pub">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#dc2626;fill:none;stroke-width:2;flex-shrink:0;">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span id="texto-erro-pub"></span>
+        </div>
+      </form>
+
+      <div class="tela-sucesso" id="tela-sucesso-pub">
+        <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <h2>Solicitação enviada!</h2>
+        <p>Recebemos os dados da sua solicitação. Lembre-se de enviar a aprovação do serviço por e-mail para
+          <strong>escritural@sisplansistemas.com.br</strong> — a homologação só é iniciada depois disso.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const form     = document.getElementById('form-pub');
+    const erroBox  = document.getElementById('mensagem-erro-pub');
+    const erroTxt  = document.getElementById('texto-erro-pub');
+    const etapa1   = document.getElementById('etapa-1');
+    const etapaBoletos = document.getElementById('etapa-2-boletos');
+    const etapaFornecedores = document.getElementById('etapa-2-fornecedores');
+
+    function mostrarErroPub(msg) {
+      erroTxt.textContent = msg;
+      erroBox.classList.add('visivel');
+    }
+
+    function esconderErroPub() {
+      erroBox.classList.remove('visivel');
+    }
+
+    // Mostra o campo de texto livre quando a opção "Outro" é marcada/selecionada.
+    function ligarCampoOutro(idGatilho, idTexto) {
+      const gatilho = document.getElementById(idGatilho);
+      const campoTexto = document.getElementById(idTexto);
+      const grupo = gatilho.closest('.opcoes-lista');
+      grupo.querySelectorAll('input').forEach(el => {
+        el.addEventListener('change', () => {
+          campoTexto.style.display = gatilho.checked ? 'block' : 'none';
+          if (!gatilho.checked) campoTexto.value = '';
+        });
+      });
+    }
+    ligarCampoOutro('radio-cnab-outro', 'campo-cnab-outro-texto');
+    ligarCampoOutro('check-protesto-outro', 'campo-protesto-outro-texto');
+    ligarCampoOutro('check-modalidades-outro', 'campo-modalidades-outro-texto');
+
+    // Junta um grupo de checkboxes (+ texto livre de "Outro", se marcado) em uma string única.
+    function coletarGrupoCheckbox(idGrupo, idGatilhoOutro, idTextoOutro) {
+      const grupo = document.getElementById(idGrupo);
+      const valores = [];
+      grupo.querySelectorAll('input[type="checkbox"]').forEach(el => {
+        if (el.checked && el.value !== '__outro__') valores.push(el.value);
+      });
+      const gatilhoOutro = document.getElementById(idGatilhoOutro);
+      if (gatilhoOutro && gatilhoOutro.checked) {
+        const texto = (document.getElementById(idTextoOutro).value || '').trim();
+        valores.push(texto ? `Outro: ${texto}` : 'Outro');
+      }
+      return valores.join(', ');
+    }
+
+    function coletarCnab() {
+      const radioEl = form.querySelector('input[name="cnab"]:checked');
+      if (!radioEl) return '';
+      if (radioEl.value === '__outro__') {
+        const texto = (document.getElementById('campo-cnab-outro-texto').value || '').trim();
+        return texto ? `Outro: ${texto}` : 'Outro';
+      }
+      return radioEl.value;
+    }
+
+    function validarGrupoObrigatorio(idGrupo, idErro) {
+      const grupo = document.getElementById(idGrupo);
+      const marcado = !!grupo.querySelector('input[type="checkbox"]:checked');
+      document.getElementById(idErro).style.display = marcado ? 'none' : 'block';
+      return marcado;
+    }
+
+    document.getElementById('botao-avancar-pub').addEventListener('click', function () {
+      esconderErroPub();
+      // reportValidity no form inteiro só valida campos visíveis (etapas 2 ainda estão display:none).
+      if (!form.reportValidity()) return;
+
+      const servicoEl = form.querySelector('input[name="servico"]:checked');
+      if (!servicoEl) return;
+
+      etapa1.classList.remove('ativa');
+      if (servicoEl.value === 'Emissão de Boletos.') {
+        etapaBoletos.classList.add('ativa');
+      } else {
+        etapaFornecedores.classList.add('ativa');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    document.querySelectorAll('.botao-voltar-etapa').forEach(btn => {
+      btn.addEventListener('click', function () {
+        esconderErroPub();
+        etapaBoletos.classList.remove('ativa');
+        etapaFornecedores.classList.remove('ativa');
+        etapa1.classList.add('ativa');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      esconderErroPub();
+
+      const servicoEl = form.querySelector('input[name="servico"]:checked');
+      const servico = servicoEl ? servicoEl.value : '';
+
+      const dados = {
+        empresa: document.getElementById('campo-empresa').value,
+        cnpj: document.getElementById('campo-cnpj').value,
+        responsavel: document.getElementById('campo-responsavel').value,
+        fone_responsavel: document.getElementById('campo-fone_responsavel').value,
+        email_responsavel: document.getElementById('campo-email_responsavel').value,
+        banco: document.getElementById('campo-banco').value,
+        conta_corrente: document.getElementById('campo-conta_corrente').value,
+        agencia: document.getElementById('campo-agencia').value,
+        convenio: document.getElementById('campo-convenio').value,
+        servico: servico,
+        confirmacao_contato: document.getElementById('campo-honeypot').value,
+        carteira: '', desc_carteira: '', cnab: '', variacao: '', juros: '', multa: '',
+        protesto: '', emissor: '', ultima_numeracao: '', solicitante: '', nome_solicitante: '', obs_emissao: '',
+        modalidades: '', solicitante_pagto: '', nome_solicitante_pagto: '', obs_pagto: '',
+      };
+
+      let botaoAtivo;
+
+      if (servico === 'Emissão de Boletos.') {
+        botaoAtivo = etapaBoletos.querySelector('.botao-enviar-pub');
+        if (!form.reportValidity()) return;
+        if (!validarGrupoObrigatorio('grupo-protesto', 'erro-protesto')) return;
+
+        const emissorEl = form.querySelector('input[name="emissor"]:checked');
+        const solicitanteEl = form.querySelector('input[name="solicitante"]:checked');
+        if (!emissorEl || !solicitanteEl) { mostrarErroPub('Preencha todas as opções obrigatórias.'); return; }
+
+        dados.carteira = document.getElementById('campo-carteira').value;
+        dados.desc_carteira = document.getElementById('campo-desc_carteira').value;
+        dados.cnab = coletarCnab();
+        dados.variacao = document.getElementById('campo-variacao').value;
+        dados.juros = document.getElementById('campo-juros').value;
+        dados.multa = document.getElementById('campo-multa').value;
+        dados.protesto = coletarGrupoCheckbox('grupo-protesto', 'check-protesto-outro', 'campo-protesto-outro-texto');
+        dados.emissor = emissorEl.value;
+        dados.ultima_numeracao = document.getElementById('campo-ultima_numeracao').value;
+        dados.solicitante = solicitanteEl.value;
+        dados.nome_solicitante = document.getElementById('campo-nome_solicitante').value;
+        dados.obs_emissao = document.getElementById('campo-obs_emissao').value;
+      } else {
+        botaoAtivo = etapaFornecedores.querySelector('.botao-enviar-pub');
+        const modalidadesOk = validarGrupoObrigatorio('grupo-modalidades', 'erro-modalidades');
+        if (!form.reportValidity()) return;
+        if (!modalidadesOk) return;
+
+        const solicitanteEl = form.querySelector('input[name="solicitante_pagto"]:checked');
+        if (!solicitanteEl) { mostrarErroPub('Preencha todas as opções obrigatórias.'); return; }
+
+        dados.modalidades = coletarGrupoCheckbox('grupo-modalidades', 'check-modalidades-outro', 'campo-modalidades-outro-texto');
+        dados.solicitante_pagto = solicitanteEl.value;
+        dados.nome_solicitante_pagto = document.getElementById('campo-nome_solicitante_pagto').value;
+        dados.obs_pagto = document.getElementById('campo-obs_pagto').value;
+      }
+
+      botaoAtivo.disabled = true;
+      botaoAtivo.textContent = 'Enviando...';
+
+      fetch('/escritural/publico/enviar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados),
+      })
+        .then(r => r.json().then(corpo => ({ status: r.status, corpo })))
+        .then(({ status, corpo }) => {
+          if (status === 200 && corpo.sucesso) {
+            form.classList.add('escondido');
+            document.getElementById('tela-sucesso-pub').classList.add('visivel');
+          } else {
+            mostrarErroPub(corpo.erro || 'Não foi possível enviar a solicitação. Tente novamente.');
+            botaoAtivo.disabled = false;
+            botaoAtivo.textContent = 'Enviar solicitação';
+          }
+        })
+        .catch(() => {
+          mostrarErroPub('Erro de conexão. Tente novamente.');
+          botaoAtivo.disabled = false;
+          botaoAtivo.textContent = 'Enviar solicitação';
+        });
+    });
+  </script>
+</body>
+</html>

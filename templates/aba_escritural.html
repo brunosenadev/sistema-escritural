@@ -38,6 +38,15 @@
   .botao-primario:hover { background: #1d4ed8; transform: translateY(-1px); }
   .botao-primario svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; }
 
+  .botao-secundario {
+    padding: 8px 16px; background: #fff; color: #374151;
+    border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 13px; font-weight: 600;
+    font-family: 'Inter', sans-serif; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s, border-color 0.15s; white-space: nowrap;
+  }
+  .botao-secundario:hover { background: #f3f4f6; border-color: #9ca3af; }
+
   .es-card {
     background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
     overflow: hidden;
@@ -157,6 +166,8 @@
   [data-tema="dark"] .es-preview-linha { border-color: var(--z-border-s); }
   [data-tema="dark"] .es-preview-label { color: var(--z-text-3); }
   [data-tema="dark"] .es-preview-valor { color: var(--z-text-1); }
+  [data-tema="dark"] .botao-secundario { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] .botao-secundario:hover { background: var(--z-border-s); }
 </style>
 {% endblock %}
 
@@ -171,6 +182,10 @@
     <button class="botao-primario" onclick="abrirModalAdicionar()">
       <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Adicionar registro
+    </button>
+    <button class="botao-secundario" onclick="copiarLinkFormulario()" title="Copiar link do formulário público">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copiar link do formulário
     </button>
   </div>
 
@@ -475,6 +490,13 @@
 
   function fecharPreviewEs() {
     document.getElementById('overlay-preview-es').classList.remove('aberto');
+  }
+
+  const LINK_FORMULARIO_PUBLICO = {{ link_publico | tojson }};
+  function copiarLinkFormulario() {
+    navigator.clipboard.writeText(LINK_FORMULARIO_PUBLICO)
+      .then(() => mostrarToast('sucesso', 'Link copiado!'))
+      .catch(() => window.prompt('Copie o link manualmente:', LINK_FORMULARIO_PUBLICO));
   }
 
   function confirmarExcluirEs(id) {
