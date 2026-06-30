@@ -217,12 +217,12 @@
             <div class="grupo-campo">
               <label for="campo-carteira">Carteira</label>
               <small>Código da carteira no banco. Exemplo: 17.</small>
-              <input class="campo-input" id="campo-carteira" required maxlength="200">
+              <input class="campo-input" id="campo-carteira" maxlength="200">
             </div>
             <div class="grupo-campo">
               <label for="campo-desc_carteira">Descrição da carteira</label>
               <small>Exemplo: Com registro, Sem registro, Direta, etc.</small>
-              <input class="campo-input" id="campo-desc_carteira" required maxlength="200">
+              <input class="campo-input" id="campo-desc_carteira" maxlength="200">
             </div>
 
             <div class="grupo-campo campo-completo">
@@ -248,23 +248,23 @@
             <div class="grupo-campo">
               <label for="campo-variacao">Variação da carteira</label>
               <small>Aplicável a bancos como BB, Caixa, Sicredi.</small>
-              <input class="campo-input" id="campo-variacao" required maxlength="200">
+              <input class="campo-input" id="campo-variacao" maxlength="200">
             </div>
             <div class="grupo-campo">
               <label for="campo-ultima_numeracao">Última numeração de boleto utilizada</label>
               <small>Se for conta nova preencher com 0.</small>
-              <input class="campo-input" id="campo-ultima_numeracao" required maxlength="200">
+              <input class="campo-input" id="campo-ultima_numeracao" maxlength="200">
             </div>
 
             <div class="grupo-campo">
               <label for="campo-juros">Juros ao dia (%)</label>
               <small>Preencher com "0" caso não houver.</small>
-              <input class="campo-input" id="campo-juros" required maxlength="200">
+              <input class="campo-input" id="campo-juros" maxlength="200">
             </div>
             <div class="grupo-campo">
               <label for="campo-multa">Multa (%)</label>
               <small>Preencher com "0" caso não houver.</small>
-              <input class="campo-input" id="campo-multa" required maxlength="200">
+              <input class="campo-input" id="campo-multa" maxlength="200">
             </div>
 
             <div class="grupo-campo campo-completo">
@@ -287,21 +287,21 @@
             <div class="grupo-campo campo-completo">
               <label>Quem irá emitir os boletos?</label>
               <div class="opcoes-lista">
-                <label class="opcao-servico"><input type="radio" name="emissor" value="Banco" required> Banco</label>
-                <label class="opcao-servico"><input type="radio" name="emissor" value="Empresa" required> Empresa</label>
+                <label class="opcao-servico"><input type="radio" name="emissor" value="Banco"> Banco</label>
+                <label class="opcao-servico"><input type="radio" name="emissor" value="Empresa"> Empresa</label>
               </div>
             </div>
 
             <div class="grupo-campo campo-completo">
               <label>Quem está realizando a solicitação?</label>
               <div class="opcoes-lista">
-                <label class="opcao-servico"><input type="radio" name="solicitante" value="Cliente Sisplan" required> Cliente Sisplan</label>
-                <label class="opcao-servico"><input type="radio" name="solicitante" value="Consultor Externo" required> Consultor Externo</label>
+                <label class="opcao-servico"><input type="radio" name="solicitante" value="Cliente Sisplan"> Cliente Sisplan</label>
+                <label class="opcao-servico"><input type="radio" name="solicitante" value="Consultor Externo"> Consultor Externo</label>
               </div>
             </div>
             <div class="grupo-campo campo-completo">
               <label for="campo-nome_solicitante">Nome de quem está solicitando</label>
-              <input class="campo-input" id="campo-nome_solicitante" required maxlength="200">
+              <input class="campo-input" id="campo-nome_solicitante" maxlength="200">
             </div>
 
             <div class="grupo-campo campo-completo">
@@ -347,13 +347,13 @@
             <div class="grupo-campo campo-completo">
               <label>Quem está realizando a solicitação?</label>
               <div class="opcoes-lista">
-                <label class="opcao-servico"><input type="radio" name="solicitante_pagto" value="Cliente Sisplan" required> Cliente Sisplan</label>
-                <label class="opcao-servico"><input type="radio" name="solicitante_pagto" value="Consultores Externos" required> Consultores Externos</label>
+                <label class="opcao-servico"><input type="radio" name="solicitante_pagto" value="Cliente Sisplan"> Cliente Sisplan</label>
+                <label class="opcao-servico"><input type="radio" name="solicitante_pagto" value="Consultores Externos"> Consultores Externos</label>
               </div>
             </div>
             <div class="grupo-campo campo-completo">
               <label for="campo-nome_solicitante_pagto">Nome de quem está solicitando</label>
-              <input class="campo-input" id="campo-nome_solicitante_pagto" required maxlength="200">
+              <input class="campo-input" id="campo-nome_solicitante_pagto" maxlength="200">
             </div>
 
             <div class="grupo-campo campo-completo">
@@ -514,7 +514,6 @@
 
       if (servico === 'Emissão de Boletos.') {
         botaoAtivo = etapaBoletos.querySelector('.botao-enviar-pub');
-        if (!form.reportValidity()) return;
         if (!validarGrupoObrigatorio('grupo-protesto', 'erro-protesto')) return;
 
         const emissorEl = form.querySelector('input[name="emissor"]:checked');
@@ -535,9 +534,7 @@
         dados.obs_emissao = document.getElementById('campo-obs_emissao').value;
       } else {
         botaoAtivo = etapaFornecedores.querySelector('.botao-enviar-pub');
-        const modalidadesOk = validarGrupoObrigatorio('grupo-modalidades', 'erro-modalidades');
-        if (!form.reportValidity()) return;
-        if (!modalidadesOk) return;
+        if (!validarGrupoObrigatorio('grupo-modalidades', 'erro-modalidades')) return;
 
         const solicitanteEl = form.querySelector('input[name="solicitante_pagto"]:checked');
         if (!solicitanteEl) { mostrarErroPub('Preencha todas as opções obrigatórias.'); return; }

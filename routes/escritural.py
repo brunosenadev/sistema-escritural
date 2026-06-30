@@ -171,6 +171,10 @@ def enviar_formulario_publico():
     dados['dt_status'] = agora
 
     banco.adicionar_escritural(dados, criado_por='Formulário público')
+
+    from routes.discord_notif import notificar_nova_homologacao
+    notificar_nova_homologacao(dados.get('empresa', ''))
+
     return jsonify({'sucesso': True})
 
 
