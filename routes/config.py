@@ -19,7 +19,8 @@ def pagina_configuracoes():
         return bloqueio
     if session.get('nivel_acesso') not in ('admin', 'master') \
             and not tem_acesso_tela('importar_homologacoes_pendentes') \
-            and not tem_acesso_tela('importar_novas_homologacoes'):
+            and not tem_acesso_tela('importar_novas_homologacoes') \
+            and not tem_acesso_tela('escritural'):
         return checar_admin()
     contadores = banco.contar_todos()
     return render_template(
@@ -27,6 +28,7 @@ def pagina_configuracoes():
         tecnicos=banco.listar_tecnicos(),
         usuarios=banco.listar_usuarios(),
         lista_status=banco.listar_status(),
+        lista_status_escritural=banco.listar_status_escritural(),
         lista_servicos=banco.listar_servicos_completo(),
         lista_setores=banco.listar_setores(),
         total_pendentes=contadores['pendentes'],
@@ -144,6 +146,24 @@ def api_remover_status(texto):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.remover_status(texto)
+    return jsonify({'sucesso': True})
+
+
+# ── API Status (Novos Escriturais) — acesso por tela, não só admin ───
+
+@config_bp.route('/api/status-escritural', methods=['POST'])
+def api_adicionar_status_escritural():
+    if not usuario_logado() or not tem_acesso_tela('escritural'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    ok = banco.adicionar_status_escritural(request.get_json().get('texto', ''))
+    return jsonify({'sucesso': True}) if ok else (jsonify({'erro': 'Status já cadastrado.'}), 409)
+
+
+@config_bp.route('/api/status-escritural/<path:texto>', methods=['DELETE'])
+def api_remover_status_escritural(texto):
+    if not usuario_logado() or not tem_acesso_tela('escritural'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    banco.remover_status_escritural(texto)
     return jsonify({'sucesso': True})
 
 

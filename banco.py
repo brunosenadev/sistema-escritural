@@ -33,6 +33,11 @@ STATUS_INICIAIS = [
     'PENDENTE DE TREINAMENTO', 'PENDENCIA EM PROG', 'EM PROCESSO', 'CANCELADO',
 ]
 
+STATUS_ESCRITURAL_INICIAIS = [
+    'AGUARDANDO', 'APROVADO', 'REPASSADO', 'PENDENTE',
+    'VERIFICANDO COM COMERCIAL', 'CANCELADO', 'RECUSADO',
+]
+
 SERVICOS_INICIAIS = [
     'COBRANÇA', 'COBRANÇA/API', 'PAGFOR', 'PAGFOR/API', 'EXTRATO', 'PAGAMENTO',
 ]
@@ -153,6 +158,10 @@ def inicializar_banco():
             cor  TEXT    NOT NULL DEFAULT '#64748b'
         );
         CREATE TABLE IF NOT EXISTS status_lista (
+            id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            texto TEXT    UNIQUE NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS status_escritural_lista (
             id    INTEGER PRIMARY KEY AUTOINCREMENT,
             texto TEXT    UNIQUE NOT NULL
         );
@@ -349,6 +358,9 @@ def inicializar_banco():
 
     for s in STATUS_INICIAIS:
         conn.execute("INSERT OR IGNORE INTO status_lista (texto) VALUES (?)", (s,))
+
+    for s in STATUS_ESCRITURAL_INICIAIS:
+        conn.execute("INSERT OR IGNORE INTO status_escritural_lista (texto) VALUES (?)", (s,))
 
     if conn.execute("SELECT COUNT(*) FROM servicos_lista").fetchone()[0] == 0:
         for s in SERVICOS_INICIAIS:
@@ -590,6 +602,32 @@ def adicionar_status(texto):
 def remover_status(texto):
     conn = conectar()
     conn.execute("DELETE FROM status_lista WHERE texto=?", (texto,))
+    conn.commit()
+    conn.close()
+
+# ── Status (Novos Escriturais) ───────────────────────────────
+
+def listar_status_escritural():
+    conn = conectar()
+    rows = conn.execute("SELECT texto FROM status_escritural_lista ORDER BY id").fetchall()
+    conn.close()
+    return [r['texto'] for r in rows]
+
+
+def adicionar_status_escritural(texto):
+    try:
+        conn = conectar()
+        conn.execute("INSERT INTO status_escritural_lista (texto) VALUES (?)", (texto.strip().upper(),))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception:
+        return False
+
+
+def remover_status_escritural(texto):
+    conn = conectar()
+    conn.execute("DELETE FROM status_escritural_lista WHERE texto=?", (texto,))
     conn.commit()
     conn.close()
 
@@ -1074,6 +1112,18 @@ def atualizar_escritural(id_registro, dados):
     conn.commit()
     conn.close()
     return True
+
+
+def atualizar_status_escritural(id_registro, novo_status):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    hoje  = datetime.now().strftime('%d/%m/%Y')
+    conn  = conectar()
+    conn.execute(
+        "UPDATE escritural SET status=?, dt_status=?, atualizado_em=? WHERE id=?",
+        (novo_status, hoje, agora, id_registro)
+    )
+    conn.commit()
+    conn.close()
 
 
 def deletar_escritural(id_registro):

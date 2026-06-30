@@ -43,7 +43,8 @@
     overflow: hidden;
   }
   .es-tabela-scroll { overflow-x: auto; }
-  table.es-tabela { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 2400px; }
+  table.es-tabela { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.es-tabela tbody tr { cursor: pointer; }
   table.es-tabela th {
     text-align: left; padding: 10px 14px; font-size: 10.5px; font-weight: 700;
     color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;
@@ -51,9 +52,9 @@
   }
   table.es-tabela td {
     padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #334155;
-    vertical-align: middle; white-space: nowrap; max-width: 220px;
-    overflow: hidden; text-overflow: ellipsis;
+    vertical-align: top; white-space: normal; word-break: break-word;
   }
+  table.es-tabela td.es-celula-grande { max-width: 360px; }
   table.es-tabela tbody tr:hover { background: #f8fafc; }
   table.es-tabela tbody tr:last-child td { border-bottom: none; }
 
@@ -67,6 +68,27 @@
   .badge-es.pendente  { background: #fef3c7; color: #92400e; }
   .badge-es.aguardando{ background: #dbeafe; color: #1d4ed8; }
   .badge-es.cancelado { background: #fee2e2; color: #991b1b; }
+  .badge-es.repassado { background: #ede9fe; color: #6d28d9; }
+  .badge-es.recusado  { background: #fca5a5; color: #7f1d1d; }
+
+  /* ── Select de status inline ─────────────────── */
+  .select-status-inline-es {
+    appearance: none; -webkit-appearance: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+    white-space: nowrap; padding: 3px 22px 3px 10px; border-radius: 99px; outline: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 6px center; background-size: 10px;
+    transition: opacity 0.15s, box-shadow 0.15s;
+  }
+  .select-status-inline-es:hover { opacity: 0.80; box-shadow: 0 0 0 2px rgba(0,0,0,0.08); }
+  .select-status-inline-es:focus { box-shadow: 0 0 0 2px rgba(37,99,235,0.25); }
+  .select-status-inline-es option { background: #ffffff; color: #1e293b; font-weight: 500; }
+
+  .rodape-tabela {
+    padding: 10px 16px; border-top: 1px solid #f1f5f9; font-size: 12px; color: #94a3b8;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  [data-tema="dark"] .rodape-tabela { border-color: var(--z-border-s); color: var(--z-text-3); }
 
   .es-acoes { display: flex; gap: 4px; }
   .botao-icone {
@@ -107,6 +129,14 @@
   .botao-salvar { padding: 9px 20px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; }
   .botao-salvar:hover { background: #1d4ed8; }
 
+  /* ── Modal de preview (somente leitura) ── */
+  .modal-preview-es { max-width: 640px; }
+  .es-preview-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+  .es-preview-linha { padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+  .es-preview-linha.es-preview-completa { grid-column: 1 / -1; }
+  .es-preview-label { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; }
+  .es-preview-valor { font-size: 13.5px; color: #1e293b; white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
+
   /* ── Dark mode ── */
   [data-tema="dark"] .es-card          { background: var(--z-surface); border-color: var(--z-border-s); }
   [data-tema="dark"] .es-busca input   { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
@@ -124,6 +154,9 @@
   [data-tema="dark"] .input-form       { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
   [data-tema="dark"] .botao-cancelar   { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
   [data-tema="dark"] .botao-fechar-modal:hover { background: var(--z-border-s); }
+  [data-tema="dark"] .es-preview-linha { border-color: var(--z-border-s); }
+  [data-tema="dark"] .es-preview-label { color: var(--z-text-3); }
+  [data-tema="dark"] .es-preview-valor { color: var(--z-text-1); }
 </style>
 {% endblock %}
 
@@ -141,22 +174,40 @@
     </button>
   </div>
 
+  {% set campos_tabela = ['status', 'data_solicitacao', 'empresa', 'cnpj', 'banco', 'servico', 'responsavel', 'tecnico'] %}
   <div class="es-card">
     <div class="es-tabela-scroll">
       <table class="es-tabela" id="tabela-escritural">
         <thead>
           <tr>
-            {% for c in campos %}<th>{{ labels.get(c, c) }}</th>{% endfor %}
+            {% for c in campos_tabela %}<th>{{ labels.get(c, c) }}</th>{% endfor %}
             <th></th>
           </tr>
         </thead>
         <tbody>
           {% for r in registros %}
-          <tr data-busca="{{ (r.empresa or '') ~ ' ' ~ (r.cnpj or '') ~ ' ' ~ (r.banco or '') ~ ' ' ~ (r.responsavel or '') ~ ' ' ~ (r.status or '') | lower }}">
-            {% for c in campos %}
+          <tr
+            data-busca="{{ (r.empresa or '') ~ ' ' ~ (r.cnpj or '') ~ ' ' ~ (r.banco or '') ~ ' ' ~ (r.responsavel or '') ~ ' ' ~ (r.status or '') | lower }}"
+            data-reg='{{ r | tojson | forceescape }}'
+            ondblclick="tratarDblClickLinhaEs(event, this)"
+          >
+            {% for c in campos_tabela %}
               {% if c == 'status' %}
                 {% set st = (r.status or '') | lower %}
-                <td><span class="badge-es {% if 'aprov' in st or 'homolog' in st %}aprovado{% elif 'aguard' in st %}aguardando{% elif 'cancel' in st %}cancelado{% elif 'pendent' in st %}pendente{% endif %}">{{ r.status or '—' }}</span></td>
+                <td>
+                  <select
+                    class="badge-es select-status-inline-es {% if 'aprov' in st or 'homolog' in st %}aprovado{% elif 'repass' in st %}repassado{% elif 'aguard' in st %}aguardando{% elif 'cancel' in st %}cancelado{% elif 'recus' in st %}recusado{% elif 'pendent' in st %}pendente{% endif %}"
+                    data-id="{{ r.id }}"
+                    onchange="atualizarStatusInlineEs(this)"
+                  >
+                    {% for s in lista_status %}
+                    <option value="{{ s }}" {% if s == r.status %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                    {% if r.status and r.status not in lista_status %}
+                    <option value="{{ r.status }}" selected>{{ r.status }}</option>
+                    {% endif %}
+                  </select>
+                </td>
               {% elif c == 'empresa' %}
                 <td class="es-empresa">{{ r.empresa or '—' }}</td>
               {% else %}
@@ -165,7 +216,7 @@
             {% endfor %}
             <td>
               <div class="es-acoes">
-                <button class="botao-icone" title="Editar" data-reg='{{ r | tojson | forceescape }}' onclick="abrirModalEditar(JSON.parse(this.dataset.reg))">
+                <button class="botao-icone" title="Editar" onclick="abrirModalEditar(JSON.parse(this.closest('tr').dataset.reg))">
                   <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
                 <button class="botao-icone excluir" title="Excluir" onclick="confirmarExcluirEs({{ r.id }})">
@@ -181,6 +232,9 @@
     {% if not registros %}
     <div class="es-empty" id="es-vazio">Nenhum registro cadastrado ainda. Adicione manualmente ou importe uma planilha existente em Configurações.</div>
     {% endif %}
+    <div class="rodape-tabela">
+      <span id="contador-linhas-es">{{ registros | length }} registros</span>
+    </div>
   </div>
 
 </div>
@@ -200,7 +254,15 @@
 
       <div class="es-secao-titulo">Solicitação</div>
       <div class="grade-form">
-        <div class="grupo-form"><label>Status</label><input class="input-form" id="campo-status"></div>
+        <div class="grupo-form">
+          <label>Status</label>
+          <select class="input-form" id="campo-status">
+            <option value="">— Selecione —</option>
+            {% for s in lista_status %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
         <div class="grupo-form"><label>Data da solicitação</label><input class="input-form" id="campo-data_solicitacao" placeholder="dd/mm/aaaa"></div>
       </div>
 
@@ -266,18 +328,71 @@
     </form>
   </div>
 </div>
+
+<!-- ═══ Modal: Preview (somente leitura, duplo clique na linha) ════ -->
+<div class="overlay-modal" id="overlay-preview-es" onclick="if(event.target===this) fecharPreviewEs()">
+  <div class="modal-es modal-preview-es">
+    <div class="modal-titulo">
+      <span>Detalhes da solicitação</span>
+      <button class="botao-fechar-modal" onclick="fecharPreviewEs()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="es-preview-grade" id="preview-es-corpo"></div>
+    <div class="rodape-modal">
+      <button type="button" class="botao-cancelar" onclick="fecharPreviewEs()">Fechar</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts_extras %}
 <script>
   const CAMPOS_ESCRITURAL = [{% for c in campos %}'{{ c }}'{% if not loop.last %},{% endif %}{% endfor %}];
+  const LABELS_ESCRITURAL = {{ labels | tojson }};
+  const CAMPOS_GRANDES_ES = ['obs_emissao', 'obs_pagto', 'anexos'];
   let idEditandoEs = null;
 
   function filtrarTabelaEs() {
     const termo = document.getElementById('campo-busca-es').value.trim().toLowerCase();
+    let visiveis = 0;
     document.querySelectorAll('#tabela-escritural tbody tr').forEach(tr => {
-      tr.style.display = !termo || (tr.dataset.busca || '').includes(termo) ? '' : 'none';
+      const mostra = !termo || (tr.dataset.busca || '').includes(termo);
+      tr.style.display = mostra ? '' : 'none';
+      if (mostra) visiveis++;
     });
+    const contador = document.getElementById('contador-linhas-es');
+    if (contador) contador.textContent = `${visiveis} registros`;
+  }
+
+  function classeBadgeEs(status) {
+    const st = (status || '').toLowerCase();
+    if (st.includes('aprov') || st.includes('homolog')) return 'aprovado';
+    if (st.includes('repass')) return 'repassado';
+    if (st.includes('aguard')) return 'aguardando';
+    if (st.includes('cancel')) return 'cancelado';
+    if (st.includes('recus')) return 'recusado';
+    if (st.includes('pendent')) return 'pendente';
+    return '';
+  }
+
+  function atualizarStatusInlineEs(el) {
+    const id = el.dataset.id;
+    const novoStatus = el.value;
+    el.className = 'badge-es select-status-inline-es ' + classeBadgeEs(novoStatus);
+    fetch(`/escritural/status/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: novoStatus }),
+    })
+      .then(r => r.json())
+      .then(resp => {
+        if (resp.sucesso) {
+          mostrarToast('sucesso', 'Status atualizado!');
+        } else {
+          mostrarToast('erro', resp.erro || 'Erro ao atualizar status.');
+        }
+      });
   }
 
   function abrirModalAdicionar() {
@@ -294,7 +409,14 @@
     document.getElementById('botao-salvar-es-texto').textContent = 'Salvar Alterações';
     CAMPOS_ESCRITURAL.forEach(c => {
       const el = document.getElementById('campo-' + c);
-      if (el) el.value = registro[c] || '';
+      if (!el) return;
+      const valor = registro[c] || '';
+      if (el.tagName === 'SELECT' && valor && ![...el.options].some(o => o.value === valor)) {
+        const opt = document.createElement('option');
+        opt.value = valor; opt.textContent = valor;
+        el.appendChild(opt);
+      }
+      el.value = valor;
     });
     document.getElementById('overlay-modal-es').classList.add('aberto');
   }
@@ -325,6 +447,34 @@
           mostrarToast('erro', resp.erro || 'Erro ao salvar.');
         }
       });
+  }
+
+  function tratarDblClickLinhaEs(event, tr) {
+    if (event.target.closest('select, button, a')) return;
+    abrirPreviewEs(JSON.parse(tr.dataset.reg));
+  }
+
+  function abrirPreviewEs(registro) {
+    const corpo = document.getElementById('preview-es-corpo');
+    corpo.innerHTML = '';
+    CAMPOS_ESCRITURAL.forEach(c => {
+      const linha = document.createElement('div');
+      linha.className = 'es-preview-linha' + (CAMPOS_GRANDES_ES.includes(c) ? ' es-preview-completa' : '');
+      const label = document.createElement('div');
+      label.className = 'es-preview-label';
+      label.textContent = LABELS_ESCRITURAL[c] || c;
+      const valor = document.createElement('div');
+      valor.className = 'es-preview-valor';
+      valor.textContent = registro[c] || '—';
+      linha.appendChild(label);
+      linha.appendChild(valor);
+      corpo.appendChild(linha);
+    });
+    document.getElementById('overlay-preview-es').classList.add('aberto');
+  }
+
+  function fecharPreviewEs() {
+    document.getElementById('overlay-preview-es').classList.remove('aberto');
   }
 
   function confirmarExcluirEs(id) {

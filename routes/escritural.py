@@ -20,6 +20,7 @@ def aba_escritural():
         registros=registros,
         campos=banco.CAMPOS_ESCRITURAL,
         labels=banco.LABELS_ESCRITURAL,
+        lista_status=banco.listar_status_escritural(),
     )
 
 
@@ -44,6 +45,17 @@ def deletar_escritural(id_registro):
     if checar_tela('escritural'):
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.deletar_escritural(id_registro)
+    return jsonify({'sucesso': True})
+
+
+@escritural_bp.route('/escritural/status/<int:id_registro>', methods=['PATCH'])
+def atualizar_status_escritural(id_registro):
+    if checar_tela('escritural'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    novo_status = (request.get_json() or {}).get('status', '')
+    if not novo_status:
+        return jsonify({'erro': 'Status não informado'}), 400
+    banco.atualizar_status_escritural(id_registro, novo_status)
     return jsonify({'sucesso': True})
 
 

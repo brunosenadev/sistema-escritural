@@ -494,6 +494,14 @@
     Setores
   </button>
   {% endif %}
+  {% if nivel_acesso in ('admin', 'master') or 'escritural' in telas_acesso %}
+  <button class="tab-btn" onclick="trocarTab('status-escritural', this)">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    Status Escriturais
+  </button>
+  {% endif %}
 </div>
 
 <!-- ════════════════════════════════════════════ -->
@@ -893,6 +901,47 @@
         <input class="input-config" type="text" id="input-novo-setor" placeholder="Ex: FINANCEIRO" oninput="this.value=this.value.toUpperCase()">
         <button class="btn-primario-config" onclick="adicionarSetor()">
           <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Adicionar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- TAB: Status Escriturais                     -->
+<!-- ════════════════════════════════════════════ -->
+<div id="tab-status-escritural" class="painel-tab">
+  <div class="card-config" style="max-width:500px;">
+    <div class="card-config-header">
+      <span class="card-config-titulo">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Status (Novos Escriturais)
+      </span>
+    </div>
+    <div class="card-config-body">
+      <div class="lista-pills" id="lista-status-escritural-pills">
+        {% for status in lista_status_escritural %}
+        <div class="pill-item status-pill" id="pill-status-escritural-{{ loop.index }}">
+          {{ status }}
+          <button class="btn-remover-pill" onclick="removerStatusEscritural('{{ status }}')" title="Remover">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        {% else %}
+        <p style="color:#94a3b8;font-size:13px;">Nenhum status cadastrado.</p>
+        {% endfor %}
+      </div>
+      <div class="form-inline-adicionar">
+        <input class="input-config" type="text" id="input-novo-status-escritural" placeholder="Ex: EM ANÁLISE" oninput="this.value=this.value.toUpperCase()">
+        <button class="btn-primario-config" onclick="adicionarStatusEscritural()">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
           Adicionar
         </button>
       </div>
@@ -1375,6 +1424,52 @@
 
   document.getElementById('input-novo-status').addEventListener('keydown', e => {
     if (e.key === 'Enter') adicionarStatus();
+  });
+
+  // ─── Status (Novos Escriturais) ────────────────────────────────
+
+  function adicionarStatusEscritural() {
+    const texto = document.getElementById('input-novo-status-escritural').value.trim();
+    if (!texto) { mostrarToast('erro', 'Informe o status.'); return; }
+    fetch('/api/status-escritural', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto }),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) {
+        mostrarToast('sucesso', 'Status adicionado!');
+        setTimeout(() => location.reload(), 600);
+      } else {
+        mostrarToast('erro', d.erro || 'Erro ao adicionar.');
+      }
+    });
+  }
+
+  function removerStatusEscritural(texto) {
+    abrirDialogo({
+      titulo: 'Remover Status',
+      mensagem: `Remover o status <strong>${texto}</strong>?`,
+      tipo: 'perigo',
+      textoBotao: 'Remover',
+      callback: () => {
+        fetch(`/api/status-escritural/${encodeURIComponent(texto)}`, { method: 'DELETE' })
+          .then(r => r.json())
+          .then(d => {
+            if (d.sucesso) {
+              mostrarToast('sucesso', 'Status removido.');
+              setTimeout(() => location.reload(), 500);
+            } else {
+              mostrarToast('erro', d.erro || 'Erro.');
+            }
+          });
+      }
+    });
+  }
+
+  document.getElementById('input-novo-status-escritural').addEventListener('keydown', e => {
+    if (e.key === 'Enter') adicionarStatusEscritural();
   });
 
   // ─── Serviços ────────────────────────────────────────────────
