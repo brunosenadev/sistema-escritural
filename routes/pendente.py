@@ -44,7 +44,7 @@ def aba_pendente():
         def _sort_sem_logado(r):
             tec = (r.get('tecnico') or '').strip().upper()
             sem = not tec or tec == 'SEM TEC.'
-            return (1 if sem else 0, r.get('tecnico') or '', r.get('id', 0))
+            return (0 if sem else 1, r.get('tecnico') or '', r.get('id', 0))
         registros.sort(key=_sort_sem_logado)
 
     cores_tecnicos = banco.cores_por_tecnico()

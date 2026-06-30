@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session, make_response
 import banco
-from utils import checar_admin, usuario_logado, criar_tokens, _preencher_sessao
+from utils import checar_admin, checar_login, usuario_logado, criar_tokens, _preencher_sessao, tem_acesso_tela
 
 config_bp = Blueprint('config', __name__)
 
@@ -14,9 +14,13 @@ def api_contadores():
 
 @config_bp.route('/configuracoes')
 def pagina_configuracoes():
-    bloqueio = checar_admin()
+    bloqueio = checar_login()
     if bloqueio:
         return bloqueio
+    if session.get('nivel_acesso') not in ('admin', 'master') \
+            and not tem_acesso_tela('importar_homologacoes_pendentes') \
+            and not tem_acesso_tela('importar_novas_homologacoes'):
+        return checar_admin()
     contadores = banco.contar_todos()
     return render_template(
         'configuracoes.html',

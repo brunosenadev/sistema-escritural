@@ -744,6 +744,15 @@
       </a>
       {% endif %}
 
+      {% if _eh_master or 'escritural' in _ta %}
+      <a href="/escritural" class="nav-item {% if aba_ativa == 'escritural' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        Novos Escriturais
+      </a>
+      {% endif %}
+
       {% if _eh_master or 'melhorias' in _ta or 'config' in _ta %}
       <div class="nav-secao-titulo" style="margin-top:8px;">Sistema</div>
 

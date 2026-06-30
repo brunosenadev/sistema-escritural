@@ -2,7 +2,7 @@ import os
 from flask import Blueprint, request, jsonify, send_file, session
 import banco
 from planilha import ler_planilha_completa, exportar_pendentes_para_excel
-from utils import usuario_logado, checar_login
+from utils import usuario_logado, checar_login, tem_acesso_tela
 
 importacao_bp = Blueprint('importacao', __name__)
 
@@ -12,7 +12,7 @@ _PASTA_UPLOADS = '/tmp' if os.environ.get('RENDER') else os.path.join(os.path.di
 def _checar_admin():
     if not usuario_logado():
         return jsonify({'erro': 'Não autenticado'}), 401
-    if session.get('nivel_acesso') not in ('admin', 'master'):
+    if session.get('nivel_acesso') not in ('admin', 'master') and not tem_acesso_tela('importar_homologacoes_pendentes'):
         return jsonify({'erro': 'Sem permissão.'}), 403
     return None
 

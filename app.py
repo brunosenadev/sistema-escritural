@@ -18,6 +18,7 @@ from routes.melhorias   import melhorias_bp
 from routes.hub         import hub_bp
 from routes.acesso      import acesso_bp
 from routes.ajuda       import ajuda_bp
+from routes.escritural  import escritural_bp
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
@@ -35,6 +36,7 @@ app.register_blueprint(melhorias_bp)
 app.register_blueprint(hub_bp)
 app.register_blueprint(acesso_bp)
 app.register_blueprint(ajuda_bp)
+app.register_blueprint(escritural_bp)
 
 
 # ── JWT: valida em toda requisição ────────────────────────

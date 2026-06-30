@@ -463,6 +463,7 @@
     </svg>
     Planilha
   </button>
+  {% if nivel_acesso in ('admin', 'master') %}
   <button class="tab-btn" onclick="trocarTab('tecnicos', this)">
     <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
       <circle cx="9" cy="7" r="4"/>
@@ -492,6 +493,7 @@
     </svg>
     Setores
   </button>
+  {% endif %}
 </div>
 
 <!-- ════════════════════════════════════════════ -->
@@ -500,14 +502,15 @@
 <div id="tab-planilha" class="painel-tab ativo">
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;">
 
-    <!-- Importar -->
+    {% if nivel_acesso == 'master' or nivel_acesso == 'admin' or 'importar_homologacoes_pendentes' in telas_acesso %}
+    <!-- Importar Homologações Pendentes -->
     <div class="card-config">
       <div class="card-config-header">
         <span class="card-config-titulo">
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
-          Importar Planilha
+          Importar Homologações Pendentes
         </span>
       </div>
       <div class="card-config-body">
@@ -551,6 +554,32 @@
         </div>
       </div>
     </div>
+    {% endif %}
+
+    {% if nivel_acesso == 'master' or nivel_acesso == 'admin' or 'importar_novas_homologacoes' in telas_acesso %}
+    <!-- Importar Novas Homologações (Novos Escriturais) -->
+    <div class="card-config">
+      <div class="card-config-header">
+        <span class="card-config-titulo">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Importar Novas Homologações
+        </span>
+      </div>
+      <div class="card-config-body">
+        <div class="area-drop-upload" onclick="document.getElementById('input-arquivo-escritural').click()">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p>Clique para selecionar</p>
+          <small>Importa registros para Novos Escriturais · .xlsx ou .xls</small>
+        </div>
+        <input type="file" id="input-arquivo-escritural" accept=".xlsx,.xls" style="display:none;" onchange="importarPlanilhaEscritural(this)">
+        <p id="status-import-escritural" style="font-size:12px;color:#64748b;margin-top:12px;"></p>
+      </div>
+    </div>
+    {% endif %}
 
     <!-- Exportar -->
     <div class="card-config">
@@ -1049,6 +1078,37 @@
       executarImportacao();
     }
   });
+
+  // ─── Importação de planilha — Novos Escriturais ───────────────
+  function importarPlanilhaEscritural(input) {
+    const arquivo = input.files[0];
+    if (!arquivo) return;
+
+    const status = document.getElementById('status-import-escritural');
+    const form = new FormData();
+    form.append('arquivo', arquivo);
+
+    status.textContent = 'Importando planilha...';
+    mostrarToast('info', 'Importando planilha de Novos Escriturais...');
+
+    fetch('/escritural/importar', { method: 'POST', body: form })
+      .then(r => r.json())
+      .then(d => {
+        if (d.sucesso) {
+          status.textContent = `Lidos: ${d.lidos} · Novos: ${d.novos} · Duplicados: ${d.duplicados}`;
+          mostrarToast('sucesso', `Importado! ${d.novos} novo(s) registro(s).`);
+        } else {
+          status.textContent = '';
+          mostrarToast('erro', d.erro || 'Erro ao importar.');
+        }
+      })
+      .catch(() => {
+        status.textContent = '';
+        mostrarToast('erro', 'Erro de comunicação.');
+      });
+
+    input.value = '';
+  }
 
   // ─── Técnicos ────────────────────────────────────────────────
   let modoEdicaoTecnico = false;

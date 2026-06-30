@@ -108,11 +108,13 @@ TELAS_AGRUPADAS = [
         ('homologados_extrato',    'Homologados Extrato Cartão'),
         ('cancelados',             'Cancelados'),
         ('sispbol',                'SispBol'),
+        ('escritural',             'Novos Escriturais'),
     ]),
     ('Sistema', [
-        ('melhorias',              'Melhorias'),
-        ('config',                 'Configurações'),
-        ('importacao',             'Importação'),
+        ('melhorias',                          'Melhorias'),
+        ('config',                             'Configurações'),
+        ('importar_homologacoes_pendentes',    'Importar Homologações Pendentes'),
+        ('importar_novas_homologacoes',        'Importar Novas Homologações'),
     ]),
     ('Referência', [
         ('hub',                    'Hub Bancário'),
@@ -293,6 +295,45 @@ def inicializar_banco():
             criado_em     TEXT DEFAULT (datetime('now','localtime')),
             atualizado_em TEXT DEFAULT (datetime('now','localtime'))
         );
+        CREATE TABLE IF NOT EXISTS escritural (
+            id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+            status                 TEXT,
+            data_solicitacao       TEXT,
+            empresa                TEXT,
+            cnpj                   TEXT,
+            responsavel             TEXT,
+            fone_responsavel        TEXT,
+            email_responsavel       TEXT,
+            banco                  TEXT,
+            conta_corrente          TEXT,
+            agencia                TEXT,
+            convenio               TEXT,
+            servico                TEXT,
+            carteira               TEXT,
+            desc_carteira           TEXT,
+            variacao               TEXT,
+            juros                  TEXT,
+            multa                  TEXT,
+            protesto               TEXT,
+            emissor                TEXT,
+            ultima_numeracao        TEXT,
+            cnab                   TEXT,
+            solicitante            TEXT,
+            nome_solicitante        TEXT,
+            obs_emissao             TEXT,
+            solicitante_pagto       TEXT,
+            nome_solicitante_pagto  TEXT,
+            modalidades            TEXT,
+            obs_pagto              TEXT,
+            tecnico                 TEXT,
+            dt_status               TEXT,
+            sequencial_nosso_numero TEXT,
+            quantos_dias            TEXT,
+            anexos                  TEXT,
+            criado_por    TEXT,
+            criado_em     TEXT DEFAULT (datetime('now','localtime')),
+            atualizado_em TEXT DEFAULT (datetime('now','localtime'))
+        );
     """)
 
     if conn.execute("SELECT COUNT(*) FROM usuarios").fetchone()[0] == 0:
@@ -349,6 +390,11 @@ def inicializar_banco():
         "ALTER TABLE usuarios ADD COLUMN tema TEXT DEFAULT 'light'",
         "ALTER TABLE usuarios ADD COLUMN setor TEXT DEFAULT ''",
         "ALTER TABLE usuarios ADD COLUMN cor  TEXT DEFAULT ''",
+        "ALTER TABLE escritural ADD COLUMN tecnico TEXT",
+        "ALTER TABLE escritural ADD COLUMN dt_status TEXT",
+        "ALTER TABLE escritural ADD COLUMN sequencial_nosso_numero TEXT",
+        "ALTER TABLE escritural ADD COLUMN quantos_dias TEXT",
+        "ALTER TABLE escritural ADD COLUMN anexos TEXT",
     ]:
         try:
             conn.execute(ddl)
@@ -952,6 +998,116 @@ def importar_pendentes(lista_registros, substituir=True):
     conn.commit()
     conn.close()
     return total
+
+
+# ── Escritural (planilha de uso restrito, acesso liberado via /acesso) ───
+
+CAMPOS_ESCRITURAL = [
+    'status', 'data_solicitacao', 'empresa', 'cnpj', 'responsavel',
+    'fone_responsavel', 'email_responsavel', 'banco', 'conta_corrente',
+    'agencia', 'convenio', 'servico', 'carteira', 'desc_carteira',
+    'variacao', 'juros', 'multa', 'protesto', 'emissor', 'ultima_numeracao',
+    'cnab', 'solicitante', 'nome_solicitante', 'obs_emissao',
+    'solicitante_pagto', 'nome_solicitante_pagto', 'modalidades', 'obs_pagto',
+    'tecnico', 'dt_status', 'sequencial_nosso_numero', 'quantos_dias', 'anexos',
+]
+
+LABELS_ESCRITURAL = {
+    'status': 'Status', 'data_solicitacao': 'Data Solic.', 'empresa': 'Empresa', 'cnpj': 'CNPJ',
+    'responsavel': 'Responsável', 'fone_responsavel': 'Fone Resp.', 'email_responsavel': 'E-mail Resp.',
+    'banco': 'Banco', 'conta_corrente': 'Conta Corrente', 'agencia': 'Agência', 'convenio': 'Convênio',
+    'servico': 'Serviço', 'carteira': 'Carteira', 'desc_carteira': 'Desc. Carteira', 'variacao': 'Variação',
+    'juros': 'Juros', 'multa': 'Multa', 'protesto': 'Protesto', 'emissor': 'Emissor',
+    'ultima_numeracao': 'Última Numeração', 'cnab': 'CNAB', 'solicitante': 'Solicitante',
+    'nome_solicitante': 'Nome Solicitante', 'obs_emissao': 'Obs. Emissão',
+    'solicitante_pagto': 'Solicitante Pagto.', 'nome_solicitante_pagto': 'Nome Sol. Pagto.',
+    'modalidades': 'Modalidades', 'obs_pagto': 'Obs. Pagto.', 'tecnico': 'Técnico',
+    'dt_status': 'Dt. Status', 'sequencial_nosso_numero': 'Seq. Nosso Número', 'quantos_dias': 'Quantos Dias',
+    'anexos': 'Anexos',
+}
+
+
+def _chave_ordenacao_data_escritural(reg):
+    """Converte 'dd/mm/aaaa[ HH:MM:SS]' em datetime para ordenar; registros sem
+    data (ou ilegíveis) recebem a menor data possível, então caem para o final
+    quando ordenado decrescente (mais recentes primeiro)."""
+    valor = (reg.get('data_solicitacao') or '').strip()
+    for fmt in ('%d/%m/%Y %H:%M:%S', '%d/%m/%Y'):
+        try:
+            return datetime.strptime(valor, fmt)
+        except ValueError:
+            continue
+    return datetime.min
+
+
+def listar_escritural():
+    conn = conectar()
+    rows = conn.execute("SELECT * FROM escritural").fetchall()
+    conn.close()
+    registros = [dict(r) for r in rows]
+    registros.sort(key=_chave_ordenacao_data_escritural, reverse=True)
+    return registros
+
+
+def adicionar_escritural(dados, criado_por=''):
+    conn = conectar()
+    colunas      = ','.join(CAMPOS_ESCRITURAL)
+    placeholders = ','.join('?' * len(CAMPOS_ESCRITURAL))
+    cur = conn.execute(
+        f"INSERT INTO escritural ({colunas},criado_por) VALUES ({placeholders},?)",
+        tuple(dados.get(c, '') for c in CAMPOS_ESCRITURAL) + (criado_por,)
+    )
+    id_novo = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return id_novo
+
+
+def atualizar_escritural(id_registro, dados):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    conn  = conectar()
+    sets  = ','.join(f"{c}=?" for c in CAMPOS_ESCRITURAL)
+    conn.execute(
+        f"UPDATE escritural SET {sets},atualizado_em=? WHERE id=?",
+        tuple(dados.get(c, '') for c in CAMPOS_ESCRITURAL) + (agora, id_registro)
+    )
+    conn.commit()
+    conn.close()
+    return True
+
+
+def deletar_escritural(id_registro):
+    conn = conectar()
+    conn.execute("DELETE FROM escritural WHERE id=?", (id_registro,))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def importar_escritural(lista_registros, criado_por='importação planilha'):
+    """Importa registros novos, pulando linhas que já existem (mesma empresa+cnpj+data_solicitacao)
+    para permitir reenviar a mesma planilha histórica sem duplicar registros antigos."""
+    conn = conectar()
+    existentes = {
+        (r['empresa'] or '', r['cnpj'] or '', r['data_solicitacao'] or '')
+        for r in conn.execute("SELECT empresa,cnpj,data_solicitacao FROM escritural").fetchall()
+    }
+    colunas      = ','.join(CAMPOS_ESCRITURAL)
+    placeholders = ','.join('?' * len(CAMPOS_ESCRITURAL))
+    novos = 0
+    for reg in lista_registros:
+        chave = (reg.get('empresa', ''), reg.get('cnpj', ''), reg.get('data_solicitacao', ''))
+        if chave in existentes:
+            continue
+        existentes.add(chave)
+        conn.execute(
+            f"INSERT INTO escritural ({colunas},criado_por) VALUES ({placeholders},?)",
+            tuple(reg.get(c, '') for c in CAMPOS_ESCRITURAL) + (criado_por,)
+        )
+        novos += 1
+    conn.commit()
+    conn.close()
+    return novos
 
 
 def assumir_homologado(id_registro, tipo, nome_tecnico):
