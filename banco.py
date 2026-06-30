@@ -109,6 +109,7 @@ TELAS_SISTEMA = [
     ('sispbol',                'SispBol'),
     ('api_pagamentos',         'API Pagamentos'),
     ('ajuda',                  'Ajuda'),
+    ('ajuda_gerenciar',        'Gerenciar Ajuda'),
     ('importacao',             'Importação'),
     ('config',                 'Configurações'),
 ]

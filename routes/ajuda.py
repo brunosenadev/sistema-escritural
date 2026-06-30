@@ -3,7 +3,7 @@ from collections import Counter
 from html import escape
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 import banco
-from utils import checar_tela, checar_admin
+from utils import checar_tela
 
 ajuda_bp = Blueprint('ajuda', __name__)
 
@@ -152,7 +152,7 @@ def ver_ajuda_post(id_post):
 
 @ajuda_bp.route('/ajuda/gerenciar')
 def ajuda_gerenciar():
-    bloqueio = checar_admin()
+    bloqueio = checar_tela('ajuda_gerenciar')
     if bloqueio:
         return bloqueio
     topicos = banco.listar_ajuda_completo()
@@ -161,7 +161,7 @@ def ajuda_gerenciar():
 
 @ajuda_bp.route('/ajuda/gerenciar/post/novo')
 def ajuda_post_novo():
-    bloqueio = checar_admin()
+    bloqueio = checar_tela('ajuda_gerenciar')
     if bloqueio:
         return bloqueio
     topico_id = request.args.get('topico_id', type=int)
@@ -175,7 +175,7 @@ def ajuda_post_novo():
 
 @ajuda_bp.route('/ajuda/gerenciar/post/<int:id_post>/editar')
 def ajuda_post_editar(id_post):
-    bloqueio = checar_admin()
+    bloqueio = checar_tela('ajuda_gerenciar')
     if bloqueio:
         return bloqueio
     post = banco.buscar_ajuda_post(id_post)
@@ -193,7 +193,7 @@ def ajuda_post_editar(id_post):
 
 @ajuda_bp.route('/api/ajuda/topicos', methods=['POST'])
 def api_adicionar_topico():
-    if checar_admin():
+    if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
     d = request.get_json() or {}
     nome = (d.get('nome') or '').strip()
@@ -205,7 +205,7 @@ def api_adicionar_topico():
 
 @ajuda_bp.route('/api/ajuda/topicos/<int:id_topico>', methods=['PUT'])
 def api_atualizar_topico(id_topico):
-    if checar_admin():
+    if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
     d = request.get_json() or {}
     nome = (d.get('nome') or '').strip()
@@ -217,7 +217,7 @@ def api_atualizar_topico(id_topico):
 
 @ajuda_bp.route('/api/ajuda/topicos/<int:id_topico>', methods=['DELETE'])
 def api_remover_topico(id_topico):
-    if checar_admin():
+    if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.remover_ajuda_topico(id_topico)
     return jsonify({'sucesso': True})
@@ -227,7 +227,7 @@ def api_remover_topico(id_topico):
 
 @ajuda_bp.route('/api/ajuda/posts', methods=['POST'])
 def api_adicionar_post():
-    if checar_admin():
+    if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
     d = request.get_json() or {}
     if not (d.get('titulo') or '').strip():
@@ -240,7 +240,7 @@ def api_adicionar_post():
 
 @ajuda_bp.route('/api/ajuda/posts/<int:id_post>', methods=['PUT'])
 def api_atualizar_post(id_post):
-    if checar_admin():
+    if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
     d = request.get_json() or {}
     if not (d.get('titulo') or '').strip():
@@ -253,7 +253,7 @@ def api_atualizar_post(id_post):
 
 @ajuda_bp.route('/api/ajuda/posts/<int:id_post>', methods=['DELETE'])
 def api_remover_post(id_post):
-    if checar_admin():
+    if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.remover_ajuda_post(id_post)
     return jsonify({'sucesso': True})
@@ -263,7 +263,7 @@ def api_remover_post(id_post):
 
 @ajuda_bp.route('/api/ajuda/upload-pdf', methods=['POST'])
 def api_upload_pdf():
-    if checar_admin():
+    if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
     arquivo = request.files.get('arquivo')
     if not arquivo or not arquivo.filename.lower().endswith('.pdf'):
