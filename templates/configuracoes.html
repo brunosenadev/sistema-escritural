@@ -436,6 +436,34 @@
     margin-top: 4px;
   }
 
+  /* ── Tabs dentro do modal de usuário ────────── */
+  .modal-tabs {
+    display: flex; gap: 2px;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 18px;
+  }
+  .modal-tab-btn {
+    padding: 7px 16px; border: none; background: none;
+    font-size: 12.5px; font-weight: 500; font-family: 'Inter', sans-serif;
+    color: #64748b; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .modal-tab-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .modal-tab-btn:hover { color: #1e293b; }
+  .modal-tab-btn.ativo { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+  .modal-tab-painel { display: none; }
+  .modal-tab-painel.ativo { display: block; }
+
+  /* ── Subtítulo de seção no modal de e-mail ─── */
+  .secao-email-titulo {
+    font-size: 10.5px; font-weight: 700; color: #2563eb; text-transform: uppercase;
+    letter-spacing: 0.6px; margin: 14px 0 10px; padding-bottom: 5px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .secao-email-titulo:first-child { margin-top: 0; }
+
   /* ── Select de destino de homologado ────────── */
   .select-destino {
     padding: 4px 8px;
@@ -978,7 +1006,7 @@
 
 <!-- Modal: Usuário -->
 <div class="overlay-modal" id="overlay-usuario" onclick="fecharModalSeClicarFora(event,'overlay-usuario')">
-  <div class="modal-config">
+  <div class="modal-config" style="max-width:560px;">
     <div class="modal-titulo">
       <span id="titulo-modal-usuario">Novo Usuário</span>
       <button class="btn-fechar-modal" onclick="fecharModal('overlay-usuario')">
@@ -987,62 +1015,135 @@
         </svg>
       </button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="grupo-modal">
-        <label>Nome completo</label>
-        <input class="input-modal" type="text" id="campo-usuario-nome" placeholder="Ex: Heitor Silva">
-      </div>
-      <div class="grupo-modal">
-        <label>Login <span id="hint-login" style="color:#94a3b8;font-weight:400;text-transform:none;">(não editável)</span></label>
-        <input class="input-modal" type="text" id="campo-usuario-login" placeholder="Ex: heitor">
-      </div>
-      <div class="grupo-modal">
-        <label>Senha</label>
-        <input class="input-modal" type="password" id="campo-usuario-senha" placeholder="••••••">
-        <p class="dica-campo" id="dica-senha">Mínimo 6 caracteres.</p>
-      </div>
-      <div class="grupo-modal">
-        <label>Nível de acesso</label>
-        <select class="select-modal" id="campo-usuario-nivel">
-          <option value="normal">Normal</option>
-          <option value="admin">Admin</option>
-          <option value="master" disabled style="color:#7e22ce;">Master (não editável)</option>
-        </select>
-      </div>
-      <div class="grupo-modal">
-        <label>Técnico vinculado (opcional)</label>
-        <select class="select-modal" id="campo-usuario-tecnico">
-          <option value="">Nenhum</option>
-          {% for tecnico in tecnicos %}
-          <option value="{{ tecnico.nome }}">{{ tecnico.nome }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="grupo-modal">
-        <label>Setor (opcional)</label>
-        <select class="select-modal" id="campo-usuario-setor">
-          <option value="">Nenhum</option>
-          {% for setor in lista_setores %}
-          <option value="{{ setor }}">{{ setor }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="grupo-modal" style="grid-column:span 2;">
-        <label>Cor de identificação <span style="color:#94a3b8;font-weight:400;">(sidebar e destaque nos grids)</span></label>
-        <div class="wrapper-cor">
-          <input type="color" id="campo-usuario-cor" value="#2563eb" oninput="document.getElementById('preview-cor-usuario').style.color=this.value">
-          <span id="preview-cor-usuario" class="preview-cor-nome" style="color:#2563eb;font-weight:600;">Prévia do nome</span>
-          <label style="display:flex;align-items:center;gap:6px;margin-left:12px;font-size:12px;color:#64748b;cursor:pointer;">
-            <input type="checkbox" id="campo-usuario-sem-cor" onchange="toggleSemCor(this)"> Sem cor (usar padrão)
-          </label>
+
+    <!-- Tabs -->
+    <div class="modal-tabs">
+      <button class="modal-tab-btn ativo" onclick="trocarTabModal('dados', this)">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Dados gerais
+      </button>
+      <button class="modal-tab-btn" id="tab-btn-email-usuario" onclick="trocarTabModal('email-usuario', this)" style="display:none;">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        E-mail
+      </button>
+    </div>
+
+    <!-- Painel: Dados gerais -->
+    <div class="modal-tab-painel ativo" id="painel-modal-dados">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="grupo-modal">
+          <label>Nome completo</label>
+          <input class="input-modal" type="text" id="campo-usuario-nome" placeholder="Ex: Heitor Silva">
+        </div>
+        <div class="grupo-modal">
+          <label>Login <span id="hint-login" style="color:#94a3b8;font-weight:400;text-transform:none;">(não editável)</span></label>
+          <input class="input-modal" type="text" id="campo-usuario-login" placeholder="Ex: heitor">
+        </div>
+        <div class="grupo-modal">
+          <label>Senha</label>
+          <input class="input-modal" type="password" id="campo-usuario-senha" placeholder="••••••">
+          <p class="dica-campo" id="dica-senha">Mínimo 6 caracteres.</p>
+        </div>
+        <div class="grupo-modal">
+          <label>Nível de acesso</label>
+          <select class="select-modal" id="campo-usuario-nivel">
+            <option value="normal">Normal</option>
+            <option value="admin">Admin</option>
+            <option value="master" disabled style="color:#7e22ce;">Master (não editável)</option>
+          </select>
+        </div>
+        <div class="grupo-modal">
+          <label>Técnico vinculado (opcional)</label>
+          <select class="select-modal" id="campo-usuario-tecnico">
+            <option value="">Nenhum</option>
+            {% for tecnico in tecnicos %}
+            <option value="{{ tecnico.nome }}">{{ tecnico.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grupo-modal">
+          <label>Setor (opcional)</label>
+          <select class="select-modal" id="campo-usuario-setor">
+            <option value="">Nenhum</option>
+            {% for setor in lista_setores %}
+            <option value="{{ setor }}">{{ setor }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grupo-modal" style="grid-column:span 2;">
+          <label>Cor de identificação <span style="color:#94a3b8;font-weight:400;">(sidebar e destaque nos grids)</span></label>
+          <div class="wrapper-cor">
+            <input type="color" id="campo-usuario-cor" value="#2563eb" oninput="document.getElementById('preview-cor-usuario').style.color=this.value">
+            <span id="preview-cor-usuario" class="preview-cor-nome" style="color:#2563eb;font-weight:600;">Prévia do nome</span>
+            <label style="display:flex;align-items:center;gap:6px;margin-left:12px;font-size:12px;color:#64748b;cursor:pointer;">
+              <input type="checkbox" id="campo-usuario-sem-cor" onchange="toggleSemCor(this)"> Sem cor (usar padrão)
+            </label>
+          </div>
         </div>
       </div>
+      <input type="hidden" id="campo-usuario-id">
+      <div class="rodape-modal">
+        <button class="btn-cancelar-modal" onclick="fecharModal('overlay-usuario')">Cancelar</button>
+        <button class="btn-salvar-modal" onclick="salvarUsuario()">Salvar</button>
+      </div>
     </div>
-    <input type="hidden" id="campo-usuario-id">
-    <div class="rodape-modal">
-      <button class="btn-cancelar-modal" onclick="fecharModal('overlay-usuario')">Cancelar</button>
-      <button class="btn-salvar-modal" onclick="salvarUsuario()">Salvar</button>
+
+    <!-- Painel: E-mail -->
+    <div class="modal-tab-painel" id="painel-modal-email-usuario">
+      <p style="font-size:12px;color:#64748b;margin-bottom:14px;">Use as mesmas configurações do Thunderbird. Encontre em: <strong>Configurações de conta → Servidor de entrada/saída</strong>.</p>
+
+      <div class="secao-email-titulo">Identidade</div>
+      <div class="grupo-modal">
+        <label>E-mail do usuário</label>
+        <input class="input-modal" type="email" id="eu-email" placeholder="nome.sobrenome@empresa.com.br">
+      </div>
+
+      <div class="secao-email-titulo">Servidor de saída (SMTP)</div>
+      <div style="display:grid;grid-template-columns:1fr 100px;gap:10px;">
+        <div class="grupo-modal">
+          <label>Servidor SMTP</label>
+          <input class="input-modal" type="text" id="eu-smtp-host" placeholder="mail.empresa.com.br">
+        </div>
+        <div class="grupo-modal">
+          <label>Porta</label>
+          <input class="input-modal" type="number" id="eu-smtp-port" value="465">
+        </div>
+      </div>
+      <div class="grupo-modal" style="display:flex;align-items:center;gap:8px;margin-top:-4px;">
+        <input type="checkbox" id="eu-smtp-ssl" checked style="accent-color:#2563eb;">
+        <label for="eu-smtp-ssl" style="text-transform:none;letter-spacing:0;font-size:13px;color:#374151;font-weight:400;">SSL/TLS</label>
+      </div>
+
+      <div class="secao-email-titulo">Servidor de entrada (IMAP)</div>
+      <div style="display:grid;grid-template-columns:1fr 100px;gap:10px;">
+        <div class="grupo-modal">
+          <label>Servidor IMAP</label>
+          <input class="input-modal" type="text" id="eu-imap-host" placeholder="mail.empresa.com.br">
+        </div>
+        <div class="grupo-modal">
+          <label>Porta</label>
+          <input class="input-modal" type="number" id="eu-imap-port" value="993">
+        </div>
+      </div>
+      <div class="grupo-modal" style="display:flex;align-items:center;gap:8px;margin-top:-4px;">
+        <input type="checkbox" id="eu-imap-ssl" checked style="accent-color:#2563eb;">
+        <label for="eu-imap-ssl" style="text-transform:none;letter-spacing:0;font-size:13px;color:#374151;font-weight:400;">SSL/TLS</label>
+      </div>
+
+      <div class="secao-email-titulo">Autenticação</div>
+      <div class="grupo-modal">
+        <label>Senha</label>
+        <input class="input-modal" type="password" id="eu-senha" placeholder="Senha da conta de e-mail">
+        <p class="dica-campo">Deixe em branco para manter a senha atual.</p>
+      </div>
+
+      <div class="rodape-modal">
+        <button class="btn-cancelar-modal" onclick="testarEmailUsuario()">Testar conexão</button>
+        <button class="btn-cancelar-modal" onclick="fecharModal('overlay-usuario')">Cancelar</button>
+        <button class="btn-salvar-modal" onclick="salvarEmailUsuario()">Salvar e-mail</button>
+      </div>
     </div>
+
   </div>
 </div>
 
@@ -1261,6 +1362,9 @@
     document.getElementById('hint-login').style.display = 'none';
     document.getElementById('dica-senha').textContent = 'Mínimo 6 caracteres.';
     _setCorUsuario('');
+    // Oculta aba E-mail (ainda não tem ID)
+    document.getElementById('tab-btn-email-usuario').style.display = 'none';
+    trocarTabModal('dados', document.querySelector('.modal-tab-btn'));
     abrirModal('overlay-usuario');
   }
 
@@ -1279,6 +1383,10 @@
     document.getElementById('hint-login').style.display = 'inline';
     document.getElementById('dica-senha').textContent = 'Deixe em branco para manter a senha atual.';
     _setCorUsuario(usuario.cor || '');
+    // Mostra aba E-mail e carrega config
+    document.getElementById('tab-btn-email-usuario').style.display = '';
+    trocarTabModal('dados', document.querySelector('.modal-tab-btn'));
+    _carregarEmailUsuario(usuario.id);
     abrirModal('overlay-usuario');
   }
 
@@ -1580,6 +1688,68 @@
   document.getElementById('input-novo-setor').addEventListener('keydown', e => {
     if (e.key === 'Enter') adicionarSetor();
   });
+
+  // ─── Tabs dentro do modal de usuário ────────────────────
+  function trocarTabModal(idPainel, btn) {
+    document.querySelectorAll('.modal-tab-painel').forEach(p => p.classList.remove('ativo'));
+    document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('ativo'));
+    document.getElementById('painel-modal-' + idPainel).classList.add('ativo');
+    btn.classList.add('ativo');
+  }
+
+  // ─── E-mail por usuário ──────────────────────────────────
+  function _carregarEmailUsuario(id) {
+    fetch(`/api/email-config/${id}`)
+    .then(r => r.json())
+    .then(cfg => {
+      document.getElementById('eu-email').value     = cfg.email     || '';
+      document.getElementById('eu-smtp-host').value = cfg.smtp_host || '';
+      document.getElementById('eu-smtp-port').value = cfg.smtp_port || 465;
+      document.getElementById('eu-smtp-ssl').checked = cfg.smtp_ssl !== 0 && cfg.smtp_ssl !== false;
+      document.getElementById('eu-imap-host').value = cfg.imap_host || '';
+      document.getElementById('eu-imap-port').value = cfg.imap_port || 993;
+      document.getElementById('eu-imap-ssl').checked = cfg.imap_ssl !== 0 && cfg.imap_ssl !== false;
+      document.getElementById('eu-senha').value = '';
+    })
+    .catch(() => {});
+  }
+
+  function salvarEmailUsuario() {
+    const id = document.getElementById('campo-usuario-id').value;
+    if (!id) { mostrarToast('erro', 'Salve o usuário primeiro.'); return; }
+    const dados = {
+      email:     document.getElementById('eu-email').value.trim(),
+      smtp_host: document.getElementById('eu-smtp-host').value.trim(),
+      smtp_port: parseInt(document.getElementById('eu-smtp-port').value) || 465,
+      smtp_ssl:  document.getElementById('eu-smtp-ssl').checked,
+      imap_host: document.getElementById('eu-imap-host').value.trim(),
+      imap_port: parseInt(document.getElementById('eu-imap-port').value) || 993,
+      imap_ssl:  document.getElementById('eu-imap-ssl').checked,
+      senha:     document.getElementById('eu-senha').value,
+    };
+    fetch(`/api/email-config/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) mostrarToast('sucesso', 'Configuração de e-mail salva!');
+      else mostrarToast('erro', d.erro || 'Erro ao salvar.');
+    });
+  }
+
+  function testarEmailUsuario() {
+    const id = document.getElementById('campo-usuario-id').value;
+    if (!id) { mostrarToast('erro', 'Salve o usuário primeiro.'); return; }
+    mostrarToast('info', 'Testando conexão SMTP...');
+    fetch(`/api/email-config/${id}/testar`, { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) mostrarToast('sucesso', d.msg || 'Conexão OK!');
+      else mostrarToast('erro', d.erro || 'Falha na conexão.');
+    });
+  }
 
   // Preview de cor do técnico em tempo real
   document.getElementById('campo-tecnico-cor').addEventListener('input', function() {

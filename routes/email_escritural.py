@@ -278,3 +278,41 @@ def email_thread_get(escritural_id):
     banco.marcar_lidos_thread(escritural_id)
     msgs = banco.listar_thread_escritural(escritural_id)
     return jsonify(msgs)
+
+
+# ── Rotas admin: config de e-mail por usuário ─────────────
+
+@email_escritural_bp.route('/api/email-config/<int:usuario_id>', methods=['GET'])
+def admin_email_config_get(usuario_id):
+    nivel = session.get('nivel_acesso', '')
+    if nivel not in ('admin', 'master'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    cfg = banco.buscar_email_config(usuario_id) or {}
+    cfg.pop('senha', None)
+    return jsonify(cfg)
+
+
+@email_escritural_bp.route('/api/email-config/<int:usuario_id>', methods=['POST'])
+def admin_email_config_set(usuario_id):
+    nivel = session.get('nivel_acesso', '')
+    if nivel not in ('admin', 'master'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    dados = request.get_json(silent=True) or {}
+    banco.salvar_email_config(usuario_id, dados)
+    return jsonify({'sucesso': True})
+
+
+@email_escritural_bp.route('/api/email-config/<int:usuario_id>/testar', methods=['POST'])
+def admin_email_config_testar(usuario_id):
+    nivel = session.get('nivel_acesso', '')
+    if nivel not in ('admin', 'master'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    cfg = banco.buscar_email_config(usuario_id)
+    if not cfg or not cfg.get('smtp_host'):
+        return jsonify({'erro': 'Configure o e-mail antes de testar.'}), 400
+    try:
+        srv = _conectar_smtp(cfg)
+        srv.quit()
+        return jsonify({'sucesso': True, 'msg': 'Conexão SMTP OK!'})
+    except Exception as e:
+        return jsonify({'erro': f'Falha SMTP: {e}'}), 502
