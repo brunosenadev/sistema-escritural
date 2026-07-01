@@ -599,6 +599,18 @@
   const LABELS_ESCRITURAL = {{ labels | tojson }};
   const CAMPOS_GRANDES_ES = ['obs_emissao', 'obs_pagto', 'anexos'];
   let idEditandoEs = null;
+  let _chatClienteEmail = '';
+
+  function _stripQuotedText(texto) {
+    if (!texto) return '';
+    const linhas = texto.replace(/\r\n/g, '\n').split('\n');
+    const resultado = [];
+    for (const linha of linhas) {
+      if (/^\s*>/.test(linha) || /^Em\s.+escreveu\s*:/i.test(linha) || /^On\s.+wrote\s*:/i.test(linha)) break;
+      resultado.push(linha);
+    }
+    return resultado.join('\n').trim();
+  }
 
   // ── Cores do select de status ────────────────────────────
   const _STATUS_CORES = {
@@ -625,10 +637,10 @@
   function _aplicarCorSelect(el) {
     const cls = _classeStatus(el.value);
     const c = _STATUS_CORES[cls] || { bg: '#f1f5f9', fg: '#475569' };
-    el.style.backgroundColor = c.bg;
-    el.style.color = c.fg;
+    el.style.setProperty('background-color', c.bg, 'important');
+    el.style.setProperty('color', c.fg, 'important');
     const fg = encodeURIComponent(c.fg);
-    el.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${fg}' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`;
+    el.style.setProperty('background-image', `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${fg}' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, 'important');
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -904,26 +916,43 @@ Sisplan Sistemas`;
     fetch(`/email/thread/${escrituralId}`).then(r => r.json()).then(msgs => {
       const wrap = document.getElementById('chat-mensagens');
       wrap.innerHTML = '';
+      _chatClienteEmail = '';
+      _chatLastMessageId = null;
+      _chatLastReferences = null;
+
       if (!msgs.length) {
         wrap.innerHTML = '<div class="chat-vazio">Nenhuma mensagem ainda. Use "Enviar orçamento" para iniciar a conversa.</div>';
         return;
       }
+
       msgs.forEach(m => {
+        if (m.direcao === 'enviado' && m.destinatario) _chatClienteEmail = m.destinatario;
+        if (m.direcao === 'recebido' && m.remetente) {
+          const p = _parseRemetente(m.remetente);
+          _chatClienteEmail = p[1] || m.remetente;
+        }
+        if (m.message_id) {
+          _chatLastMessageId = m.message_id;
+          _chatLastReferences = (_chatLastReferences ? _chatLastReferences + ' ' : '') + m.message_id;
+        }
+
+        const texto = m.direcao === 'recebido' ? _stripQuotedText(m.corpo_texto) : (m.corpo_texto || '');
+        if (!texto && m.direcao === 'recebido') return;
+
         const item = document.createElement('div');
         item.className = 'chat-item';
         const balao = document.createElement('div');
         balao.className = `chat-balao ${m.direcao}`;
-        balao.textContent = m.corpo_texto || '(sem conteúdo)';
+        balao.textContent = texto || '(sem conteúdo)';
         const meta = document.createElement('div');
         meta.className = `chat-meta ${m.direcao}`;
-        const quem = m.direcao === 'enviado' ? (m.enviado_por || 'Você') : m.remetente;
+        const quem = m.direcao === 'enviado' ? (m.enviado_por || 'Você') : (m.remetente || 'Cliente');
         meta.textContent = `${quem} · ${m.data_hora}`;
         item.appendChild(balao);
         item.appendChild(meta);
         wrap.appendChild(item);
-        if (m.message_id) { _chatLastMessageId = m.message_id; }
-        if (m.message_id) { _chatLastReferences = (_chatLastReferences ? _chatLastReferences + ' ' : '') + m.message_id; }
       });
+
       wrap.scrollTop = wrap.scrollHeight;
     });
   }
@@ -931,25 +960,30 @@ Sisplan Sistemas`;
     const escrituralId = parseInt(document.getElementById('chat-escritural-id').value);
     const corpo = document.getElementById('chat-corpo-resposta').value.trim();
     if (!corpo) { mostrarToast('erro', 'Escreva uma mensagem antes de enviar.'); return; }
-    fetch(`/email/thread/${escrituralId}`).then(r => r.json()).then(msgs => {
-      const recebidas = msgs.filter(m => m.direcao === 'recebido');
-      const ultima = recebidas[recebidas.length - 1] || msgs[0];
-      const partes = ultima ? _parseRemetente(ultima.remetente) : ['', ''];
-      const destinatario = partes[1] || ultima?.remetente || '';
-      const dados = {
-        escritural_id: escrituralId, destinatario,
-        assunto: `Re: [SISPLAN-${escrituralId}] Orçamento`,
-        corpo, in_reply_to: _chatLastMessageId, references: _chatLastReferences,
-      };
-      fetch('/email/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) })
-      .then(r => r.json())
-      .then(resp => {
-        if (resp.sucesso) {
-          document.getElementById('chat-corpo-resposta').value = '';
-          carregarThread(escrituralId);
-          mostrarToast('sucesso', 'Resposta enviada!');
-        } else { mostrarToast('erro', resp.erro || 'Erro ao enviar.'); }
-      });
+    if (!_chatClienteEmail) { mostrarToast('erro', 'Não foi possível identificar o e-mail do destinatário.'); return; }
+    const btn = document.querySelector('#overlay-chat-email .botao-salvar');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    const dados = {
+      escritural_id: escrituralId,
+      destinatario: _chatClienteEmail,
+      assunto: `Re: [SISPLAN-${escrituralId}] Orçamento`,
+      corpo,
+      in_reply_to: _chatLastMessageId,
+      references: _chatLastReferences,
+    };
+    fetch('/email/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) })
+    .then(r => r.json())
+    .then(resp => {
+      if (btn) { btn.disabled = false; btn.textContent = 'Responder'; }
+      if (resp.sucesso) {
+        document.getElementById('chat-corpo-resposta').value = '';
+        carregarThread(escrituralId);
+        mostrarToast('sucesso', 'Resposta enviada!');
+      } else { mostrarToast('erro', resp.erro || 'Erro ao enviar.'); }
+    })
+    .catch(() => {
+      if (btn) { btn.disabled = false; btn.textContent = 'Responder'; }
+      mostrarToast('erro', 'Erro de conexão.');
     });
   }
   function _parseRemetente(from) {

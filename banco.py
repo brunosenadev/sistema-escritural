@@ -1795,7 +1795,7 @@ def salvar_email_thread(escritural_id, msg):
 def listar_thread_escritural(escritural_id):
     conn = conectar()
     rows = conn.execute(
-        "SELECT * FROM email_thread_escritural WHERE escritural_id=? ORDER BY data_hora ASC",
+        "SELECT * FROM email_thread_escritural WHERE escritural_id=? ORDER BY rowid ASC",
         (escritural_id,)
     ).fetchall()
     conn.close()
