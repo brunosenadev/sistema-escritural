@@ -99,8 +99,8 @@ def _pdf_para_html(arquivo) -> str:
 
                     buffer.append(texto_linha)
 
-                flush()  # fim do bloco do PDF -> normalmente fim do parágrafo
-            flush()  # quebra de página -> fim do parágrafo
+                flush() 
+            flush() 
 
         partes_html = []
         i = 0
@@ -124,9 +124,6 @@ def _pdf_para_html(arquivo) -> str:
     finally:
         doc.close()
 
-
-# ── Visualização (tela-gated) ─────────────────────────────
-
 @ajuda_bp.route('/ajuda')
 def aba_ajuda():
     bloqueio = checar_tela('ajuda')
@@ -148,7 +145,6 @@ def ver_ajuda_post(id_post):
     topico = next((t for t in banco.listar_ajuda_topicos() if t['id'] == post['topico_id']), None)
     return render_template('ajuda_post_view.html', post=post, topico=topico)
 
-
 @ajuda_bp.route('/ajuda/post/<int:id_post>/imprimir')
 def imprimir_ajuda_post(id_post):
     bloqueio = checar_tela('ajuda')
@@ -161,9 +157,6 @@ def imprimir_ajuda_post(id_post):
     from datetime import datetime
     now = datetime.now().strftime('%d/%m/%Y %H:%M')
     return render_template('ajuda_post_print.html', post=post, topico=topico, now=now)
-
-
-# ── Gerenciamento (admin/master, tela separada) ───────────
 
 @ajuda_bp.route('/ajuda/gerenciar')
 def ajuda_gerenciar():

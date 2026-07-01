@@ -135,8 +135,10 @@ TELAS_SISTEMA = [tela for _, telas in TELAS_AGRUPADAS for tela in telas]
 # ── Conexão ───────────────────────────────────────────────
 
 def conectar():
-    conn = sqlite3.connect(CAMINHO_BANCO)
+    conn = sqlite3.connect(CAMINHO_BANCO, timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA journal_mode=WAL')
+    conn.execute('PRAGMA busy_timeout=30000')
     return conn
 
 # ── Inicialização ─────────────────────────────────────────
@@ -1853,25 +1855,26 @@ def listar_email_configs_ativos():
 
 def salvar_email_thread(escritural_id, msg):
     conn = conectar()
-    cur = conn.execute("""
-        INSERT INTO email_thread_escritural
-            (escritural_id, message_id, in_reply_to, assunto, remetente, destinatario,
-             corpo_texto, corpo_html, data_hora, direcao, lido, enviado_por)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-    """, (
-        escritural_id,
-        msg.get('message_id', ''), msg.get('in_reply_to', ''),
-        msg.get('assunto', ''), msg.get('remetente', ''), msg.get('destinatario', ''),
-        msg.get('corpo_texto', ''), msg.get('corpo_html', ''),
-        msg.get('data_hora', datetime.now().strftime('%d/%m/%Y %H:%M')),
-        msg.get('direcao', 'enviado'),
-        1 if msg.get('direcao') == 'enviado' else 0,
-        msg.get('enviado_por', ''),
-    ))
-    conn.commit()
-    id_novo = cur.lastrowid
-    conn.close()
-    return id_novo
+    try:
+        cur = conn.execute("""
+            INSERT INTO email_thread_escritural
+                (escritural_id, message_id, in_reply_to, assunto, remetente, destinatario,
+                 corpo_texto, corpo_html, data_hora, direcao, lido, enviado_por)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            escritural_id,
+            msg.get('message_id', ''), msg.get('in_reply_to', ''),
+            msg.get('assunto', ''), msg.get('remetente', ''), msg.get('destinatario', ''),
+            msg.get('corpo_texto', ''), msg.get('corpo_html', ''),
+            msg.get('data_hora', datetime.now().strftime('%d/%m/%Y %H:%M')),
+            msg.get('direcao', 'enviado'),
+            1 if msg.get('direcao') == 'enviado' else 0,
+            msg.get('enviado_por', ''),
+        ))
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
 
 
 def listar_thread_escritural(escritural_id):
@@ -1886,12 +1889,14 @@ def listar_thread_escritural(escritural_id):
 
 def marcar_lidos_thread(escritural_id):
     conn = conectar()
-    conn.execute(
-        "UPDATE email_thread_escritural SET lido=1 WHERE escritural_id=? AND lido=0",
-        (escritural_id,)
-    )
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute(
+            "UPDATE email_thread_escritural SET lido=1 WHERE escritural_id=? AND lido=0",
+            (escritural_id,)
+        )
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def message_id_existe(message_id):
