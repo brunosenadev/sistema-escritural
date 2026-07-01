@@ -31,7 +31,6 @@ def _enviar_bg(token, canal_id, mensagem):
 
 
 def notificar_nova_homologacao(cliente):
-    """Envia mensagem no canal Discord configurado. Fire-and-forget."""
     token = _token()
     canal_id = _canal()
     if not token or not canal_id:
@@ -41,7 +40,6 @@ def notificar_nova_homologacao(cliente):
 
 
 def notificar_discord(mensagem):
-    """Envia qualquer mensagem no canal configurado. Fire-and-forget."""
     token = _token()
     canal_id = _canal()
     if not token or not canal_id:

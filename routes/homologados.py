@@ -13,9 +13,10 @@ def _sem_permissao():
 homologados_bp = Blueprint('homologados', __name__)
 
 _CONFIGS = {
-    'cobranca':   ('listar_homologados_cobranca',   'Homologados Cobrança',       'homologados_cobranca'),
-    'pagamentos': ('listar_homologados_pagamentos',  'Homologados Pagamentos',      'homologados_pagamentos'),
-    'extrato':    ('listar_homologados_extrato',     'Homologados Extrato Cartão',  'homologados_extrato'),
+    'cobranca':     ('listar_homologados_cobranca',       'Homologados Cobrança',          'homologados_cobranca'),
+    'pagamentos':   ('listar_homologados_pagamentos',     'Homologados Pagamentos',         'homologados_pagamentos'),
+    'extrato':      ('listar_homologados_extrato',        'Homologados Extrato Cartão',     'homologados_extrato'),
+    'ext-bancario': ('listar_homologados_ext_bancario',  'Homologados Extrato Bancário',   'homologados_ext_bancario'),
 }
 
 
@@ -30,7 +31,12 @@ def _chave_data(s):
 
 
 def _render(tipo):
-    tela_map = {'cobranca': 'homologados_cobranca', 'pagamentos': 'homologados_pagamentos', 'extrato': 'homologados_extrato'}
+    tela_map = {
+        'cobranca':     'homologados_cobranca',
+        'pagamentos':   'homologados_pagamentos',
+        'extrato':      'homologados_extrato',
+        'ext-bancario': 'homologados_ext_bancario',
+    }
     bloqueio = checar_tela(tela_map.get(tipo, tipo))
     if bloqueio:
         return bloqueio
@@ -138,6 +144,34 @@ def deletar_hom_extrato(id_registro):
     err = _sem_permissao()
     if err: return err
     banco.deletar_homologado_extrato(id_registro)
+    return jsonify({'sucesso': True})
+
+
+# ── Extrato Bancário ──────────────────────────────────────
+
+@homologados_bp.route('/homologados-ext-bancario')
+def aba_homologados_ext_bancario():
+    return _render('ext-bancario')
+
+@homologados_bp.route('/homologados-ext-bancario/adicionar', methods=['POST'])
+def adicionar_hom_ext_bancario():
+    err = _sem_permissao()
+    if err: return err
+    id_novo = banco.adicionar_homologado_ext_bancario(request.get_json(), session.get('usuario', ''))
+    return jsonify({'sucesso': True, 'id': id_novo})
+
+@homologados_bp.route('/homologados-ext-bancario/atualizar/<int:id_registro>', methods=['PUT'])
+def atualizar_hom_ext_bancario(id_registro):
+    err = _sem_permissao()
+    if err: return err
+    banco.atualizar_homologado_ext_bancario(id_registro, request.get_json())
+    return jsonify({'sucesso': True})
+
+@homologados_bp.route('/homologados-ext-bancario/deletar/<int:id_registro>', methods=['DELETE'])
+def deletar_hom_ext_bancario(id_registro):
+    err = _sem_permissao()
+    if err: return err
+    banco.deletar_homologado_ext_bancario(id_registro)
     return jsonify({'sucesso': True})
 
 

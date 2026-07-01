@@ -19,7 +19,8 @@ from routes.hub         import hub_bp
 from routes.acesso      import acesso_bp
 from routes.ajuda           import ajuda_bp
 from routes.escritural      import escritural_bp
-from routes.discord_notif   import discord_bp
+from routes.discord_notif       import discord_bp
+from routes.email_escritural    import email_escritural_bp, iniciar_polling
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
@@ -39,9 +40,9 @@ app.register_blueprint(acesso_bp)
 app.register_blueprint(ajuda_bp)
 app.register_blueprint(escritural_bp)
 app.register_blueprint(discord_bp)
+app.register_blueprint(email_escritural_bp)
 
-
-# ── JWT: valida em toda requisição ────────────────────────
+iniciar_polling()
 
 _ROTAS_PUBLICAS = {
     'auth.pagina_login', 'auth.sair', 'static',
@@ -56,7 +57,6 @@ def _jwt_guard():
 
     from utils import _payload_access, _payload_refresh, _preencher_sessao, criar_tokens
 
-    # 1. Access token válido
     payload = _payload_access()
     if payload:
         _preencher_sessao(payload)
@@ -80,7 +80,6 @@ def _jwt_guard():
             g._novo_refresh = new_refresh
             return
 
-    # 3. Sem token válido
     session.clear()
     return redirect(url_for('auth.pagina_login'))
 

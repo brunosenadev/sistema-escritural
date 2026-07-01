@@ -25,7 +25,7 @@ _CAMPOS_FORNECEDORES_OBRIGATORIOS = ('modalidades', 'solicitante_pagto', 'nome_s
 _CAMPOS_FORNECEDORES_OPCIONAIS = ('obs_pagto',)
 
 _TAMANHO_MAX_CAMPO = 200
-_TAMANHO_MAX_CAMPO_LONGO = 1000  # campos de texto livre/observações/checkboxes combinados
+_TAMANHO_MAX_CAMPO_LONGO = 1000
 _CAMPOS_LONGOS = {'protesto', 'modalidades', 'obs_emissao', 'obs_pagto'}
 
 _REGEX_EMAIL = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
@@ -130,12 +130,12 @@ def _validar_formulario_publico(dados):
     return limpos, None
 
 
-@escritural_bp.route('/escritural/publico', methods=['GET'])
+@escritural_bp.route('/escritural/formulario', methods=['GET'])
 def formulario_publico():
     return render_template('escritural_publico.html')
 
 
-@escritural_bp.route('/escritural/publico/enviar', methods=['POST'])
+@escritural_bp.route('/escritural/formulario/enviar', methods=['POST'])
 def enviar_formulario_publico():
     corpo = request.get_json(silent=True) or {}
 
@@ -176,7 +176,12 @@ def aba_escritural():
     if bloqueio:
         return bloqueio
     from flask import url_for
+    from collections import Counter
     registros = banco.listar_escritural()
+    resumo_banco = dict(
+        sorted(Counter(r.get('banco') or 'Sem banco' for r in registros).items(),
+               key=lambda x: x[1], reverse=True)
+    )
     return render_template(
         'aba_escritural.html',
         registros=registros,
@@ -184,6 +189,8 @@ def aba_escritural():
         labels=banco.LABELS_ESCRITURAL,
         lista_status=banco.listar_status_escritural(),
         link_publico=url_for('escritural.formulario_publico', _external=True),
+        nao_lidos=banco.contar_nao_lidos_escritural(),
+        resumo_banco=resumo_banco,
     )
 
 

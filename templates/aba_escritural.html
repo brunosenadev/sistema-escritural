@@ -7,248 +7,394 @@
 
 {% block estilos_extras %}
 <style>
-  .es-wrap { padding-bottom: 40px; }
 
-  .es-toolbar {
+  /* ── Layout principal (igual homologados) ── */
+  .grade-aba { display: grid; grid-template-columns: 1fr 240px; gap: 20px; align-items: start; }
+
+  .card-tabela {
+    background: #fff; border-radius: 14px;
+    border: 1px solid #e2e8f0; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .barra-ferramentas {
     display: flex; align-items: center; gap: 10px;
-    margin-bottom: 14px; flex-wrap: wrap;
+    padding: 14px 18px; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap;
   }
-  .es-busca { position: relative; flex: 1; min-width: 200px; max-width: 360px; }
-  .es-busca svg {
-    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
-    width: 14px; height: 14px; stroke: #94a3b8; fill: none; stroke-width: 2; stroke-linecap: round;
-    pointer-events: none;
-  }
-  .es-busca input {
-    width: 100%; padding: 8px 12px 8px 34px;
+
+  .campo-busca {
+    flex: 1; min-width: 180px; padding: 8px 12px;
     border: 1.5px solid #e2e8f0; border-radius: 8px;
-    font-size: 13px; font-family: 'Inter', sans-serif; color: #1e293b;
-    background: #fff; outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    font-size: 13px; font-family: inherit; outline: none;
+    transition: border-color 0.15s;
   }
-  .es-busca input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
+  .campo-busca:focus { border-color: #3b82f6; }
 
-  .botao-primario {
-    padding: 8px 16px; background: #2563eb; color: #fff;
-    border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
-    font-family: 'Inter', sans-serif; cursor: pointer;
-    display: inline-flex; align-items: center; gap: 6px;
-    transition: background 0.15s, transform 0.15s; margin-left: auto;
+  .select-filtro {
+    padding: 8px 10px; border: 1.5px solid #e2e8f0;
+    border-radius: 8px; font-size: 12px; font-family: inherit;
+    outline: none; color: #475569; cursor: pointer; max-width: 160px;
   }
-  .botao-primario:hover { background: #1d4ed8; transform: translateY(-1px); }
-  .botao-primario svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; }
 
-  .botao-secundario {
-    padding: 8px 16px; background: #fff; color: #374151;
-    border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 13px; font-weight: 600;
-    font-family: 'Inter', sans-serif; cursor: pointer;
-    display: inline-flex; align-items: center; gap: 6px;
-    transition: background 0.15s, border-color 0.15s; white-space: nowrap;
+  .botao-novo {
+    padding: 8px 16px; background: #0a1628; color: #fff;
+    border: none; border-radius: 8px; font-size: 13px;
+    font-family: inherit; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    white-space: nowrap; transition: background 0.15s;
   }
-  .botao-secundario:hover { background: #f3f4f6; border-color: #9ca3af; }
+  .botao-novo:hover { background: #1a3a7a; }
+  .botao-novo svg { width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round; }
+  .botao-novo.secundario { background: #334155; }
+  .botao-novo.secundario:hover { background: #475569; }
 
-  .es-card {
-    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
-    overflow: hidden;
-  }
-  .es-tabela-scroll { overflow-x: auto; }
-  table.es-tabela { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  table.es-tabela tbody tr { cursor: pointer; }
-  table.es-tabela th {
-    text-align: left; padding: 10px 14px; font-size: 10.5px; font-weight: 700;
-    color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;
+  /* ── Tabela ── */
+  .tabela-es { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .tabela-es th {
+    padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8;
     background: #f8fafc; border-bottom: 1px solid #e2e8f0; white-space: nowrap;
   }
-  table.es-tabela td {
-    padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #334155;
-    vertical-align: top; white-space: normal; word-break: break-word;
+  .tabela-es td {
+    padding: 9px 12px; border-bottom: 1px solid #f1f5f9; color: #334155;
+    vertical-align: middle; max-width: 160px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  table.es-tabela td.es-celula-grande { max-width: 360px; }
-  table.es-tabela tbody tr:hover { background: #f8fafc; }
-  table.es-tabela tbody tr:last-child td { border-bottom: none; }
+  .tabela-es td.celula-status { max-width: none; overflow: visible; padding: 9px 6px; white-space: nowrap; }
+  .tabela-es tr:last-child td { border-bottom: none; }
+  .tabela-es tbody tr:hover td { background: #f8fbff; }
+  .tabela-es tbody tr { cursor: pointer; }
 
-  .es-empresa { font-weight: 600; color: #1e293b; }
-
-  .badge-es {
-    display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 99px;
-    font-size: 11px; font-weight: 600; white-space: nowrap; background: #f1f5f9; color: #475569;
-  }
-  .badge-es.aprovado  { background: #dcfce7; color: #15803d; }
-  .badge-es.pendente  { background: #fef3c7; color: #92400e; }
-  .badge-es.aguardando{ background: #dbeafe; color: #1d4ed8; }
-  .badge-es.cancelado { background: #fee2e2; color: #991b1b; }
-  .badge-es.repassado { background: #ede9fe; color: #6d28d9; }
-  .badge-es.recusado  { background: #fca5a5; color: #7f1d1d; }
-
-  /* ── Select de status inline ─────────────────── */
-  .select-status-inline-es {
-    appearance: none; -webkit-appearance: none; border: none; cursor: pointer;
-    font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
-    white-space: nowrap; padding: 3px 22px 3px 10px; border-radius: 99px; outline: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 6px center; background-size: 10px;
-    transition: opacity 0.15s, box-shadow 0.15s;
-  }
-  .select-status-inline-es:hover { opacity: 0.80; box-shadow: 0 0 0 2px rgba(0,0,0,0.08); }
-  .select-status-inline-es:focus { box-shadow: 0 0 0 2px rgba(37,99,235,0.25); }
-  .select-status-inline-es option { background: #ffffff; color: #1e293b; font-weight: 500; }
+  .celula-empresa { font-weight: 600; color: #1e293b; }
 
   .rodape-tabela {
-    padding: 10px 16px; border-top: 1px solid #f1f5f9; font-size: 12px; color: #94a3b8;
+    display: flex; justify-content: space-between; padding: 10px 18px;
+    font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9;
+  }
+
+  /* ── Select de status com cores dinâmicas (via JS) ── */
+  .select-status-inline {
+    appearance: none; -webkit-appearance: none;
+    border: none; cursor: pointer; outline: none;
+    padding: 3px 24px 3px 10px; border-radius: 99px;
+    font-size: 11px; font-weight: 700; white-space: nowrap;
+    letter-spacing: 0.3px; font-family: inherit;
+    background-repeat: no-repeat;
+    background-position: right 7px center;
+    background-size: 10px 10px;
+    background-color: #f1f5f9; color: #475569;
+    transition: opacity 0.15s;
+  }
+  .select-status-inline option { background: #fff; color: #1e293b; font-weight: 500; }
+
+  /* ── Acões por linha ── */
+  .celula-acoes { display: flex; gap: 4px; align-items: center; }
+  .botao-acao {
+    width: 28px; height: 28px; border: none; background: none; cursor: pointer;
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .botao-acao svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .botao-acao.editar  { color: #3b82f6; } .botao-acao.editar:hover  { background: #eff6ff; }
+  .botao-acao.deletar { color: #ef4444; } .botao-acao.deletar:hover { background: #fef2f2; }
+
+  .linha-vazia td { text-align: center; padding: 40px 20px; color: #94a3b8; }
+  .linha-vazia svg { width: 32px; height: 32px; stroke: #cbd5e1; fill: none; stroke-width: 1.5; display: block; margin: 0 auto 10px; }
+
+  /* ── Coluna de resumo (igual homologados) ── */
+  .coluna-resumo { display: flex; flex-direction: column; gap: 14px; }
+  .card-resumo { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; }
+  .card-resumo-header {
+    padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; color: #64748b; background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+  }
+  .lista-resumo { padding: 4px 0; }
+  .item-resumo {
     display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 16px; font-size: 12px; transition: background 0.1s;
+    border-radius: 6px; margin: 1px 4px; cursor: pointer;
   }
-  [data-tema="dark"] .rodape-tabela { border-color: var(--z-border-s); color: var(--z-text-3); }
-
-  .es-acoes { display: flex; gap: 4px; }
-  .botao-icone {
-    width: 28px; height: 28px; border-radius: 7px; border: none; background: transparent;
-    color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s, color 0.15s;
-  }
-  .botao-icone:hover { background: #f1f5f9; color: #2563eb; }
-  .botao-icone.excluir:hover { background: #fee2e2; color: #dc2626; }
-  .botao-icone svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
-
-  .es-empty { text-align: center; padding: 60px 20px; color: #94a3b8; font-size: 13px; }
+  .item-resumo:hover { background: #f8fafc; }
+  .item-resumo-nome { font-weight: 600; font-size: 11px; color: #334155; }
+  .item-resumo-cont { background: #f1f5f9; color: #475569; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
 
   /* ── Modal ── */
   .overlay-modal { display: none; position: fixed; inset: 0; background: rgba(10,22,40,0.55); z-index: 500; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
   .overlay-modal.aberto { display: flex; }
-  .modal-es { background: #fff; border-radius: 16px; padding: 28px; width: 100%; max-width: 760px; box-shadow: 0 20px 60px rgba(10,22,40,0.25); max-height: 90vh; overflow-y: auto; }
-  .modal-titulo { font-size: 17px; font-weight: 700; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
-  .botao-fechar-modal { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; border-radius: 6px; display: flex; align-items: center; }
-  .botao-fechar-modal:hover { color: #475569; background: #f1f5f9; }
-  .botao-fechar-modal svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .card-modal {
+    background: #fff; border-radius: 16px; padding: 28px;
+    width: 100%; max-width: 760px; max-width: 640px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.18);
+    max-height: 90vh; overflow-y: auto;
+    animation: modal-entrar 0.2s ease;
+  }
+  .card-modal.modal-largo { max-width: 760px; }
+  .card-modal.modal-estreito { max-width: 520px; }
+  @keyframes modal-entrar { from{opacity:0;transform:translateY(-12px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+  .modal-titulo { font-size: 16px; font-weight: 700; color: #1e293b; }
+  .botao-fechar-modal { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; border-radius: 6px; transition: color 0.15s, background 0.15s; display: flex; align-items: center; }
+  .botao-fechar-modal:hover { color: #ef4444; background: #fef2f2; }
+  .botao-fechar-modal svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
 
-  .es-secao-titulo {
+  .secao-form-titulo {
     font-size: 11px; font-weight: 700; color: #2563eb; text-transform: uppercase;
     letter-spacing: 0.6px; margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #f1f5f9;
   }
-  .es-secao-titulo:first-of-type { margin-top: 0; }
+  .secao-form-titulo:first-of-type { margin-top: 0; }
 
-  .grade-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .grade-form .campo-completo { grid-column: 1 / -1; }
-  .grupo-form label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
-  .input-form { width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: 'Inter', sans-serif; color: #1e293b; background: #f8fafc; outline: none; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s; }
-  .input-form:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
+  .grade-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+  .campo-completo { grid-column: 1 / -1; }
+  .grupo-form { display: flex; flex-direction: column; gap: 5px; }
+  .grupo-form label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; }
+  .input-form, .select-form { padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.15s; color: #1e293b; width: 100%; background: #f8fafc; }
+  .input-form:focus, .select-form:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
 
-  .rodape-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
-  .botao-cancelar { padding: 9px 18px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #fff; color: #475569; font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer; }
-  .botao-cancelar:hover { background: #f8fafc; }
-  .botao-salvar { padding: 9px 20px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; }
-  .botao-salvar:hover { background: #1d4ed8; }
+  .rodape-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #f1f5f9; }
+  .botao-cancelar { padding: 9px 18px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 13px; font-family: inherit; cursor: pointer; }
+  .botao-cancelar:hover { background: #f1f5f9; }
+  .botao-salvar { padding: 9px 20px; border-radius: 8px; border: none; background: #0a1628; color: #fff; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .botao-salvar:hover { background: #1a3a7a; }
+
+  /* ── Dropdown do ID ── */
+  .es-id-cell { white-space: nowrap; }
+  .es-dropdown { position: relative; display: inline-block; }
+  .es-id-btn {
+    padding: 3px 10px; border-radius: 6px; border: 1.5px solid #e2e8f0;
+    background: #f8fafc; font-size: 12px; font-weight: 700; color: #2563eb;
+    font-family: inherit; cursor: pointer; display: inline-flex;
+    align-items: center; gap: 5px; transition: background 0.15s, border-color 0.15s;
+  }
+  .es-id-btn:hover { background: #eff6ff; border-color: #93c5fd; }
+  .es-id-btn svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+  .badge-nao-lido {
+    background: #ef4444; color: #fff; border-radius: 99px;
+    font-size: 10px; font-weight: 700; padding: 1px 5px; min-width: 16px; text-align: center;
+  }
+  .es-dropdown-menu {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 200;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(10,22,40,0.14); min-width: 190px; padding: 4px;
+  }
+  .es-dropdown-menu.aberto { display: block; }
+  .es-dropdown-menu button {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 8px 12px; border: none; background: none; border-radius: 7px;
+    font-size: 13px; color: #1e293b; font-family: inherit;
+    cursor: pointer; text-align: left;
+  }
+  .es-dropdown-menu button:hover { background: #f1f5f9; }
 
   /* ── Modal de preview (somente leitura) ── */
-  .modal-preview-es { max-width: 640px; }
   .es-preview-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
   .es-preview-linha { padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
   .es-preview-linha.es-preview-completa { grid-column: 1 / -1; }
   .es-preview-label { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; }
   .es-preview-valor { font-size: 13.5px; color: #1e293b; white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
 
+  /* ── Chat de e-mail ── */
+  .chat-email-wrap { display: flex; flex-direction: column; gap: 14px; max-height: 52vh; overflow-y: auto; padding-right: 4px; margin-bottom: 16px; }
+  .chat-balao {
+    max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .chat-balao.enviado { align-self: flex-end; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-bottom-right-radius: 4px; }
+  .chat-balao.recebido { align-self: flex-start; background: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b; border-bottom-left-radius: 4px; }
+  .chat-meta { font-size: 10.5px; color: #94a3b8; margin-top: 4px; }
+  .chat-meta.enviado { text-align: right; }
+  .chat-item { display: flex; flex-direction: column; }
+  .chat-vazio { text-align: center; color: #94a3b8; font-size: 13px; padding: 30px 0; }
+  .chat-resposta-area { border-top: 1px solid #f1f5f9; padding-top: 14px; }
+  .chat-resposta-area textarea { resize: vertical; min-height: 72px; }
+
   /* ── Dark mode ── */
-  [data-tema="dark"] .es-card          { background: var(--z-surface); border-color: var(--z-border-s); }
-  [data-tema="dark"] .es-busca input   { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] table.es-tabela th{ background: var(--z-elevated); border-color: var(--z-border-s); color: var(--z-text-3); }
-  [data-tema="dark"] table.es-tabela td{ border-color: var(--z-border-s); color: var(--z-text-2); }
-  [data-tema="dark"] table.es-tabela tbody tr:hover { background: var(--z-elevated); }
-  [data-tema="dark"] .es-empresa       { color: var(--z-text-1); }
-  [data-tema="dark"] .es-empty         { color: var(--z-text-3); }
-  [data-tema="dark"] .botao-icone      { color: var(--z-text-3); }
-  [data-tema="dark"] .botao-icone:hover{ background: var(--z-border-s); color: var(--z-accent-t); }
-  [data-tema="dark"] .modal-es         { background: var(--z-surface); }
-  [data-tema="dark"] .modal-titulo     { color: var(--z-text-1); }
-  [data-tema="dark"] .es-secao-titulo  { color: var(--z-accent-t); border-color: var(--z-border-s); }
+  [data-tema="dark"] .card-tabela     { background: var(--z-surface); border-color: var(--z-border-s); }
+  [data-tema="dark"] .card-resumo     { background: var(--z-surface); border-color: var(--z-border-s); }
+  [data-tema="dark"] .card-resumo-header { background: var(--z-elevated); border-color: var(--z-border-s); }
+  [data-tema="dark"] .item-resumo:hover { background: var(--z-elevated); }
+  [data-tema="dark"] .item-resumo-nome { color: var(--z-text-2); }
+  [data-tema="dark"] .tabela-es th   { background: var(--z-elevated); border-color: var(--z-border-s); color: var(--z-text-3); }
+  [data-tema="dark"] .tabela-es td   { border-color: var(--z-border-s); color: var(--z-text-2); }
+  [data-tema="dark"] .tabela-es tbody tr:hover td { background: var(--z-elevated); }
+  [data-tema="dark"] .celula-empresa  { color: var(--z-text-1); }
+  [data-tema="dark"] .barra-ferramentas { border-color: var(--z-border-s); }
+  [data-tema="dark"] .campo-busca    { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .select-filtro  { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] .rodape-tabela  { border-color: var(--z-border-s); color: var(--z-text-3); }
+  [data-tema="dark"] .card-modal     { background: var(--z-surface); }
+  [data-tema="dark"] .modal-titulo   { color: var(--z-text-1); }
+  [data-tema="dark"] .secao-form-titulo { color: var(--z-accent-t); border-color: var(--z-border-s); }
   [data-tema="dark"] .grupo-form label { color: var(--z-text-3); }
-  [data-tema="dark"] .input-form       { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .botao-cancelar   { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .botao-fechar-modal:hover { background: var(--z-border-s); }
+  [data-tema="dark"] .input-form, [data-tema="dark"] .select-form { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .botao-cancelar { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] .rodape-modal   { border-color: var(--z-border-s); }
+  [data-tema="dark"] .es-id-btn      { background: var(--z-elevated); border-color: var(--z-border); }
+  [data-tema="dark"] .es-dropdown-menu { background: var(--z-surface); border-color: var(--z-border); }
+  [data-tema="dark"] .es-dropdown-menu button { color: var(--z-text-1); }
+  [data-tema="dark"] .es-dropdown-menu button:hover { background: var(--z-elevated); }
   [data-tema="dark"] .es-preview-linha { border-color: var(--z-border-s); }
   [data-tema="dark"] .es-preview-label { color: var(--z-text-3); }
   [data-tema="dark"] .es-preview-valor { color: var(--z-text-1); }
-  [data-tema="dark"] .botao-secundario { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .botao-secundario:hover { background: var(--z-border-s); }
+  [data-tema="dark"] .chat-balao.enviado { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.2); color: #93c5fd; }
+  [data-tema="dark"] .chat-balao.recebido { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .chat-resposta-area { border-color: var(--z-border-s); }
 </style>
 {% endblock %}
 
-{% block conteudo %}
-<div class="es-wrap">
+{% block acoes_header %}
+<button class="botao-novo secundario" onclick="abrirEmailConfig()" title="Configurar e-mail">
+  <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+  E-mail
+</button>
+<button class="botao-novo secundario" onclick="copiarLinkFormulario()" title="Copiar link do formulário público">
+  <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+  Copiar link
+</button>
+{% if pode_editar %}
+<button class="botao-novo" onclick="abrirModalAdicionar()">
+  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  Novo Registro
+</button>
+{% endif %}
+{% endblock %}
 
-  <div class="es-toolbar">
-    <div class="es-busca">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="campo-busca-es" placeholder="Buscar por empresa, CNPJ, banco..." oninput="filtrarTabelaEs()">
+{% block conteudo %}
+{% set campos_tabela = ['status', 'data_solicitacao', 'empresa', 'cnpj', 'banco', 'servico', 'responsavel'] %}
+
+<div class="grade-aba">
+
+  <div>
+    <div class="card-tabela">
+      <div class="barra-ferramentas">
+        <input class="campo-busca" type="text" id="campo-busca-es" placeholder="Buscar empresa, CNPJ, banco..." oninput="filtrarTabelaEs()">
+        <select class="select-filtro" id="filtro-banco" onchange="filtrarTabelaEs()">
+          <option value="">Todos os bancos</option>
+          {% for banco_nome in resumo_banco.keys() %}
+          <option value="{{ banco_nome | lower }}">{{ banco_nome }}</option>
+          {% endfor %}
+        </select>
+        <select class="select-filtro" id="filtro-status" onchange="filtrarTabelaEs()">
+          <option value="">Todos os status</option>
+          {% for s in lista_status %}
+          <option value="{{ s | lower }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="tabela-es" id="tabela-escritural">
+          <thead>
+            <tr>
+              <th>ID</th>
+              {% for c in campos_tabela %}<th>{{ labels.get(c, c) }}</th>{% endfor %}
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if registros %}
+              {% for r in registros %}
+              <tr
+                data-id="{{ r.id }}"
+                data-busca="{{ ((r.empresa or '') ~ ' ' ~ (r.cnpj or '') ~ ' ' ~ (r.banco or '') ~ ' ' ~ (r.responsavel or '') ~ ' ' ~ (r.status or '')) | lower }}"
+                data-banco="{{ (r.banco or '') | lower }}"
+                data-status="{{ (r.status or '') | lower }}"
+                data-reg='{{ r | tojson | forceescape }}'
+                ondblclick="tratarDblClickLinhaEs(event, this)"
+              >
+                <td class="es-id-cell">
+                  <div class="es-dropdown">
+                    <button class="es-id-btn" onclick="toggleDropdownEs(event, this)">
+                      #{{ r.id }}
+                      {% if nao_lidos.get(r.id, 0) > 0 %}<span class="badge-nao-lido">{{ nao_lidos[r.id] }}</span>{% endif %}
+                      <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="es-dropdown-menu">
+                      <button onclick="abrirOrcamentoFromRow(this)">
+                        <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Enviar orçamento
+                      </button>
+                      <button onclick="abrirChatFromRow(this)">
+                        <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        Ver conversa
+                      </button>
+                    </div>
+                  </div>
+                </td>
+                {% for c in campos_tabela %}
+                  {% if c == 'status' %}
+                    <td class="celula-status">
+                      <select
+                        class="select-status-inline"
+                        data-id="{{ r.id }}"
+                        data-status-val="{{ r.status or '' }}"
+                        onchange="atualizarStatusInlineEs(this)"
+                        {% if not pode_editar %}disabled style="pointer-events:none;opacity:0.75;"{% endif %}
+                      >
+                        {% for s in lista_status %}
+                        <option value="{{ s }}" {% if s == r.status %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                        {% if r.status and r.status not in lista_status %}
+                        <option value="{{ r.status }}" selected>{{ r.status }}</option>
+                        {% endif %}
+                      </select>
+                    </td>
+                  {% elif c == 'empresa' %}
+                    <td class="celula-empresa" title="{{ r.empresa }}">{{ r.empresa or '—' }}</td>
+                  {% else %}
+                    <td title="{{ r[c] or '' }}">{{ r[c] or '—' }}</td>
+                  {% endif %}
+                {% endfor %}
+                <td>
+                  <div class="celula-acoes">
+                    {% if pode_editar %}
+                    <button class="botao-acao editar" title="Editar"
+                      onclick="abrirModalEditar(JSON.parse(this.closest('tr').dataset.reg))">
+                      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button class="botao-acao deletar" title="Deletar"
+                      data-empresa="{{ r.empresa | e }}"
+                      onclick="confirmarExcluirEs({{ r.id }}, this.dataset.empresa)">
+                      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    </button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr class="linha-vazia">
+                <td colspan="9">
+                  <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  <p>Nenhuma solicitação cadastrada</p>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="rodape-tabela">
+        <span id="contador-linhas-es">{{ registros | length }} registros</span>
+        <span>Novos Escriturais</span>
+      </div>
     </div>
-    <button class="botao-primario" onclick="abrirModalAdicionar()">
-      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Adicionar registro
-    </button>
-    <button class="botao-secundario" onclick="copiarLinkFormulario()" title="Copiar link do formulário público">
-      <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      Copiar link do formulário
-    </button>
   </div>
 
-  {% set campos_tabela = ['status', 'data_solicitacao', 'empresa', 'cnpj', 'banco', 'servico', 'responsavel', 'tecnico'] %}
-  <div class="es-card">
-    <div class="es-tabela-scroll">
-      <table class="es-tabela" id="tabela-escritural">
-        <thead>
-          <tr>
-            {% for c in campos_tabela %}<th>{{ labels.get(c, c) }}</th>{% endfor %}
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in registros %}
-          <tr
-            data-busca="{{ (r.empresa or '') ~ ' ' ~ (r.cnpj or '') ~ ' ' ~ (r.banco or '') ~ ' ' ~ (r.responsavel or '') ~ ' ' ~ (r.status or '') | lower }}"
-            data-reg='{{ r | tojson | forceescape }}'
-            ondblclick="tratarDblClickLinhaEs(event, this)"
-          >
-            {% for c in campos_tabela %}
-              {% if c == 'status' %}
-                {% set st = (r.status or '') | lower %}
-                <td>
-                  <select
-                    class="badge-es select-status-inline-es {% if 'aprov' in st or 'homolog' in st %}aprovado{% elif 'repass' in st %}repassado{% elif 'aguard' in st %}aguardando{% elif 'cancel' in st %}cancelado{% elif 'recus' in st %}recusado{% elif 'pendent' in st %}pendente{% endif %}"
-                    data-id="{{ r.id }}"
-                    onchange="atualizarStatusInlineEs(this)"
-                  >
-                    {% for s in lista_status %}
-                    <option value="{{ s }}" {% if s == r.status %}selected{% endif %}>{{ s }}</option>
-                    {% endfor %}
-                    {% if r.status and r.status not in lista_status %}
-                    <option value="{{ r.status }}" selected>{{ r.status }}</option>
-                    {% endif %}
-                  </select>
-                </td>
-              {% elif c == 'empresa' %}
-                <td class="es-empresa">{{ r.empresa or '—' }}</td>
-              {% else %}
-                <td>{{ r[c] or '—' }}</td>
-              {% endif %}
-            {% endfor %}
-            <td>
-              <div class="es-acoes">
-                <button class="botao-icone" title="Editar" onclick="abrirModalEditar(JSON.parse(this.closest('tr').dataset.reg))">
-                  <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-                <button class="botao-icone excluir" title="Excluir" onclick="confirmarExcluirEs({{ r.id }})">
-                  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% if not registros %}
-    <div class="es-empty" id="es-vazio">Nenhum registro cadastrado ainda. Adicione manualmente ou importe uma planilha existente em Configurações.</div>
-    {% endif %}
-    <div class="rodape-tabela">
-      <span id="contador-linhas-es">{{ registros | length }} registros</span>
+  <div class="coluna-resumo">
+    <div class="card-resumo">
+      <div class="card-resumo-header">Resumo por Banco</div>
+      <div class="lista-resumo">
+        {% for banco_nome, qtd in resumo_banco.items() %}
+        <div class="item-resumo" onclick="filtrarPorBancoEs('{{ banco_nome | lower }}')">
+          <span class="item-resumo-nome">{{ banco_nome }}</span>
+          <span class="item-resumo-cont">{{ qtd }}</span>
+        </div>
+        {% else %}
+        <div style="padding:16px;text-align:center;color:#94a3b8;font-size:13px;">Sem dados</div>
+        {% endfor %}
+      </div>
     </div>
   </div>
 
@@ -256,9 +402,9 @@
 
 <!-- ═══ Modal: Adicionar / Editar registro ════ -->
 <div class="overlay-modal" id="overlay-modal-es" onclick="if(event.target===this) fecharModalEs()">
-  <div class="modal-es">
-    <div class="modal-titulo">
-      <span id="titulo-modal-es">Novo Registro</span>
+  <div class="card-modal modal-largo">
+    <div class="modal-header">
+      <span class="modal-titulo" id="titulo-modal-es">Novo Registro</span>
       <button class="botao-fechar-modal" onclick="fecharModalEs()">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -267,11 +413,11 @@
     <form id="form-escritural" onsubmit="salvarRegistroEs(event)">
       <input type="hidden" id="campo-id">
 
-      <div class="es-secao-titulo">Solicitação</div>
+      <div class="secao-form-titulo">Solicitação</div>
       <div class="grade-form">
         <div class="grupo-form">
           <label>Status</label>
-          <select class="input-form" id="campo-status">
+          <select class="select-form" id="campo-status">
             <option value="">— Selecione —</option>
             {% for s in lista_status %}
             <option value="{{ s }}">{{ s }}</option>
@@ -281,7 +427,7 @@
         <div class="grupo-form"><label>Data da solicitação</label><input class="input-form" id="campo-data_solicitacao" placeholder="dd/mm/aaaa"></div>
       </div>
 
-      <div class="es-secao-titulo">Empresa</div>
+      <div class="secao-form-titulo">Empresa</div>
       <div class="grade-form">
         <div class="grupo-form campo-completo"><label>Empresa</label><input class="input-form" id="campo-empresa"></div>
         <div class="grupo-form"><label>CNPJ</label><input class="input-form" id="campo-cnpj"></div>
@@ -290,7 +436,7 @@
         <div class="grupo-form"><label>E-mail responsável</label><input class="input-form" id="campo-email_responsavel"></div>
       </div>
 
-      <div class="es-secao-titulo">Dados bancários</div>
+      <div class="secao-form-titulo">Dados bancários</div>
       <div class="grade-form">
         <div class="grupo-form"><label>Banco</label><input class="input-form" id="campo-banco"></div>
         <div class="grupo-form"><label>Serviço</label><input class="input-form" id="campo-servico"></div>
@@ -299,7 +445,7 @@
         <div class="grupo-form campo-completo"><label>Convênio</label><input class="input-form" id="campo-convenio"></div>
       </div>
 
-      <div class="es-secao-titulo">Carteira / Cobrança</div>
+      <div class="secao-form-titulo">Carteira / Cobrança</div>
       <div class="grade-form">
         <div class="grupo-form"><label>Carteira</label><input class="input-form" id="campo-carteira"></div>
         <div class="grupo-form"><label>Desc. carteira</label><input class="input-form" id="campo-desc_carteira"></div>
@@ -312,14 +458,14 @@
         <div class="grupo-form campo-completo"><label>CNAB</label><input class="input-form" id="campo-cnab"></div>
       </div>
 
-      <div class="es-secao-titulo">Solicitante (emissão)</div>
+      <div class="secao-form-titulo">Solicitante (emissão)</div>
       <div class="grade-form">
         <div class="grupo-form"><label>Solicitante</label><input class="input-form" id="campo-solicitante"></div>
         <div class="grupo-form"><label>Nome do solicitante</label><input class="input-form" id="campo-nome_solicitante"></div>
         <div class="grupo-form campo-completo"><label>Obs. emissão</label><input class="input-form" id="campo-obs_emissao"></div>
       </div>
 
-      <div class="es-secao-titulo">Pagamentos</div>
+      <div class="secao-form-titulo">Pagamentos</div>
       <div class="grade-form">
         <div class="grupo-form"><label>Solicitante pagto.</label><input class="input-form" id="campo-solicitante_pagto"></div>
         <div class="grupo-form"><label>Nome solicitante pagto.</label><input class="input-form" id="campo-nome_solicitante_pagto"></div>
@@ -327,7 +473,7 @@
         <div class="grupo-form campo-completo"><label>Obs. pagto.</label><input class="input-form" id="campo-obs_pagto"></div>
       </div>
 
-      <div class="es-secao-titulo">Outros / Dados legados</div>
+      <div class="secao-form-titulo">Outros / Dados legados</div>
       <div class="grade-form">
         <div class="grupo-form"><label>Técnico</label><input class="input-form" id="campo-tecnico"></div>
         <div class="grupo-form"><label>Dt. status</label><input class="input-form" id="campo-dt_status" placeholder="dd/mm/aaaa"></div>
@@ -344,11 +490,101 @@
   </div>
 </div>
 
-<!-- ═══ Modal: Preview (somente leitura, duplo clique na linha) ════ -->
+<!-- ═══ Modal: Configurar e-mail ════ -->
+<div class="overlay-modal" id="overlay-email-config" onclick="if(event.target===this) fecharEmailConfig()">
+  <div class="card-modal modal-estreito">
+    <div class="modal-header">
+      <span class="modal-titulo">Configurar e-mail</span>
+      <button class="botao-fechar-modal" onclick="fecharEmailConfig()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <p style="font-size:12.5px;color:#64748b;margin-bottom:16px;">Use as mesmas configurações do Thunderbird. Encontre em: <strong>Configurações de conta → Servidor de entrada/saída</strong>.</p>
+    <div class="secao-form-titulo">Identidade</div>
+    <div class="grade-form">
+      <div class="grupo-form campo-completo"><label>Seu e-mail</label><input class="input-form" id="ec-email" placeholder="nome.sobrenome@empresa.com.br"></div>
+    </div>
+    <div class="secao-form-titulo">Servidor de saída (SMTP)</div>
+    <div class="grade-form">
+      <div class="grupo-form campo-completo"><label>Servidor SMTP</label><input class="input-form" id="ec-smtp-host" placeholder="mail.empresa.com.br"></div>
+      <div class="grupo-form"><label>Porta SMTP</label><input class="input-form" id="ec-smtp-port" type="number" value="587"></div>
+      <div class="grupo-form" style="display:flex;align-items:center;gap:8px;padding-top:22px;">
+        <input type="checkbox" id="ec-smtp-ssl" style="accent-color:#2563eb;">
+        <label for="ec-smtp-ssl" style="text-transform:none;letter-spacing:0;font-size:13px;color:#374151;">SSL (porta 465)</label>
+      </div>
+    </div>
+    <div class="secao-form-titulo">Servidor de entrada (IMAP)</div>
+    <div class="grade-form">
+      <div class="grupo-form campo-completo"><label>Servidor IMAP</label><input class="input-form" id="ec-imap-host" placeholder="mail.empresa.com.br"></div>
+      <div class="grupo-form"><label>Porta IMAP</label><input class="input-form" id="ec-imap-port" type="number" value="993"></div>
+      <div class="grupo-form" style="display:flex;align-items:center;gap:8px;padding-top:22px;">
+        <input type="checkbox" id="ec-imap-ssl" checked style="accent-color:#2563eb;">
+        <label for="ec-imap-ssl" style="text-transform:none;letter-spacing:0;font-size:13px;color:#374151;">SSL</label>
+      </div>
+    </div>
+    <div class="secao-form-titulo">Autenticação</div>
+    <div class="grade-form">
+      <div class="grupo-form campo-completo"><label>Senha</label><input class="input-form" id="ec-senha" type="password" placeholder="Senha da conta de e-mail"></div>
+    </div>
+    <div class="rodape-modal">
+      <button type="button" class="botao-cancelar" onclick="testarEmailConfig()">Testar conexão</button>
+      <button type="button" class="botao-cancelar" onclick="fecharEmailConfig()">Cancelar</button>
+      <button type="button" class="botao-salvar" onclick="salvarEmailConfig()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Modal: Enviar orçamento ════ -->
+<div class="overlay-modal" id="overlay-orcamento" onclick="if(event.target===this) fecharOrcamento()">
+  <div class="card-modal" style="max-width:580px;">
+    <div class="modal-header">
+      <span class="modal-titulo">Enviar orçamento</span>
+      <button class="botao-fechar-modal" onclick="fecharOrcamento()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <input type="hidden" id="orc-escritural-id">
+    <input type="hidden" id="orc-in-reply-to">
+    <div class="grade-form">
+      <div class="grupo-form campo-completo"><label>Para</label><input class="input-form" id="orc-destinatario" placeholder="email@cliente.com.br"></div>
+      <div class="grupo-form campo-completo"><label>Assunto</label><input class="input-form" id="orc-assunto"></div>
+      <div class="grupo-form campo-completo">
+        <label>Mensagem</label>
+        <textarea class="input-form" id="orc-corpo" rows="10" style="resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div class="rodape-modal">
+      <button type="button" class="botao-cancelar" onclick="fecharOrcamento()">Cancelar</button>
+      <button type="button" class="botao-salvar" id="btn-enviar-orc" onclick="enviarOrcamento()">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Modal: Conversa por e-mail ════ -->
+<div class="overlay-modal" id="overlay-chat-email" onclick="if(event.target===this) fecharChatEmail()">
+  <div class="card-modal" style="max-width:600px;">
+    <div class="modal-header">
+      <span class="modal-titulo" id="chat-titulo-empresa">Conversa</span>
+      <button class="botao-fechar-modal" onclick="fecharChatEmail()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <input type="hidden" id="chat-escritural-id">
+    <div class="chat-email-wrap" id="chat-mensagens"></div>
+    <div class="chat-resposta-area">
+      <div class="grade-form">
+        <div class="grupo-form campo-completo">
+          <label>Responder</label>
+          <textarea class="input-form" id="chat-corpo-resposta" rows="4" style="resize:vertical;" placeholder="Escreva sua resposta..."></textarea>
+        </div>
+      </div>
+      <div class="rodape-modal" style="margin-top:10px;">
+        <button type="button" class="botao-cancelar" onclick="fecharChatEmail()">Fechar</button>
+        <button type="button" class="botao-salvar" onclick="enviarRespostaChat()">Responder</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Modal: Preview (somente leitura) ════ -->
 <div class="overlay-modal" id="overlay-preview-es" onclick="if(event.target===this) fecharPreviewEs()">
-  <div class="modal-es modal-preview-es">
-    <div class="modal-titulo">
-      <span>Detalhes da solicitação</span>
+  <div class="card-modal modal-estreito">
+    <div class="modal-header">
+      <span class="modal-titulo">Detalhes da solicitação</span>
       <button class="botao-fechar-modal" onclick="fecharPreviewEs()">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -368,48 +604,86 @@
   const CAMPOS_GRANDES_ES = ['obs_emissao', 'obs_pagto', 'anexos'];
   let idEditandoEs = null;
 
-  function filtrarTabelaEs() {
-    const termo = document.getElementById('campo-busca-es').value.trim().toLowerCase();
-    let visiveis = 0;
-    document.querySelectorAll('#tabela-escritural tbody tr').forEach(tr => {
-      const mostra = !termo || (tr.dataset.busca || '').includes(termo);
-      tr.style.display = mostra ? '' : 'none';
-      if (mostra) visiveis++;
-    });
-    const contador = document.getElementById('contador-linhas-es');
-    if (contador) contador.textContent = `${visiveis} registros`;
-  }
+  // ── Cores do select de status ────────────────────────────
+  const _STATUS_CORES = {
+    aprovado:   { bg: '#dcfce7', fg: '#15803d' },
+    homolog:    { bg: '#dcfce7', fg: '#15803d' },
+    repassado:  { bg: '#ede9fe', fg: '#6d28d9' },
+    aguardando: { bg: '#dbeafe', fg: '#1d4ed8' },
+    cancelado:  { bg: '#fee2e2', fg: '#991b1b' },
+    recusado:   { bg: '#fca5a5', fg: '#7f1d1d' },
+    pendente:   { bg: '#fef3c7', fg: '#92400e' },
+  };
 
-  function classeBadgeEs(status) {
+  function _classeStatus(status) {
     const st = (status || '').toLowerCase();
     if (st.includes('aprov') || st.includes('homolog')) return 'aprovado';
-    if (st.includes('repass')) return 'repassado';
-    if (st.includes('aguard')) return 'aguardando';
-    if (st.includes('cancel')) return 'cancelado';
-    if (st.includes('recus')) return 'recusado';
+    if (st.includes('repass'))  return 'repassado';
+    if (st.includes('aguard'))  return 'aguardando';
+    if (st.includes('cancel'))  return 'cancelado';
+    if (st.includes('recus'))   return 'recusado';
     if (st.includes('pendent')) return 'pendente';
     return '';
   }
 
+  function _aplicarCorSelect(el) {
+    const cls = _classeStatus(el.value);
+    const c = _STATUS_CORES[cls] || { bg: '#f1f5f9', fg: '#475569' };
+    el.style.backgroundColor = c.bg;
+    el.style.color = c.fg;
+    const fg = encodeURIComponent(c.fg);
+    el.style.backgroundImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${fg}' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.select-status-inline').forEach(_aplicarCorSelect);
+  });
+
+  // ── Filtrar tabela ───────────────────────────────────────
+  function filtrarTabelaEs() {
+    const termo  = document.getElementById('campo-busca-es').value.trim().toLowerCase();
+    const banco  = document.getElementById('filtro-banco').value.toLowerCase();
+    const status = document.getElementById('filtro-status').value.toLowerCase();
+    let vis = 0;
+    document.querySelectorAll('#tabela-escritural tbody tr[data-id]').forEach(tr => {
+      const ok = (!termo  || (tr.dataset.busca  || '').includes(termo))
+              && (!banco  || (tr.dataset.banco   || '').includes(banco))
+              && (!status || (tr.dataset.status  || '').includes(status));
+      tr.style.display = ok ? '' : 'none';
+      if (ok) vis++;
+    });
+    const el = document.getElementById('contador-linhas-es');
+    if (el) el.textContent = `${vis} registros`;
+  }
+
+  function filtrarPorBancoEs(banco) {
+    document.getElementById('filtro-banco').value = banco;
+    filtrarTabelaEs();
+  }
+
+  // ── Atualizar status inline ──────────────────────────────
   function atualizarStatusInlineEs(el) {
     const id = el.dataset.id;
     const novoStatus = el.value;
-    el.className = 'badge-es select-status-inline-es ' + classeBadgeEs(novoStatus);
+    _aplicarCorSelect(el);
     fetch(`/escritural/status/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: novoStatus }),
     })
-      .then(r => r.json())
-      .then(resp => {
-        if (resp.sucesso) {
-          mostrarToast('sucesso', 'Status atualizado!');
-        } else {
-          mostrarToast('erro', resp.erro || 'Erro ao atualizar status.');
-        }
-      });
+    .then(r => r.json())
+    .then(resp => {
+      if (resp.sucesso) {
+        mostrarToast('sucesso', 'Status atualizado!');
+        const tr = el.closest('tr');
+        if (tr) tr.dataset.status = novoStatus.toLowerCase();
+      } else {
+        mostrarToast('erro', resp.erro || 'Erro ao atualizar status.');
+      }
+    });
   }
 
+  // ── Modais add/editar ────────────────────────────────────
   function abrirModalAdicionar() {
     idEditandoEs = null;
     document.getElementById('titulo-modal-es').textContent = 'Novo Registro';
@@ -447,23 +721,22 @@
       const el = document.getElementById('campo-' + c);
       dados[c] = el ? el.value : '';
     });
-
     const url    = idEditandoEs ? `/escritural/atualizar/${idEditandoEs}` : '/escritural/adicionar';
     const metodo = idEditandoEs ? 'PUT' : 'POST';
-
     fetch(url, { method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) })
-      .then(r => r.json())
-      .then(resp => {
-        if (resp.sucesso) {
-          mostrarToast('sucesso', idEditandoEs ? 'Registro atualizado!' : 'Registro adicionado!');
-          fecharModalEs();
-          setTimeout(() => location.reload(), 600);
-        } else {
-          mostrarToast('erro', resp.erro || 'Erro ao salvar.');
-        }
-      });
+    .then(r => r.json())
+    .then(resp => {
+      if (resp.sucesso) {
+        mostrarToast('sucesso', idEditandoEs ? 'Registro atualizado!' : 'Registro adicionado!');
+        fecharModalEs();
+        setTimeout(() => location.reload(), 600);
+      } else {
+        mostrarToast('erro', resp.erro || 'Erro ao salvar.');
+      }
+    });
   }
 
+  // ── Preview duplo clique ─────────────────────────────────
   function tratarDblClickLinhaEs(event, tr) {
     if (event.target.closest('select, button, a')) return;
     abrirPreviewEs(JSON.parse(tr.dataset.reg));
@@ -492,6 +765,7 @@
     document.getElementById('overlay-preview-es').classList.remove('aberto');
   }
 
+  // ── Copiar link formulário ───────────────────────────────
   const LINK_FORMULARIO_PUBLICO = {{ link_publico | tojson }};
   function copiarLinkFormulario() {
     navigator.clipboard.writeText(LINK_FORMULARIO_PUBLICO)
@@ -499,26 +773,208 @@
       .catch(() => window.prompt('Copie o link manualmente:', LINK_FORMULARIO_PUBLICO));
   }
 
-  function confirmarExcluirEs(id) {
+  // ── Dropdown do ID ───────────────────────────────────────
+  function toggleDropdownEs(event, btn) {
+    event.stopPropagation();
+    const menu = btn.nextElementSibling;
+    const jaAberto = menu.classList.contains('aberto');
+    fecharTodosDropdownsEs();
+    if (!jaAberto) menu.classList.add('aberto');
+  }
+  function fecharTodosDropdownsEs() {
+    document.querySelectorAll('.es-dropdown-menu.aberto').forEach(m => m.classList.remove('aberto'));
+  }
+  document.addEventListener('click', fecharTodosDropdownsEs);
+
+  function abrirOrcamentoFromRow(btn) {
+    const reg = JSON.parse(btn.closest('tr').dataset.reg);
+    fecharTodosDropdownsEs();
+    abrirOrcamento(reg);
+  }
+  function abrirChatFromRow(btn) {
+    const reg = JSON.parse(btn.closest('tr').dataset.reg);
+    fecharTodosDropdownsEs();
+    abrirChatEmail(reg.id, reg.empresa || '');
+  }
+
+  // ── Config de e-mail ─────────────────────────────────────
+  function abrirEmailConfig() {
+    fetch('/email/config').then(r => r.json()).then(cfg => {
+      document.getElementById('ec-email').value    = cfg.email    || '';
+      document.getElementById('ec-smtp-host').value = cfg.smtp_host || '';
+      document.getElementById('ec-smtp-port').value = cfg.smtp_port || 587;
+      document.getElementById('ec-smtp-ssl').checked = !!cfg.smtp_ssl;
+      document.getElementById('ec-imap-host').value = cfg.imap_host || '';
+      document.getElementById('ec-imap-port').value = cfg.imap_port || 993;
+      document.getElementById('ec-imap-ssl').checked = cfg.imap_ssl !== 0;
+      document.getElementById('ec-senha').value = '';
+    });
+    document.getElementById('overlay-email-config').classList.add('aberto');
+  }
+  function fecharEmailConfig() { document.getElementById('overlay-email-config').classList.remove('aberto'); }
+  function salvarEmailConfig() {
+    const dados = {
+      email:     document.getElementById('ec-email').value.trim(),
+      smtp_host: document.getElementById('ec-smtp-host').value.trim(),
+      smtp_port: parseInt(document.getElementById('ec-smtp-port').value) || 587,
+      smtp_ssl:  document.getElementById('ec-smtp-ssl').checked,
+      imap_host: document.getElementById('ec-imap-host').value.trim(),
+      imap_port: parseInt(document.getElementById('ec-imap-port').value) || 993,
+      imap_ssl:  document.getElementById('ec-imap-ssl').checked,
+      senha:     document.getElementById('ec-senha').value,
+    };
+    fetch('/email/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) })
+    .then(r => r.json())
+    .then(resp => {
+      if (resp.sucesso) { mostrarToast('sucesso', 'Configuração salva!'); fecharEmailConfig(); }
+      else mostrarToast('erro', resp.erro || 'Erro ao salvar.');
+    });
+  }
+  function testarEmailConfig() {
+    mostrarToast('info', 'Testando conexão SMTP...');
+    fetch('/email/config/testar', { method: 'POST' })
+    .then(r => r.json())
+    .then(resp => {
+      if (resp.sucesso) mostrarToast('sucesso', resp.msg || 'Conexão OK!');
+      else mostrarToast('erro', resp.erro || 'Falha na conexão.');
+    });
+  }
+
+  // ── Orçamento ────────────────────────────────────────────
+  const TEMPLATE_ORCAMENTO = (empresa, servico, banco) =>
+`Prezado(a),
+
+Segue orçamento para homologação do serviço de ${servico} junto ao ${banco} para a empresa ${empresa}.
+
+O custo estimado é de 1 a 4 horas técnicas (conforme complexidade da instituição financeira).
+O atendimento ocorre em partes e pode levar até 7 dias para ser totalmente concluído.
+
+Para darmos início, solicitamos a aprovação formal via resposta a este e-mail.
+
+Qualquer dúvida estamos à disposição.
+
+Atenciosamente,
+Sisplan Sistemas`;
+
+  let _chatLastMessageId = null;
+  let _chatLastReferences = null;
+
+  function abrirOrcamento(reg) {
+    document.getElementById('orc-escritural-id').value = reg.id;
+    document.getElementById('orc-in-reply-to').value   = '';
+    document.getElementById('orc-destinatario').value  = reg.email_responsavel || '';
+    document.getElementById('orc-assunto').value       = `Orçamento — Homologação ${reg.servico || ''} ${reg.banco || ''}`.trim();
+    document.getElementById('orc-corpo').value         = TEMPLATE_ORCAMENTO(reg.empresa || '', reg.servico || '', reg.banco || '');
+    const btn = document.getElementById('btn-enviar-orc');
+    btn.disabled = false; btn.textContent = 'Enviar';
+    document.getElementById('overlay-orcamento').classList.add('aberto');
+  }
+  function fecharOrcamento() { document.getElementById('overlay-orcamento').classList.remove('aberto'); }
+  function enviarOrcamento() {
+    const btn = document.getElementById('btn-enviar-orc');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    const dados = {
+      escritural_id: parseInt(document.getElementById('orc-escritural-id').value),
+      destinatario:  document.getElementById('orc-destinatario').value.trim(),
+      assunto:       document.getElementById('orc-assunto').value.trim(),
+      corpo:         document.getElementById('orc-corpo').value.trim(),
+      in_reply_to:   document.getElementById('orc-in-reply-to').value || null,
+    };
+    fetch('/email/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) })
+    .then(r => r.json())
+    .then(resp => {
+      if (resp.sucesso) { mostrarToast('sucesso', 'E-mail enviado!'); fecharOrcamento(); }
+      else { mostrarToast('erro', resp.erro || 'Erro ao enviar.'); btn.disabled = false; btn.textContent = 'Enviar'; }
+    })
+    .catch(() => { mostrarToast('erro', 'Erro de conexão.'); btn.disabled = false; btn.textContent = 'Enviar'; });
+  }
+
+  // ── Chat/conversa por e-mail ─────────────────────────────
+  function abrirChatEmail(escrituralId, empresa) {
+    document.getElementById('chat-escritural-id').value = escrituralId;
+    document.getElementById('chat-titulo-empresa').textContent = `Conversa — ${empresa || '#' + escrituralId}`;
+    document.getElementById('chat-corpo-resposta').value = '';
+    _chatLastMessageId = null; _chatLastReferences = null;
+    document.getElementById('overlay-chat-email').classList.add('aberto');
+    carregarThread(escrituralId);
+  }
+  function fecharChatEmail() { document.getElementById('overlay-chat-email').classList.remove('aberto'); }
+  function carregarThread(escrituralId) {
+    fetch(`/email/thread/${escrituralId}`).then(r => r.json()).then(msgs => {
+      const wrap = document.getElementById('chat-mensagens');
+      wrap.innerHTML = '';
+      if (!msgs.length) {
+        wrap.innerHTML = '<div class="chat-vazio">Nenhuma mensagem ainda. Use "Enviar orçamento" para iniciar a conversa.</div>';
+        return;
+      }
+      msgs.forEach(m => {
+        const item = document.createElement('div');
+        item.className = 'chat-item';
+        const balao = document.createElement('div');
+        balao.className = `chat-balao ${m.direcao}`;
+        balao.textContent = m.corpo_texto || '(sem conteúdo)';
+        const meta = document.createElement('div');
+        meta.className = `chat-meta ${m.direcao}`;
+        const quem = m.direcao === 'enviado' ? (m.enviado_por || 'Você') : m.remetente;
+        meta.textContent = `${quem} · ${m.data_hora}`;
+        item.appendChild(balao);
+        item.appendChild(meta);
+        wrap.appendChild(item);
+        if (m.message_id) { _chatLastMessageId = m.message_id; }
+        if (m.message_id) { _chatLastReferences = (_chatLastReferences ? _chatLastReferences + ' ' : '') + m.message_id; }
+      });
+      wrap.scrollTop = wrap.scrollHeight;
+    });
+  }
+  function enviarRespostaChat() {
+    const escrituralId = parseInt(document.getElementById('chat-escritural-id').value);
+    const corpo = document.getElementById('chat-corpo-resposta').value.trim();
+    if (!corpo) { mostrarToast('erro', 'Escreva uma mensagem antes de enviar.'); return; }
+    fetch(`/email/thread/${escrituralId}`).then(r => r.json()).then(msgs => {
+      const recebidas = msgs.filter(m => m.direcao === 'recebido');
+      const ultima = recebidas[recebidas.length - 1] || msgs[0];
+      const partes = ultima ? _parseRemetente(ultima.remetente) : ['', ''];
+      const destinatario = partes[1] || ultima?.remetente || '';
+      const dados = {
+        escritural_id: escrituralId, destinatario,
+        assunto: `Re: [SISPLAN-${escrituralId}] Orçamento`,
+        corpo, in_reply_to: _chatLastMessageId, references: _chatLastReferences,
+      };
+      fetch('/email/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) })
+      .then(r => r.json())
+      .then(resp => {
+        if (resp.sucesso) {
+          document.getElementById('chat-corpo-resposta').value = '';
+          carregarThread(escrituralId);
+          mostrarToast('sucesso', 'Resposta enviada!');
+        } else { mostrarToast('erro', resp.erro || 'Erro ao enviar.'); }
+      });
+    });
+  }
+  function _parseRemetente(from) {
+    const m = from && from.match(/<([^>]+)>/);
+    return m ? [from.replace(/<[^>]+>/, '').trim(), m[1]] : ['', from || ''];
+  }
+
+  // ── Excluir ──────────────────────────────────────────────
+  function confirmarExcluirEs(id, empresa) {
     abrirDialogo({
       titulo: 'Excluir registro?',
-      mensagem: 'Essa ação não pode ser desfeita.',
+      mensagem: `Deseja excluir o registro de <strong>${empresa || '#' + id}</strong>?<br>Essa ação não pode ser desfeita.`,
       tipo: 'perigo',
       textoBotao: 'Excluir',
       callback: () => {
         fetch(`/escritural/deletar/${id}`, { method: 'DELETE' })
-          .then(r => r.json())
-          .then(resp => {
-            if (resp.sucesso) {
-              mostrarToast('sucesso', 'Registro excluído.');
-              setTimeout(() => location.reload(), 600);
-            } else {
-              mostrarToast('erro', resp.erro || 'Erro ao excluir.');
-            }
-          });
+        .then(r => r.json())
+        .then(resp => {
+          if (resp.sucesso) {
+            mostrarToast('sucesso', 'Registro excluído.');
+            const tr = document.querySelector(`tr[data-id="${id}"]`);
+            if (tr) { tr.style.transition = 'opacity 0.3s'; tr.style.opacity = '0'; setTimeout(() => { tr.remove(); filtrarTabelaEs(); }, 300); }
+          } else { mostrarToast('erro', resp.erro || 'Erro ao excluir.'); }
+        });
       }
     });
   }
-
 </script>
 {% endblock %}

@@ -4,11 +4,8 @@ import jwt as pyjwt
 from flask import request, g, session, redirect, url_for
 
 SECRET      = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
-ACCESS_TTL  = 15   # minutos
-REFRESH_TTL = 7    # dias
-
-
-# ── JWT helpers ───────────────────────────────────────────
+ACCESS_TTL  = 15  
+REFRESH_TTL = 7   
 
 def _encode(payload: dict) -> str:
     return pyjwt.encode(payload, SECRET, algorithm='HS256')
@@ -20,9 +17,7 @@ def _decode(token: str) -> dict | None:
     except pyjwt.PyJWTError:
         return None
 
-
 def criar_tokens(usuario_row: dict) -> tuple[str, str]:
-    """Gera (access_token, refresh_token) para o usuário."""
     agora = datetime.datetime.utcnow()
     access = _encode({
         'sub':   usuario_row['id'],
@@ -73,18 +68,15 @@ def _preencher_sessao(payload: dict):
 
 
 def pode_editar() -> bool:
-    """True se o usuário pode fazer alterações (admin/master ou tem técnico vinculado)."""
     return session.get('nivel_acesso') in ('admin', 'master') or bool(session.get('tecnico_vinculado'))
 
 def usuario_logado() -> bool:
     return 'usuario' in session
 
-
 def checar_login():
     if not usuario_logado():
         return redirect(url_for('auth.pagina_login'))
     return None
-
 
 def checar_admin():
     bloqueio = checar_login()
@@ -94,23 +86,18 @@ def checar_admin():
         return redirect(url_for('auth.inicio'))
     return None
 
-
 def tem_acesso_tela(tela: str) -> bool:
-    """Master tem acesso a tudo; demais usuários consultam a sessão."""
     if session.get('nivel_acesso') == 'master':
         return True
     return tela in (session.get('telas') or [])
 
-
 def checar_tela(tela: str):
-    """Combina checar_login + tem_acesso_tela. Retorna redirect ou None."""
     bloqueio = checar_login()
     if bloqueio:
         return bloqueio
     if not tem_acesso_tela(tela):
         return redirect(url_for('auth.inicio'))
     return None
-
 
 def checar_master():
     bloqueio = checar_login()

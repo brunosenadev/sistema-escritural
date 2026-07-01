@@ -548,7 +548,7 @@
       botaoAtivo.disabled = true;
       botaoAtivo.textContent = 'Enviando...';
 
-      fetch('/escritural/publico/enviar', {
+      fetch('/escritural/formulario/enviar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dados),

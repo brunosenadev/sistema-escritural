@@ -725,6 +725,17 @@
       </a>
       {% endif %}
 
+      {% if _eh_master or 'homologados_ext_bancario' in _ta %}
+      <a href="/homologados-ext-bancario" class="nav-item {% if aba_ativa == 'homologados_ext_bancario' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/>
+          <line x1="2" y1="10" x2="22" y2="10"/>
+          <line x1="6" y1="14" x2="10" y2="14"/>
+        </svg>
+        Hom. Extrato Bancário
+        <span class="nav-badge" id="badge-ext-bancario" style="display:none;background:#0891b2;"></span>
+      </a>
+      {% endif %}
+
       {% if _eh_master or 'cancelados' in _ta %}
       <a href="/cancelados" class="nav-item {% if aba_ativa == 'cancelados' %}ativo{% endif %}">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
@@ -1159,8 +1170,9 @@
           setBadge('badge-pendente',   d.pendentes);
           setBadge('badge-cobranca',   d.cobranca);
           setBadge('badge-pagamentos', d.pagamentos);
-          setBadge('badge-extrato',    d.extrato);
-          setBadge('badge-cancelados', d.cancelados);
+          setBadge('badge-extrato',       d.extrato);
+          setBadge('badge-ext-bancario',  d.ext_bancario);
+          setBadge('badge-cancelados',    d.cancelados);
           var info = document.getElementById('banco-info-pendentes');
           if (info) info.textContent = 'Banco ativo · ' + d.pendentes + ' pendentes';
         })

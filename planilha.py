@@ -1,29 +1,20 @@
-"""
-planilha.py — Leitura e escrita de arquivos Excel.
-A planilha agora é usada apenas para importar/exportar dados.
-A fonte de verdade é o banco de dados (banco.py).
-"""
-
 import unicodedata
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from datetime import datetime
 
-# ── Colunas da aba Pendente (índice 1-based) ─────────────
-COLUNA_TECNICO     = 1   # A
-COLUNA_EMPRESA     = 2   # B
-COLUNA_SERVICO     = 3   # C
-COLUNA_BANCO       = 4   # D
-COLUNA_DT_SOLICITA = 5   # E
-COLUNA_DT_STATUS   = 6   # F
-COLUNA_STATUS      = 7   # G
-COLUNA_OBS         = 8   # H
+COLUNA_TECNICO     = 1   
+COLUNA_EMPRESA     = 2   
+COLUNA_SERVICO     = 3   
+COLUNA_BANCO       = 4   
+COLUNA_DT_SOLICITA = 5   
+COLUNA_DT_STATUS   = 6   
+COLUNA_STATUS      = 7   
+COLUNA_OBS         = 8   
 
-LINHA_INICIO_DADOS = 3   # Linha onde os dados começam (após cabeçalho + ano)
-
+LINHA_INICIO_DADOS = 3  
 
 def _encontrar_aba(workbook, *palavras_chave):
-    """Localiza uma aba no workbook pelo nome (case-insensitive, múltiplas palavras-chave)."""
     for nome in workbook.sheetnames:
         n = nome.lower()
         if all(p in n for p in palavras_chave):
@@ -39,17 +30,12 @@ def _encontrar_aba_pendente(workbook):
 
 
 def _formatar_data(valor_celula):
-    """Converte data de célula Excel para string dd/mm/aaaa."""
     if isinstance(valor_celula, datetime):
         return valor_celula.strftime('%d/%m/%Y')
     return str(valor_celula or '').strip()
 
 
 def ler_pendentes_do_excel(caminho_arquivo):
-    """
-    Lê a aba Pendente de um arquivo Excel e retorna uma lista de dicts.
-    Linhas completamente vazias são ignoradas.
-    """
     try:
         wb = openpyxl.load_workbook(caminho_arquivo)
     except Exception as e:
@@ -69,7 +55,6 @@ def ler_pendentes_do_excel(caminho_arquivo):
         banco   = aba.cell(num_linha, COLUNA_BANCO).value
         status  = aba.cell(num_linha, COLUNA_STATUS).value
 
-        # Ignora linhas sem nenhum campo principal
         if not any([tecnico, empresa, servico, banco, status]):
             continue
 
@@ -88,16 +73,10 @@ def ler_pendentes_do_excel(caminho_arquivo):
 
 
 def exportar_pendentes_para_excel(registros, caminho_destino):
-    """
-    Gera um arquivo Excel com os registros da aba Pendente.
-    Aplica formatação básica no cabeçalho.
-    Retorna o caminho do arquivo gerado.
-    """
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = 'Pendente'
 
-    # Cabeçalho
     cabecalhos = ['TÉCNICO', 'EMPRESA', 'SERVIÇO', 'BANCO', 'DT.SOLICITA', 'DT.STATUS', 'STATUS', 'OBS']
     estilo_cab = Font(bold=True, color='FFFFFF')
     fundo_cab  = PatternFill(fill_type='solid', fgColor='0A1628')
@@ -108,7 +87,6 @@ def exportar_pendentes_para_excel(registros, caminho_destino):
         celula.fill      = fundo_cab
         celula.alignment = Alignment(horizontal='center', vertical='center')
 
-    # Dados
     for idx, reg in enumerate(registros, 2):
         ws.cell(idx, COLUNA_TECNICO).value     = reg.get('tecnico', '')
         ws.cell(idx, COLUNA_EMPRESA).value     = reg.get('empresa', '')
@@ -119,7 +97,6 @@ def exportar_pendentes_para_excel(registros, caminho_destino):
         ws.cell(idx, COLUNA_STATUS).value      = reg.get('status', '')
         ws.cell(idx, COLUNA_OBS).value         = reg.get('obs', '')
 
-    # Largura das colunas
     larguras = [14, 30, 16, 20, 14, 14, 26, 40]
     for col, larg in enumerate(larguras, 1):
         ws.column_dimensions[ws.cell(1, col).column_letter].width = larg
@@ -127,13 +104,7 @@ def exportar_pendentes_para_excel(registros, caminho_destino):
     wb.save(caminho_destino)
     return caminho_destino
 
-
 def ler_planilha_completa(caminho_arquivo):
-    """
-    Abre o workbook UMA vez e lê todas as abas relevantes.
-    Retorna dict: {pendente, cobranca, pagamentos, extrato, cancelados}
-    Cada valor é uma lista de dicts (vazia se a aba não for encontrada).
-    """
     try:
         wb = openpyxl.load_workbook(caminho_arquivo)
     except Exception as e:
@@ -158,7 +129,6 @@ def ler_planilha_completa(caminho_arquivo):
     if aba_c:
         resultado['cobranca'] = _ler_aba_homologados(aba_c)
 
-    # Exige 'homolog' no nome para não cair na aba "API Pagamentos"
     aba_pg = _encontrar_aba(wb, 'homolog', 'pag')
     if aba_pg:
         resultado['pagamentos'] = _ler_aba_homologados(aba_pg)
@@ -173,14 +143,11 @@ def ler_planilha_completa(caminho_arquivo):
 
     return resultado
 
-
 def _e_linha_separadora(empresa, servico, banco):
-    """Retorna True se a linha for um separador de ano/seção (sem empresa, serviço e banco)."""
     return not empresa and not servico and not banco
 
 
 def _ler_aba_pendente_sheet(aba):
-    """Lê uma aba já aberta com estrutura de Pendente."""
     registros = []
     for num_linha in range(LINHA_INICIO_DADOS, aba.max_row + 1):
         tecnico = aba.cell(num_linha, COLUNA_TECNICO).value
@@ -188,7 +155,6 @@ def _ler_aba_pendente_sheet(aba):
         servico = aba.cell(num_linha, COLUNA_SERVICO).value
         banco   = aba.cell(num_linha, COLUNA_BANCO).value
         status  = aba.cell(num_linha, COLUNA_STATUS).value
-        # Pula linhas completamente vazias ou separadores de ano/seção
         if not any([tecnico, empresa, servico, banco, status]):
             continue
         if _e_linha_separadora(empresa, servico, banco):
@@ -207,7 +173,6 @@ def _ler_aba_pendente_sheet(aba):
 
 
 def _ler_cancelados_sheet(aba):
-    """Lê uma aba já aberta com estrutura de Cancelados."""
     registros = []
     for num_linha in range(LINHA_INICIO_DADOS, aba.max_row + 1):
         row = {campo: aba.cell(num_linha, col).value for campo, col in _COL_CAN.items()}
@@ -231,20 +196,17 @@ def _ler_cancelados_sheet(aba):
         })
     return registros
 
-
-# ── Colunas comuns das abas Homologados (mesma estrutura de Pendente) ─────
 _COL_HOM = {
-    'tecnico':     1,   # A
-    'empresa':     2,   # B
-    'servico':     3,   # C
-    'banco':       4,   # D
-    'dt_solicita': 5,   # E
-    'dt_status':   6,   # F
-    'status':      7,   # G
-    'obs':         8,   # H
+    'tecnico':     1,  
+    'empresa':     2,  
+    'servico':     3,  
+    'banco':       4,  
+    'dt_solicita': 5,  
+    'dt_status':   6,  
+    'status':      7,  
+    'obs':         8,  
 }
 
-# Colunas extras da aba Cancelados
 _COL_CAN = {
     'tecnico':       1,
     'empresa':       2,
@@ -262,7 +224,6 @@ _COL_CAN = {
 
 
 def _ler_aba_homologados(aba):
-    """Lê linhas de uma aba de homologados (estrutura igual à Pendente)."""
     registros = []
     for num_linha in range(LINHA_INICIO_DADOS, aba.max_row + 1):
         row = {campo: aba.cell(num_linha, col).value for campo, col in _COL_HOM.items()}
@@ -353,19 +314,11 @@ def ler_cancelados_do_excel(caminho_arquivo):
         })
     return registros
 
-
-# ── Aba Escritural (planilha histórica, formato livre por cabeçalho) ─────
-
 def _normalizar_texto(txt):
     txt = str(txt or '').strip().lower()
     txt = unicodedata.normalize('NFKD', txt).encode('ascii', 'ignore').decode('ascii')
     return txt
 
-
-# Para cada campo do banco, candidatos de cabeçalho (já normalizados) que podem
-# aparecer na planilha antiga. A 1ª passada busca igualdade exata; se não achar,
-# cai para "contém" — nessa ordem, para não confundir "solicitante" com
-# "solicitante pagto", por exemplo.
 _MAPA_CAMPOS_ESCRITURAL = {
     'status':                 ('status', 'situacao'),
     'data_solicitacao':       ('data solicitacao', 'data da solicitacao', 'dt solicitacao', 'dt. solicita', 'dt.solicita', 'carimbo de data'),
@@ -402,25 +355,16 @@ _MAPA_CAMPOS_ESCRITURAL = {
     'anexos':                 ('anexos',),
 }
 
-# Pares de campos cujo cabeçalho original repete a MESMA pergunta genérica
-# duas vezes na mesma planilha (uma para a seção de emissão, outra para a de
-# pagamento, ex: "Quem está solicitando este/esse serviço?"), sem nenhum texto
-# que as diferencie. Como não dá para mapear por texto nesses casos, usa a
-# posição da coluna "modalidades" (que só existe na seção de pagamento) como
-# referência: coluna antes dela = campo de emissão, depois = campo de pagamento.
 _PARES_CAMPOS_DUPLICADOS = (
     ('solicitante', 'solicitante_pagto', ('solicitando',)),
     ('nome_solicitante', 'nome_solicitante_pagto', ('nome',)),
     ('obs_emissao', 'obs_pagto', ('observ', 'obs')),
 )
 
-_MIN_CAMPOS_CABECALHO = 4  # mínimo de campos mapeados para considerar uma linha como cabeçalho válido
+_MIN_CAMPOS_CABECALHO = 4  
 
 
 def _valor_para_texto(valor):
-    """Converte valor de célula para texto, evitando ".0" em números inteiros
-    e preservando hora em datas (necessário para não colidir solicitações
-    distintas feitas no mesmo dia pela mesma empresa)."""
     if isinstance(valor, datetime):
         if valor.time() == datetime.min.time():
             return valor.strftime('%d/%m/%Y')
@@ -433,7 +377,6 @@ def _valor_para_texto(valor):
 
 
 def _mapear_colunas_escritural(aba, num_linha_cabecalho):
-    """Lê a linha indicada como cabeçalho e descobre em qual coluna está cada campo do banco."""
     cabecalhos = {}
     for col in range(1, aba.max_column + 1):
         texto = _normalizar_texto(aba.cell(num_linha_cabecalho, col).value)
@@ -443,7 +386,6 @@ def _mapear_colunas_escritural(aba, num_linha_cabecalho):
     mapa = {}
     usadas = set()
 
-    # 1ª passada: igualdade exata
     for campo, candidatos in _MAPA_CAMPOS_ESCRITURAL.items():
         for col, texto in cabecalhos.items():
             if col in usadas:
@@ -453,7 +395,6 @@ def _mapear_colunas_escritural(aba, num_linha_cabecalho):
                 usadas.add(col)
                 break
 
-    # 2ª passada: contém (fallback para cabeçalhos com texto extra)
     for campo, candidatos in _MAPA_CAMPOS_ESCRITURAL.items():
         if campo in mapa:
             continue
@@ -465,15 +406,10 @@ def _mapear_colunas_escritural(aba, num_linha_cabecalho):
                 usadas.add(col)
                 break
 
-    # Fallback posicional: várias planilhas legadas têm a coluna A com o status
-    # do pedido mas sem texto de cabeçalho (célula A1 vazia) — se "status" não
-    # foi reconhecido por texto e a coluna 1 está livre, assume que é ela.
     if 'status' not in mapa and 1 not in usadas and 1 not in cabecalhos:
         mapa['status'] = 1
         usadas.add(1)
 
-    # 3ª passada: campos com pergunta genérica duplicada (emissão x pagamento),
-    # resolvidos pela posição em relação à coluna "modalidades".
     col_modalidades = mapa.get('modalidades')
     if col_modalidades:
         for campo_antes, campo_depois, marcadores in _PARES_CAMPOS_DUPLICADOS:
@@ -492,13 +428,6 @@ def _mapear_colunas_escritural(aba, num_linha_cabecalho):
 
 
 def _linha_eh_cabecalho_fantasma(aba, num_linha, mapa):
-    """Detecta linhas de cabeçalho 'fantasma' repetidas no meio dos dados
-    (algumas planilhas legadas têm o cabeçalho descritivo colado de novo no
-    meio da aba, ex: ao iniciar uma nova seção/ano, em vez de dados reais).
-    Sinal: a célula de 'data_solicitacao' deveria ser sempre uma data (objeto
-    datetime ou texto dd/mm/aaaa) — se em vez disso for uma string contendo o
-    texto descritivo do próprio cabeçalho (ex: "Carimbo de data/hora"), é
-    cabeçalho repetido, não um registro real."""
     col_data = mapa.get('data_solicitacao')
     if not col_data:
         return False
@@ -510,9 +439,6 @@ def _linha_eh_cabecalho_fantasma(aba, num_linha, mapa):
 
 
 def _detectar_cabecalho(aba, linhas_candidatas=(1, 2, 3)):
-    """Tenta cada linha candidata como cabeçalho e retorna a primeira que mapear
-    campos suficientes. Necessário porque algumas abas têm uma linha de título
-    de seção (ex: "ESCRITURAL 2023") antes do cabeçalho real."""
     melhor = (None, {})
     for linha in linhas_candidatas:
         if linha > aba.max_row:
@@ -524,15 +450,7 @@ def _detectar_cabecalho(aba, linhas_candidatas=(1, 2, 3)):
             melhor = (linha, mapa)
     return melhor
 
-
 def ler_escritural_do_excel(caminho_arquivo):
-    """
-    Lê TODAS as abas de um arquivo de solicitações Escritural (cabeçalhos
-    variáveis, várias planilhas legadas com layouts diferentes) e retorna uma
-    lista combinada de dicts no formato da tabela 'escritural'. Identifica as
-    colunas pelo texto do cabeçalho de cada aba (não pela ordem/posição), e
-    detecta automaticamente em qual linha está o cabeçalho real.
-    """
     try:
         wb = openpyxl.load_workbook(caminho_arquivo, data_only=True)
     except Exception as e:
@@ -547,11 +465,6 @@ def ler_escritural_do_excel(caminho_arquivo):
             print(f'[planilha] Aba "{nome_aba}" ignorada: nenhum cabeçalho reconhecido.')
             continue
 
-        # Algumas planilhas legadas têm uma 2ª linha de cabeçalho logo após a
-        # primeira, com o texto descritivo completo de cada campo (ex: "Carimbo
-        # de data/hora", "CNPJ da Empresa:") em vez de dados reais. Se essa
-        # linha também "parece" um cabeçalho (mapeia muitos campos por texto),
-        # pula ela também para não virar um registro fantasma.
         linha_inicio_dados = linha_cab + 1
         if linha_inicio_dados <= aba.max_row:
             mapa_linha_seguinte = _mapear_colunas_escritural(aba, linha_inicio_dados)

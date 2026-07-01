@@ -148,6 +148,20 @@ def ver_ajuda_post(id_post):
     return render_template('ajuda_post_view.html', post=post, topico=topico)
 
 
+@ajuda_bp.route('/ajuda/post/<int:id_post>/imprimir')
+def imprimir_ajuda_post(id_post):
+    bloqueio = checar_tela('ajuda')
+    if bloqueio:
+        return bloqueio
+    post = banco.buscar_ajuda_post(id_post)
+    if not post:
+        return redirect(url_for('ajuda.aba_ajuda'))
+    topico = next((t for t in banco.listar_ajuda_topicos() if t['id'] == post['topico_id']), None)
+    from datetime import datetime
+    now = datetime.now().strftime('%d/%m/%Y %H:%M')
+    return render_template('ajuda_post_print.html', post=post, topico=topico, now=now)
+
+
 # ── Gerenciamento (admin/master, tela separada) ───────────
 
 @ajuda_bp.route('/ajuda/gerenciar')

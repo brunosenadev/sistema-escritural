@@ -110,7 +110,8 @@ TELAS_AGRUPADAS = [
         ('pendente',               'Pendente'),
         ('homologados_cobranca',   'Homologados Cobrança'),
         ('homologados_pagamentos', 'Homologados Pagamentos'),
-        ('homologados_extrato',    'Homologados Extrato Cartão'),
+        ('homologados_extrato',         'Homologados Extrato Cartão'),
+        ('homologados_ext_bancario',    'Homologados Extrato Bancário'),
         ('cancelados',             'Cancelados'),
         ('sispbol',                'SispBol'),
         ('escritural',             'Novos Escriturais'),
@@ -304,6 +305,45 @@ def inicializar_banco():
             criado_em     TEXT DEFAULT (datetime('now','localtime')),
             atualizado_em TEXT DEFAULT (datetime('now','localtime'))
         );
+        CREATE TABLE IF NOT EXISTS homologados_ext_bancario (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            tecnico       TEXT,
+            empresa       TEXT,
+            servico       TEXT,
+            banco         TEXT,
+            dt_solicita   TEXT,
+            dt_status     TEXT,
+            status        TEXT DEFAULT 'HOMOLOGADO',
+            obs           TEXT,
+            criado_por    TEXT,
+            criado_em     TEXT DEFAULT (datetime('now','localtime')),
+            atualizado_em TEXT DEFAULT (datetime('now','localtime'))
+        );
+        CREATE TABLE IF NOT EXISTS email_config_usuario (
+            usuario_id  INTEGER PRIMARY KEY,
+            email       TEXT    DEFAULT '',
+            smtp_host   TEXT    DEFAULT '',
+            smtp_port   INTEGER DEFAULT 587,
+            smtp_ssl    INTEGER DEFAULT 0,
+            imap_host   TEXT    DEFAULT '',
+            imap_port   INTEGER DEFAULT 993,
+            imap_ssl    INTEGER DEFAULT 1,
+            senha       TEXT    DEFAULT ''
+        );
+        CREATE TABLE IF NOT EXISTS email_thread_escritural (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            escritural_id INTEGER NOT NULL,
+            message_id    TEXT    DEFAULT '',
+            in_reply_to   TEXT    DEFAULT '',
+            assunto       TEXT    DEFAULT '',
+            remetente     TEXT    DEFAULT '',
+            destinatario  TEXT    DEFAULT '',
+            corpo_texto   TEXT    DEFAULT '',
+            data_hora     TEXT    DEFAULT (datetime('now','localtime')),
+            direcao       TEXT    DEFAULT 'enviado',
+            lido          INTEGER DEFAULT 1,
+            enviado_por   TEXT    DEFAULT ''
+        );
         CREATE TABLE IF NOT EXISTS escritural (
             id                     INTEGER PRIMARY KEY AUTOINCREMENT,
             status                 TEXT,
@@ -407,6 +447,7 @@ def inicializar_banco():
         "ALTER TABLE escritural ADD COLUMN sequencial_nosso_numero TEXT",
         "ALTER TABLE escritural ADD COLUMN quantos_dias TEXT",
         "ALTER TABLE escritural ADD COLUMN anexos TEXT",
+        "ALTER TABLE email_thread_escritural ADD COLUMN enviado_por TEXT DEFAULT ''",
     ]:
         try:
             conn.execute(ddl)
@@ -924,7 +965,8 @@ def contar_todos():
             (SELECT COUNT(*) FROM cancelados)             AS cancelados,
             (SELECT COUNT(*) FROM homologados_cobranca)   AS cobranca,
             (SELECT COUNT(*) FROM homologados_pagamentos) AS pagamentos,
-            (SELECT COUNT(*) FROM homologados_extrato)    AS extrato
+            (SELECT COUNT(*) FROM homologados_extrato)         AS extrato,
+            (SELECT COUNT(*) FROM homologados_ext_bancario)    AS ext_bancario
     """).fetchone()
     conn.close()
     return dict(row)
@@ -1547,6 +1589,51 @@ def importar_homologados_extrato(lista_registros, substituir=True):
     conn.close()
     return total
 
+# ── Homologados Extrato Bancário ──────────────────────────
+
+def listar_homologados_ext_bancario():
+    conn = conectar()
+    rows = conn.execute("SELECT * FROM homologados_ext_bancario ORDER BY id").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def adicionar_homologado_ext_bancario(dados, criado_por=''):
+    conn = conectar()
+    cur = conn.execute(
+        "INSERT INTO homologados_ext_bancario (tecnico,empresa,servico,banco,dt_solicita,dt_status,status,obs,criado_por) VALUES (?,?,?,?,?,?,?,?,?)",
+        (dados.get('tecnico',''), dados.get('empresa',''), dados.get('servico',''),
+         dados.get('banco',''), dados.get('dt_solicita',''), dados.get('dt_status',''),
+         dados.get('status','HOMOLOGADO'), dados.get('obs',''), criado_por)
+    )
+    id_novo = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return id_novo
+
+
+def atualizar_homologado_ext_bancario(id_registro, dados):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    conn = conectar()
+    conn.execute(
+        "UPDATE homologados_ext_bancario SET tecnico=?,empresa=?,servico=?,banco=?,dt_solicita=?,dt_status=?,status=?,obs=?,atualizado_em=? WHERE id=?",
+        (dados.get('tecnico',''), dados.get('empresa',''), dados.get('servico',''),
+         dados.get('banco',''), dados.get('dt_solicita',''), dados.get('dt_status',''),
+         dados.get('status','HOMOLOGADO'), dados.get('obs',''), agora, id_registro)
+    )
+    conn.commit()
+    conn.close()
+    return True
+
+
+def deletar_homologado_ext_bancario(id_registro):
+    conn = conectar()
+    conn.execute("DELETE FROM homologados_ext_bancario WHERE id=?", (id_registro,))
+    conn.commit()
+    conn.close()
+    return True
+
+
 # ── Ajuda (manuais) ───────────────────────────────────────
 
 def listar_ajuda_topicos():
@@ -1635,3 +1722,113 @@ def remover_ajuda_post(id_post):
     conn.execute("DELETE FROM ajuda_posts WHERE id=?", (id_post,))
     conn.commit()
     conn.close()
+
+
+# ── E-mail: config por usuário ────────────────────────────
+
+def salvar_email_config(usuario_id, dados):
+    conn = conectar()
+    conn.execute("""
+        INSERT INTO email_config_usuario
+            (usuario_id, email, smtp_host, smtp_port, smtp_ssl, imap_host, imap_port, imap_ssl, senha)
+        VALUES (?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(usuario_id) DO UPDATE SET
+            email=excluded.email, smtp_host=excluded.smtp_host, smtp_port=excluded.smtp_port,
+            smtp_ssl=excluded.smtp_ssl, imap_host=excluded.imap_host, imap_port=excluded.imap_port,
+            imap_ssl=excluded.imap_ssl, senha=excluded.senha
+    """, (
+        usuario_id,
+        dados.get('email', ''), dados.get('smtp_host', ''), int(dados.get('smtp_port', 587)),
+        1 if dados.get('smtp_ssl') else 0,
+        dados.get('imap_host', ''), int(dados.get('imap_port', 993)),
+        1 if dados.get('imap_ssl', True) else 0,
+        dados.get('senha', ''),
+    ))
+    conn.commit()
+    conn.close()
+
+
+def buscar_email_config(usuario_id):
+    conn = conectar()
+    row = conn.execute(
+        "SELECT * FROM email_config_usuario WHERE usuario_id=?", (usuario_id,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def listar_email_configs_ativos():
+    """Retorna todas as configs de e-mail com host preenchido (para o IMAP polling)."""
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT * FROM email_config_usuario WHERE imap_host != '' AND email != '' AND senha != ''"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+# ── E-mail: threads por solicitação ──────────────────────
+
+def salvar_email_thread(escritural_id, msg):
+    conn = conectar()
+    cur = conn.execute("""
+        INSERT INTO email_thread_escritural
+            (escritural_id, message_id, in_reply_to, assunto, remetente, destinatario,
+             corpo_texto, data_hora, direcao, lido, enviado_por)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    """, (
+        escritural_id,
+        msg.get('message_id', ''), msg.get('in_reply_to', ''),
+        msg.get('assunto', ''), msg.get('remetente', ''), msg.get('destinatario', ''),
+        msg.get('corpo_texto', ''),
+        msg.get('data_hora', datetime.now().strftime('%d/%m/%Y %H:%M')),
+        msg.get('direcao', 'enviado'),
+        1 if msg.get('direcao') == 'enviado' else 0,
+        msg.get('enviado_por', ''),
+    ))
+    conn.commit()
+    id_novo = cur.lastrowid
+    conn.close()
+    return id_novo
+
+
+def listar_thread_escritural(escritural_id):
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT * FROM email_thread_escritural WHERE escritural_id=? ORDER BY data_hora ASC",
+        (escritural_id,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def marcar_lidos_thread(escritural_id):
+    conn = conectar()
+    conn.execute(
+        "UPDATE email_thread_escritural SET lido=1 WHERE escritural_id=? AND lido=0",
+        (escritural_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def message_id_existe(message_id):
+    """Verifica se um Message-ID já foi salvo (deduplicação do IMAP polling)."""
+    if not message_id:
+        return False
+    conn = conectar()
+    row = conn.execute(
+        "SELECT id FROM email_thread_escritural WHERE message_id=?", (message_id,)
+    ).fetchone()
+    conn.close()
+    return row is not None
+
+
+def contar_nao_lidos_escritural():
+    """Retorna dict {escritural_id: qtd} com não-lidos por solicitação."""
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT escritural_id, COUNT(*) as qtd FROM email_thread_escritural WHERE lido=0 GROUP BY escritural_id"
+    ).fetchall()
+    conn.close()
+    return {r['escritural_id']: r['qtd'] for r in rows}
