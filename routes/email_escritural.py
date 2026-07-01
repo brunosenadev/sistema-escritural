@@ -117,7 +117,7 @@ def enviar_email_smtp(cfg, destinatario, assunto, corpo_texto, in_reply_to=None,
 
 # ── IMAP polling ──────────────────────────────────────────
 
-def _processar_mensagem_imap(cfg, uid, msg_bytes):
+def _processar_mensagem_imap(cfg, uid, msg_bytes, direcao=None):
     msg = email_lib.message_from_bytes(msg_bytes)
     message_id = (msg.get('Message-ID') or '').strip()
 
@@ -141,29 +141,73 @@ def _processar_mensagem_imap(cfg, uid, msg_bytes):
     except Exception:
         data_hora_fmt = datetime.now().strftime('%d/%m/%Y %H:%M')
 
+    # Auto-detect direction: se o From é o próprio email do usuário → enviado
+    if direcao is None:
+        _, from_addr = parseaddr(remetente)
+        direcao = 'enviado' if from_addr.lower() == cfg['email'].lower() else 'recebido'
+
+    # Para emails enviados: destinatário vem do header To
+    if direcao == 'enviado':
+        destinatario = _decodificar_header(msg.get('To', '')) or ''
+        _, to_addr = parseaddr(destinatario)
+        destinatario = to_addr or destinatario
+        _, nome_exib = parseaddr(remetente)
+        enviado_por = remetente.split('<')[0].strip().strip('"') or nome_exib
+    else:
+        destinatario = cfg['email']
+        enviado_por = ''
+
     banco.salvar_email_thread(escritural_id, {
         'message_id': message_id,
         'in_reply_to': in_reply_to,
         'assunto': assunto_raw,
         'remetente': remetente,
-        'destinatario': cfg['email'],
+        'destinatario': destinatario,
         'corpo_texto': corpo,
         'data_hora': data_hora_fmt,
-        'direcao': 'recebido',
-        'enviado_por': '',
+        'direcao': direcao,
+        'enviado_por': enviado_por,
     })
+
+
+def _poll_pasta(M, cfg, direcao):
+    try:
+        _, data = M.search(None, 'SUBJECT "[SISPLAN-"')
+        uids = (data[0] or b'').split()
+        for uid in uids:
+            try:
+                _, msg_data = M.fetch(uid, '(RFC822)')
+                if msg_data and msg_data[0]:
+                    _processar_mensagem_imap(cfg, uid, msg_data[0][1], direcao)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+# Nomes comuns da pasta Enviados em diferentes servidores
+_PASTAS_ENVIADOS = ['Sent', 'Sent Messages', 'Sent Items', 'INBOX.Sent', 'Enviad',
+                    '[Gmail]/Sent Mail', 'Junk', 'Drafts']
 
 
 def _poll_usuario(cfg):
     try:
         M = _conectar_imap(cfg)
+
+        # INBOX — emails recebidos
         M.select('INBOX')
-        _, data = M.search(None, 'SUBJECT "[SISPLAN-"')
-        uids = data[0].split()
-        for uid in uids:
-            _, msg_data = M.fetch(uid, '(RFC822)')
-            if msg_data and msg_data[0]:
-                _processar_mensagem_imap(cfg, uid, msg_data[0][1])
+        _poll_pasta(M, cfg, 'recebido')
+
+        # Pasta de enviados — emails enviados via Thunderbird/outro cliente
+        for nome_pasta in _PASTAS_ENVIADOS:
+            try:
+                status, _ = M.select(nome_pasta)
+                if status == 'OK':
+                    _poll_pasta(M, cfg, 'enviado')
+                    break
+            except Exception:
+                continue
+
         M.logout()
     except Exception:
         pass
@@ -251,9 +295,24 @@ def email_enviar():
     if f'[SISPLAN-{escritural_id}]' not in assunto:
         assunto = f'[SISPLAN-{escritural_id}] {assunto}'
 
+    # Monta histórico citado (thread) abaixo do novo corpo
+    corpo_envio = corpo
+    if in_reply_to:
+        historico = banco.listar_thread_escritural(escritural_id)
+        linhas_hist = []
+        for m in historico:
+            remetente_h = m.get('remetente') or m.get('enviado_por') or 'Remetente'
+            data_h = m.get('data_hora', '')
+            corpo_h = (m.get('corpo_texto') or '').strip()
+            linhas_hist.append(f'\nEm {data_h}, {remetente_h} escreveu:')
+            for linha in corpo_h.splitlines():
+                linhas_hist.append(f'> {linha}')
+        if linhas_hist:
+            corpo_envio = corpo + '\n\n' + '\n'.join(linhas_hist)
+
     cfg['nome_exibicao'] = session.get('nome', '')
     try:
-        msg_id = enviar_email_smtp(cfg, destinatario, assunto, corpo, in_reply_to, references)
+        msg_id = enviar_email_smtp(cfg, destinatario, assunto, corpo_envio, in_reply_to, references)
     except Exception as e:
         return jsonify({'erro': f'Falha ao enviar: {e}'}), 502
 
@@ -263,7 +322,7 @@ def email_enviar():
         'assunto': assunto,
         'remetente': cfg['email'],
         'destinatario': destinatario,
-        'corpo_texto': corpo,
+        'corpo_texto': corpo,  # salva só o novo texto, sem a citação
         'data_hora': datetime.now().strftime('%d/%m/%Y %H:%M'),
         'direcao': 'enviado',
         'enviado_por': session.get('nome', ''),
