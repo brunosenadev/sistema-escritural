@@ -371,6 +371,8 @@
     justify-content: flex-end;
     gap: 10px;
     margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
   }
 
   .btn-cancelar-modal {
@@ -427,6 +429,7 @@
     font-size: 13px;
     color: #64748b;
     background: #f8fafc;
+    transition: background 0.15s, border-color 0.15s;
   }
 
   /* ── Texto de dica senha ────────────────────── */
@@ -463,6 +466,29 @@
     border-bottom: 1px solid #f1f5f9;
   }
   .secao-email-titulo:first-child { margin-top: 0; }
+
+  /* ── Dark mode do modal de usuário ─────────── */
+  [data-tema="dark"] .modal-config       { background: var(--z-surface); }
+  [data-tema="dark"] .modal-titulo       { color: var(--z-text-1); }
+  [data-tema="dark"] .btn-fechar-modal:hover { background: var(--z-border-s); }
+  [data-tema="dark"] .grupo-modal label  { color: var(--z-text-3); }
+  [data-tema="dark"] .input-modal,
+  [data-tema="dark"] .select-modal       { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .input-modal:focus,
+  [data-tema="dark"] .select-modal:focus { border-color: #3b82f6; background: var(--z-surface); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+  [data-tema="dark"] .dica-campo         { color: var(--z-text-3); }
+  [data-tema="dark"] .btn-cancelar-modal { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] .btn-cancelar-modal:hover { background: var(--z-border-s); }
+  [data-tema="dark"] .rodape-modal       { border-top-color: var(--z-border-s); }
+  [data-tema="dark"] .preview-cor-nome   { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] input[type="color"] { background: var(--z-elevated); border-color: var(--z-border); }
+  [data-tema="dark"] .wrapper-cor label  { color: var(--z-text-3); }
+  [data-tema="dark"] .modal-tabs         { border-color: var(--z-border-s); }
+  [data-tema="dark"] .modal-tab-btn      { color: var(--z-text-3); }
+  [data-tema="dark"] .modal-tab-btn:hover { color: var(--z-text-1); }
+  [data-tema="dark"] .modal-tab-btn.ativo { color: #3b82f6; border-bottom-color: #3b82f6; }
+  [data-tema="dark"] .secao-email-titulo { color: #60a5fa; border-color: var(--z-border-s); }
+  [data-tema="dark"] .hint-login         { color: var(--z-text-3); }
 
   /* ── Select de destino de homologado ────────── */
   .select-destino {
