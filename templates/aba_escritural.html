@@ -193,19 +193,33 @@
   .es-preview-valor { font-size: 13.5px; color: #1e293b; white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
 
   /* ── Chat de e-mail ── */
-  .chat-email-wrap { display: flex; flex-direction: column; gap: 14px; max-height: 52vh; overflow-y: auto; padding-right: 4px; margin-bottom: 16px; }
+  .chat-email-wrap { display: flex; flex-direction: column; gap: 14px; max-height: 56vh; overflow-y: auto; padding-right: 4px; margin-bottom: 16px; }
+  .chat-item { display: flex; flex-direction: column; }
+
   .chat-balao {
-    max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6;
+    max-width: 88%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6;
     white-space: pre-wrap; word-break: break-word;
   }
-  .chat-balao.enviado { align-self: flex-end; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-bottom-right-radius: 4px; }
+  .chat-balao.enviado  { align-self: flex-end;  background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-bottom-right-radius: 4px; }
   .chat-balao.recebido { align-self: flex-start; background: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b; border-bottom-left-radius: 4px; }
+
+  /* Iframe para emails HTML (assinatura, logos, etc.) */
+  .chat-iframe-wrap {
+    max-width: 88%; align-self: flex-start;
+    border: 1px solid #e2e8f0; border-radius: 12px; border-bottom-left-radius: 4px;
+    overflow: hidden; background: #fff;
+  }
+  .chat-iframe {
+    width: 100%; border: none; display: block; min-height: 80px;
+  }
+
   .chat-meta { font-size: 10.5px; color: #94a3b8; margin-top: 4px; }
   .chat-meta.enviado { text-align: right; }
-  .chat-item { display: flex; flex-direction: column; }
   .chat-vazio { text-align: center; color: #94a3b8; font-size: 13px; padding: 30px 0; }
   .chat-resposta-area { border-top: 1px solid #f1f5f9; padding-top: 14px; }
   .chat-resposta-area textarea { resize: vertical; min-height: 72px; }
+
+  [data-tema="dark"] .chat-iframe-wrap { border-color: var(--z-border); background: #fff; }
 
   /* ── Dark mode ── */
   [data-tema="dark"] .card-tabela     { background: var(--z-surface); border-color: var(--z-border-s); }
@@ -937,18 +951,46 @@ Sisplan Sistemas`;
         }
 
         const texto = m.direcao === 'recebido' ? _stripQuotedText(m.corpo_texto) : (m.corpo_texto || '');
-        if (!texto && m.direcao === 'recebido') return;
+        const html  = (m.corpo_html || '').trim();
+
+        if (!texto && !html && m.direcao === 'recebido') return;
 
         const item = document.createElement('div');
         item.className = 'chat-item';
-        const balao = document.createElement('div');
-        balao.className = `chat-balao ${m.direcao}`;
-        balao.textContent = texto || '(sem conteúdo)';
+
+        if (html && m.direcao === 'recebido') {
+          // Email com HTML (assinatura, logos) → iframe isolado
+          const iframeWrap = document.createElement('div');
+          iframeWrap.className = 'chat-iframe-wrap';
+          const iframe = document.createElement('iframe');
+          iframe.className = 'chat-iframe';
+          iframe.setAttribute('sandbox', 'allow-same-origin');
+          iframe.setAttribute('scrolling', 'no');
+          iframe.srcdoc = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+            body{margin:0;padding:12px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+              font-size:13px;line-height:1.5;color:#1e293b;word-break:break-word;overflow-x:hidden;}
+            img{max-width:100%;height:auto;} a{color:#2563eb;}
+            table{max-width:100%;border-collapse:collapse;}
+          </style></head><body>${html}</body></html>`;
+          iframe.addEventListener('load', function() {
+            try {
+              const h = this.contentDocument.body.scrollHeight;
+              this.style.height = Math.min(h + 4, 480) + 'px';
+            } catch(e) { this.style.height = '200px'; }
+          });
+          iframeWrap.appendChild(iframe);
+          item.appendChild(iframeWrap);
+        } else {
+          const balao = document.createElement('div');
+          balao.className = `chat-balao ${m.direcao}`;
+          balao.textContent = texto || '(sem conteúdo)';
+          item.appendChild(balao);
+        }
+
         const meta = document.createElement('div');
         meta.className = `chat-meta ${m.direcao}`;
         const quem = m.direcao === 'enviado' ? (m.enviado_por || 'Você') : (m.remetente || 'Cliente');
         meta.textContent = `${quem} · ${m.data_hora}`;
-        item.appendChild(balao);
         item.appendChild(meta);
         wrap.appendChild(item);
       });

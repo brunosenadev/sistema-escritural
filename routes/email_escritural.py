@@ -64,6 +64,47 @@ def _extrair_texto(msg_email):
     return corpo.strip()
 
 
+def _extrair_html(msg_email):
+    """Extrai o corpo HTML de uma mensagem (prefere text/html)."""
+    html = ''
+    if msg_email.is_multipart():
+        for part in msg_email.walk():
+            ct = part.get_content_type()
+            cd = str(part.get('Content-Disposition', ''))
+            if ct == 'text/html' and 'attachment' not in cd:
+                payload = part.get_payload(decode=True)
+                charset = part.get_content_charset() or 'utf-8'
+                html = payload.decode(charset, errors='replace')
+                break
+    else:
+        if msg_email.get_content_type() == 'text/html':
+            payload = msg_email.get_payload(decode=True)
+            charset = msg_email.get_content_charset() or 'utf-8'
+            if payload:
+                html = payload.decode(charset, errors='replace')
+    return html
+
+
+_RE_BLOCKQUOTE  = re.compile(r'<blockquote[^>]*>.*?</blockquote>', re.DOTALL | re.IGNORECASE)
+_RE_CITE_PREFIX = re.compile(
+    r'<(?:div|p)[^>]*class=["\'][^"\']*(?:moz-cite-prefix|gmail_quote_attribution|WordSection)[^"\']*["\'][^>]*>.*?</(?:div|p)>',
+    re.DOTALL | re.IGNORECASE,
+)
+_RE_SCRIPT      = re.compile(r'<script[^>]*>.*?</script>', re.DOTALL | re.IGNORECASE)
+_RE_ON_ATTRS    = re.compile(r'\s+on\w+="[^"]*"', re.IGNORECASE)
+
+
+def _strip_quoted_html(html):
+    """Remove blocos de citação (histórico) do HTML e scripts."""
+    if not html:
+        return html
+    html = _RE_SCRIPT.sub('', html)
+    html = _RE_ON_ATTRS.sub('', html)
+    html = _RE_CITE_PREFIX.sub('', html)
+    html = _RE_BLOCKQUOTE.sub('', html)
+    return html
+
+
 def _conectar_smtp(cfg):
     porta = int(cfg.get('smtp_port', 587))
     host = cfg['smtp_host']
@@ -134,6 +175,7 @@ def _processar_mensagem_imap(cfg, uid, msg_bytes, direcao=None):
     data_hora = _decodificar_header(msg.get('Date', ''))
     in_reply_to = (msg.get('In-Reply-To') or '').strip()
     corpo = _extrair_texto(msg)
+    corpo_html = _strip_quoted_html(_extrair_html(msg))
 
     try:
         dt = email_lib.utils.parsedate_to_datetime(data_hora)
@@ -164,6 +206,7 @@ def _processar_mensagem_imap(cfg, uid, msg_bytes, direcao=None):
         'remetente': remetente,
         'destinatario': destinatario,
         'corpo_texto': corpo,
+        'corpo_html': corpo_html,
         'data_hora': data_hora_fmt,
         'direcao': direcao,
         'enviado_por': enviado_por,

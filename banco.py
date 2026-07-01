@@ -459,6 +459,7 @@ def inicializar_banco():
         "ALTER TABLE escritural ADD COLUMN quantos_dias TEXT",
         "ALTER TABLE escritural ADD COLUMN anexos TEXT",
         "ALTER TABLE email_thread_escritural ADD COLUMN enviado_por TEXT DEFAULT ''",
+        "ALTER TABLE email_thread_escritural ADD COLUMN corpo_html TEXT DEFAULT ''",
     ]:
         try:
             conn.execute(ddl)
@@ -1855,13 +1856,13 @@ def salvar_email_thread(escritural_id, msg):
     cur = conn.execute("""
         INSERT INTO email_thread_escritural
             (escritural_id, message_id, in_reply_to, assunto, remetente, destinatario,
-             corpo_texto, data_hora, direcao, lido, enviado_por)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?)
+             corpo_texto, corpo_html, data_hora, direcao, lido, enviado_por)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         escritural_id,
         msg.get('message_id', ''), msg.get('in_reply_to', ''),
         msg.get('assunto', ''), msg.get('remetente', ''), msg.get('destinatario', ''),
-        msg.get('corpo_texto', ''),
+        msg.get('corpo_texto', ''), msg.get('corpo_html', ''),
         msg.get('data_hora', datetime.now().strftime('%d/%m/%Y %H:%M')),
         msg.get('direcao', 'enviado'),
         1 if msg.get('direcao') == 'enviado' else 0,
