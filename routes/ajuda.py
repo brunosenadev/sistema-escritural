@@ -133,7 +133,8 @@ def aba_ajuda():
     if bloqueio:
         return bloqueio
     topicos = banco.listar_ajuda_completo()
-    return render_template('aba_ajuda.html', topicos=topicos)
+    collections_por_banco = banco.listar_collections_por_banco()
+    return render_template('aba_ajuda.html', topicos=topicos, collections_por_banco=collections_por_banco)
 
 
 @ajuda_bp.route('/ajuda/post/<int:id_post>')
@@ -170,7 +171,19 @@ def ajuda_gerenciar():
     if bloqueio:
         return bloqueio
     topicos = banco.listar_ajuda_completo()
-    return render_template('ajuda_gerenciar.html', topicos=topicos)
+    collections = banco.listar_collections()
+    return render_template('ajuda_gerenciar.html', topicos=topicos, collections=collections)
+
+
+@ajuda_bp.route('/ajuda/collections/<int:id_col>')
+def ver_collection(id_col):
+    bloqueio = checar_tela('ajuda')
+    if bloqueio:
+        return bloqueio
+    col = banco.buscar_collection(id_col)
+    if not col:
+        return redirect(url_for('ajuda.aba_ajuda'))
+    return render_template('ajuda_collection_view.html', col=col)
 
 
 @ajuda_bp.route('/ajuda/gerenciar/post/novo')
@@ -270,6 +283,42 @@ def api_remover_post(id_post):
     if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.remover_ajuda_post(id_post)
+    return jsonify({'sucesso': True})
+
+
+# ── API: Collections ──────────────────────────────────────
+
+@ajuda_bp.route('/api/ajuda/collections', methods=['POST'])
+def api_adicionar_collection():
+    if checar_tela('ajuda_gerenciar'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    d = request.get_json() or {}
+    if not (d.get('titulo') or '').strip():
+        return jsonify({'erro': 'Informe o título.'}), 400
+    if not (d.get('banco') or '').strip():
+        return jsonify({'erro': 'Informe o banco.'}), 400
+    novo_id = banco.adicionar_collection(d, criado_por=session.get('nome', ''))
+    return jsonify({'sucesso': True, 'id': novo_id})
+
+
+@ajuda_bp.route('/api/ajuda/collections/<int:id_col>', methods=['PUT'])
+def api_atualizar_collection(id_col):
+    if checar_tela('ajuda_gerenciar'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    d = request.get_json() or {}
+    if not (d.get('titulo') or '').strip():
+        return jsonify({'erro': 'Informe o título.'}), 400
+    if not (d.get('banco') or '').strip():
+        return jsonify({'erro': 'Informe o banco.'}), 400
+    banco.atualizar_collection(id_col, d)
+    return jsonify({'sucesso': True})
+
+
+@ajuda_bp.route('/api/ajuda/collections/<int:id_col>', methods=['DELETE'])
+def api_remover_collection(id_col):
+    if checar_tela('ajuda_gerenciar'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    banco.remover_collection(id_col)
     return jsonify({'sucesso': True})
 
 

@@ -2,7 +2,7 @@
 {% set aba_ativa = 'ajuda' %}
 
 {% block titulo %}Gerenciar Ajuda — Sisplan{% endblock %}
-{% block titulo_pagina %}Gerenciar Manuais{% endblock %}
+{% block titulo_pagina %}Gerenciar Manuais e Collections{% endblock %}
 {% block breadcrumb %}Referência / Ajuda / Gerenciar{% endblock %}
 
 {% block acoes_header %}{% endblock %}
@@ -61,6 +61,30 @@
   .aj-toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 18px; }
   .aj-toolbar .btn-secundario-mini { padding: 9px 16px; }
 
+  /* Abas gerenciar */
+  .ger-tabs { display: flex; gap: 4px; margin-bottom: 22px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0; }
+  .ger-tab-btn { padding: 9px 20px; font-size: 13px; font-weight: 600; border: none; background: none; cursor: pointer; font-family: 'Inter',sans-serif; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.15s, border-color 0.15s; display: flex; align-items: center; gap: 6px; }
+  .ger-tab-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .ger-tab-btn.ativo { color: #2563eb; border-bottom-color: #2563eb; }
+  .ger-tab-btn:hover:not(.ativo) { color: #334155; }
+  .ger-painel { display: none; }
+  .ger-painel.ativo { display: block; }
+
+  /* Collections */
+  .col-tabela-banco { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #16a34a; }
+  .col-conteudo-preview { font-family: 'Consolas','Monaco',monospace; font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+
+  /* Modal collection */
+  .modal-col-config { background: #fff; border-radius: 16px; padding: 28px; width: 100%; max-width: 600px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(10,22,40,0.25); animation: modal-entrar 0.2s ease; }
+  .textarea-col-config { width: 100%; padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-family: 'Consolas','Monaco','Courier New',monospace; background: #0f172a; color: #e2e8f0; outline: none; resize: vertical; min-height: 200px; box-sizing: border-box; }
+  .textarea-col-config:focus { border-color: #3b82f6; }
+
+  [data-tema="dark"] .ger-tabs { border-color: var(--z-border-s); }
+  [data-tema="dark"] .ger-tab-btn { color: var(--z-text-3); }
+  [data-tema="dark"] .ger-tab-btn.ativo { color: #60a5fa; border-bottom-color: #60a5fa; }
+  [data-tema="dark"] .modal-col-config { background: var(--z-surface); border: 1px solid var(--z-border-s); }
+  [data-tema="dark"] .textarea-col-config { border-color: var(--z-border); }
+
   [data-tema="dark"] .card-config        { background: var(--z-surface); border-color: var(--z-border-s); }
   [data-tema="dark"] .card-config-header { background: var(--z-surface); border-color: var(--z-border-s); }
   [data-tema="dark"] .card-config-titulo { color: var(--z-text-1); }
@@ -78,84 +102,144 @@
 
 {% block conteudo %}
 
-<div class="aj-toolbar">
-  <a href="/ajuda" class="btn-secundario-mini">
-    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-    Ver Ajuda
-  </a>
-  <button class="btn-primario-config" onclick="abrirModalNovoTopico()">
-    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    Novo Tópico
+<!-- Abas -->
+<div class="ger-tabs">
+  <button class="ger-tab-btn ativo" id="gtab-manuais" onclick="trocarGerAba('manuais')">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Manuais
+  </button>
+  <button class="ger-tab-btn" id="gtab-collections" onclick="trocarGerAba('collections')">
+    <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+    Collections API
   </button>
 </div>
 
-{% if not topicos %}
-<div class="aj-empty-topico" style="background:#fff;border:1px dashed #e2e8f0;border-radius:14px;padding:50px 20px;">
-  Nenhum tópico cadastrado. Crie o primeiro tópico para começar a adicionar manuais.
-</div>
-{% endif %}
+<!-- ── Painel: Manuais ── -->
+<div class="ger-painel ativo" id="gpainel-manuais">
+  <div class="aj-toolbar">
+    <a href="/ajuda" class="btn-secundario-mini">
+      <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Ver Ajuda
+    </a>
+    <button class="btn-primario-config" onclick="abrirModalNovoTopico()">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Novo Tópico
+    </button>
+  </div>
 
-{% for topico in topicos %}
-<div class="card-config">
-  <div class="card-config-header">
-    <span class="card-config-titulo">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      {{ topico.nome }}
-      <span style="font-size:11px;font-weight:500;color:#94a3b8;">({{ topico.posts | length }} manual{{ 'is' if topico.posts | length != 1 else '' }})</span>
-    </span>
-    <div class="card-config-acoes">
-      <a href="/ajuda/gerenciar/post/novo?topico_id={{ topico.id }}" class="btn-acao-mini btn-editar-mini">
-        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Novo Post
-      </a>
-      <button class="btn-acao-mini btn-editar-mini" onclick='abrirModalEditarTopico({{ topico.id }}, {{ topico.nome | tojson }}, {{ topico.ordem }})'>
-        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Editar
-      </button>
-      <button class="btn-acao-mini btn-deletar-mini" onclick='removerTopico({{ topico.id }}, {{ topico.nome | tojson }})'>
-        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
-        Remover
-      </button>
+  {% if not topicos %}
+  <div class="aj-empty-topico" style="background:#fff;border:1px dashed #e2e8f0;border-radius:14px;padding:50px 20px;">
+    Nenhum tópico cadastrado. Crie o primeiro tópico para começar a adicionar manuais.
+  </div>
+  {% endif %}
+
+  {% for topico in topicos %}
+  <div class="card-config">
+    <div class="card-config-header">
+      <span class="card-config-titulo">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        {{ topico.nome }}
+        <span style="font-size:11px;font-weight:500;color:#94a3b8;">({{ topico.posts | length }} manual{{ 'is' if topico.posts | length != 1 else '' }})</span>
+      </span>
+      <div class="card-config-acoes">
+        <a href="/ajuda/gerenciar/post/novo?topico_id={{ topico.id }}" class="btn-acao-mini btn-editar-mini">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo Post
+        </a>
+        <button class="btn-acao-mini btn-editar-mini" onclick='abrirModalEditarTopico({{ topico.id }}, {{ topico.nome | tojson }}, {{ topico.ordem }})'>
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar
+        </button>
+        <button class="btn-acao-mini btn-deletar-mini" onclick='removerTopico({{ topico.id }}, {{ topico.nome | tojson }})'>
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+          Remover
+        </button>
+      </div>
+    </div>
+    <div class="card-config-body">
+      {% if topico.posts %}
+      <table class="tabela-config">
+        <thead>
+          <tr><th>Título</th><th>Descrição</th><th style="width:140px;">Atualizado em</th><th style="width:160px;"></th></tr>
+        </thead>
+        <tbody>
+          {% for post in topico.posts %}
+          <tr>
+            <td style="font-weight:500;">{{ post.titulo }}</td>
+            <td style="color:#64748b;">{{ post.descricao or '—' }}</td>
+            <td style="color:#94a3b8;font-size:12px;">{{ post.atualizado_em }}</td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <a href="/ajuda/gerenciar/post/{{ post.id }}/editar" class="btn-acao-mini btn-editar-mini">
+                  <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Editar
+                </a>
+                <button class="btn-acao-mini btn-deletar-mini" onclick='removerPost({{ post.id }}, {{ post.titulo | tojson }})'>
+                  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="aj-empty-topico">Nenhum manual neste tópico ainda.</div>
+      {% endif %}
     </div>
   </div>
-  <div class="card-config-body">
-    {% if topico.posts %}
-    <table class="tabela-config">
-      <thead>
-        <tr>
-          <th>Título</th>
-          <th>Descrição</th>
-          <th style="width:140px;">Atualizado em</th>
-          <th style="width:160px;"></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for post in topico.posts %}
-        <tr>
-          <td style="font-weight:500;">{{ post.titulo }}</td>
-          <td style="color:#64748b;">{{ post.descricao or '—' }}</td>
-          <td style="color:#94a3b8;font-size:12px;">{{ post.atualizado_em }}</td>
-          <td>
-            <div style="display:flex;gap:6px;">
-              <a href="/ajuda/gerenciar/post/{{ post.id }}/editar" class="btn-acao-mini btn-editar-mini">
-                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Editar
-              </a>
-              <button class="btn-acao-mini btn-deletar-mini" onclick='removerPost({{ post.id }}, {{ post.titulo | tojson }})'>
-                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
-              </button>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <div class="aj-empty-topico">Nenhum manual neste tópico ainda.</div>
-    {% endif %}
-  </div>
+  {% endfor %}
 </div>
-{% endfor %}
+
+<!-- ── Painel: Collections ── -->
+<div class="ger-painel" id="gpainel-collections">
+  <div class="aj-toolbar">
+    <a href="/ajuda?aba=collections" class="btn-secundario-mini">
+      <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Ver Collections
+    </a>
+    <button class="btn-primario-config" onclick="abrirModalNovaCollection()">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nova Collection
+    </button>
+  </div>
+
+  {% if not collections %}
+  <div class="aj-empty-topico" style="background:#fff;border:1px dashed #e2e8f0;border-radius:14px;padding:50px 20px;">
+    Nenhuma collection cadastrada ainda.
+  </div>
+  {% else %}
+  <div class="card-config">
+    <div class="card-config-body">
+      <table class="tabela-config">
+        <thead>
+          <tr><th>Banco</th><th>Título</th><th>Descrição</th><th style="width:130px;">Atualizado em</th><th style="width:100px;"></th></tr>
+        </thead>
+        <tbody>
+          {% for col in collections %}
+          <tr>
+            <td class="col-tabela-banco">{{ col.banco }}</td>
+            <td style="font-weight:500;"><a href="/ajuda/collections/{{ col.id }}" style="color:#2563eb;text-decoration:none;">{{ col.titulo }}</a></td>
+            <td style="color:#64748b;">{{ col.descricao or '—' }}</td>
+            <td style="color:#94a3b8;font-size:12px;">{{ col.atualizado_em }}</td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <button class="btn-acao-mini btn-editar-mini" onclick='abrirModalEditarCollection({{ col | tojson | forceescape }})'>
+                  <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn-acao-mini btn-deletar-mini" onclick='removerCollection({{ col.id }}, {{ col.titulo | tojson }})'>
+                  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
 
 <!-- Modal: Tópico -->
 <div class="overlay-modal" id="overlay-topico" onclick="fecharModalSeClicarFora(event,'overlay-topico')">
@@ -182,6 +266,41 @@
   </div>
 </div>
 
+<!-- Modal: Collection -->
+<div class="overlay-modal" id="overlay-collection" onclick="fecharModalSeClicarFora(event,'overlay-collection')">
+  <div class="modal-col-config">
+    <div class="modal-titulo">
+      <span id="titulo-modal-col">Nova Collection</span>
+      <button class="btn-fechar-modal" onclick="fecharModal('overlay-collection')">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <input type="hidden" id="campo-col-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div class="grupo-modal">
+        <label>Banco *</label>
+        <input class="input-modal" id="campo-col-banco" placeholder="Ex: 341 - Itaú">
+      </div>
+      <div class="grupo-modal">
+        <label>Título *</label>
+        <input class="input-modal" id="campo-col-titulo" placeholder="Ex: Cobrança API v2">
+      </div>
+    </div>
+    <div class="grupo-modal">
+      <label>Descrição</label>
+      <input class="input-modal" id="campo-col-descricao" placeholder="Breve descrição da collection">
+    </div>
+    <div class="grupo-modal">
+      <label>Conteúdo da Collection (JSON / texto)</label>
+      <textarea class="textarea-col-config" id="campo-col-conteudo" placeholder="Cole aqui o JSON da collection, comandos cURL, ou qualquer conteúdo..."></textarea>
+    </div>
+    <div class="rodape-modal">
+      <button class="btn-cancelar-modal" onclick="fecharModal('overlay-collection')">Cancelar</button>
+      <button class="btn-salvar-modal" onclick="salvarCollection()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts_extras %}
@@ -192,6 +311,15 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') document.querySelectorAll('.overlay-modal.aberto').forEach(m => m.classList.remove('aberto'));
   });
+
+  function trocarGerAba(aba) {
+    document.querySelectorAll('.ger-tab-btn').forEach(b => b.classList.remove('ativo'));
+    document.querySelectorAll('.ger-painel').forEach(p => p.classList.remove('ativo'));
+    document.getElementById('gtab-' + aba).classList.add('ativo');
+    document.getElementById('gpainel-' + aba).classList.add('ativo');
+  }
+  const _paramAba = new URLSearchParams(location.search).get('aba');
+  if (_paramAba === 'collections') trocarGerAba('collections');
 
   function abrirModalNovoTopico() {
     document.getElementById('titulo-modal-topico').textContent = 'Novo Tópico';
@@ -273,6 +401,65 @@
               mostrarToast('erro', d.erro || 'Erro ao remover.');
             }
           });
+      }
+    });
+  }
+
+  // ── Collections ──────────────────────────────────────────
+  function abrirModalNovaCollection() {
+    document.getElementById('titulo-modal-col').textContent = 'Nova Collection';
+    document.getElementById('campo-col-id').value = '';
+    document.getElementById('campo-col-banco').value = '';
+    document.getElementById('campo-col-titulo').value = '';
+    document.getElementById('campo-col-descricao').value = '';
+    document.getElementById('campo-col-conteudo').value = '';
+    abrirModal('overlay-collection');
+  }
+
+  function abrirModalEditarCollection(col) {
+    document.getElementById('titulo-modal-col').textContent = 'Editar Collection';
+    document.getElementById('campo-col-id').value = col.id;
+    document.getElementById('campo-col-banco').value = col.banco || '';
+    document.getElementById('campo-col-titulo').value = col.titulo || '';
+    document.getElementById('campo-col-descricao').value = col.descricao || '';
+    document.getElementById('campo-col-conteudo').value = col.conteudo || '';
+    abrirModal('overlay-collection');
+  }
+
+  function salvarCollection() {
+    const id = document.getElementById('campo-col-id').value;
+    const dados = {
+      banco:     document.getElementById('campo-col-banco').value.trim(),
+      titulo:    document.getElementById('campo-col-titulo').value.trim(),
+      descricao: document.getElementById('campo-col-descricao').value.trim(),
+      conteudo:  document.getElementById('campo-col-conteudo').value,
+    };
+    if (!dados.banco || !dados.titulo) { mostrarToast('erro', 'Banco e título são obrigatórios.'); return; }
+    const url    = id ? `/api/ajuda/collections/${id}` : '/api/ajuda/collections';
+    const metodo = id ? 'PUT' : 'POST';
+    fetch(url, { method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) {
+        mostrarToast('sucesso', id ? 'Collection atualizada!' : 'Collection criada!');
+        fecharModal('overlay-collection');
+        setTimeout(() => location.reload(), 500);
+      } else mostrarToast('erro', d.erro || 'Erro ao salvar.');
+    });
+  }
+
+  function removerCollection(id, titulo) {
+    abrirDialogo({
+      titulo: 'Remover Collection',
+      mensagem: `Remover a collection <strong>${titulo}</strong>?`,
+      tipo: 'perigo', textoBotao: 'Remover',
+      callback: () => {
+        fetch(`/api/ajuda/collections/${id}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(d => {
+          if (d.sucesso) { mostrarToast('sucesso', 'Collection removida.'); setTimeout(() => location.reload(), 500); }
+          else mostrarToast('erro', d.erro || 'Erro ao remover.');
+        });
       }
     });
   }

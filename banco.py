@@ -231,6 +231,17 @@ def inicializar_banco():
             atualizado_em TEXT    DEFAULT (datetime('now','localtime')),
             FOREIGN KEY (topico_id) REFERENCES ajuda_topicos(id)
         );
+        CREATE TABLE IF NOT EXISTS collections (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            banco         TEXT    NOT NULL DEFAULT '',
+            titulo        TEXT    NOT NULL DEFAULT '',
+            descricao     TEXT    DEFAULT '',
+            conteudo      TEXT    DEFAULT '',
+            ordem         INTEGER DEFAULT 99,
+            criado_por    TEXT    DEFAULT '',
+            criado_em     TEXT    DEFAULT (datetime('now','localtime')),
+            atualizado_em TEXT    DEFAULT (datetime('now','localtime'))
+        );
         CREATE TABLE IF NOT EXISTS pendentes (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
             tecnico       TEXT,
@@ -1721,6 +1732,75 @@ def atualizar_ajuda_post(id_post, dados):
 def remover_ajuda_post(id_post):
     conn = conectar()
     conn.execute("DELETE FROM ajuda_posts WHERE id=?", (id_post,))
+    conn.commit()
+    conn.close()
+
+
+# ── Collections ──────────────────────────────────────────
+
+def listar_collections():
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT * FROM collections ORDER BY banco, ordem, titulo"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def listar_collections_por_banco():
+    """Retorna dict {banco: [collections]} ordenado por banco."""
+    from collections import defaultdict
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT * FROM collections ORDER BY banco, ordem, titulo"
+    ).fetchall()
+    conn.close()
+    agrupado = defaultdict(list)
+    for r in rows:
+        agrupado[r['banco'] or 'Geral'].append(dict(r))
+    return dict(agrupado)
+
+
+def buscar_collection(id_col):
+    conn = conectar()
+    row = conn.execute("SELECT * FROM collections WHERE id=?", (id_col,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def adicionar_collection(dados, criado_por=''):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    conn = conectar()
+    cur = conn.execute(
+        """INSERT INTO collections (banco,titulo,descricao,conteudo,ordem,criado_por,criado_em,atualizado_em)
+           VALUES (?,?,?,?,?,?,?,?)""",
+        (dados.get('banco','').strip(), dados.get('titulo','').strip(),
+         dados.get('descricao','').strip(), dados.get('conteudo',''),
+         int(dados.get('ordem', 99) or 99), criado_por, agora, agora)
+    )
+    novo_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return novo_id
+
+
+def atualizar_collection(id_col, dados):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    conn = conectar()
+    conn.execute(
+        """UPDATE collections SET banco=?,titulo=?,descricao=?,conteudo=?,ordem=?,atualizado_em=?
+           WHERE id=?""",
+        (dados.get('banco','').strip(), dados.get('titulo','').strip(),
+         dados.get('descricao','').strip(), dados.get('conteudo',''),
+         int(dados.get('ordem', 99) or 99), agora, id_col)
+    )
+    conn.commit()
+    conn.close()
+
+
+def remover_collection(id_col):
+    conn = conectar()
+    conn.execute("DELETE FROM collections WHERE id=?", (id_col,))
     conn.commit()
     conn.close()
 

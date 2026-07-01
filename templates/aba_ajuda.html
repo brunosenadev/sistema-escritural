@@ -7,7 +7,7 @@
 
 {% block acoes_header %}
 {% if nivel_acesso == 'master' or 'ajuda_gerenciar' in telas_acesso %}
-<a href="/ajuda/gerenciar" class="btn-header-pill" title="Gerenciar manuais">
+<a href="/ajuda/gerenciar" class="btn-header-pill" title="Gerenciar manuais e collections">
   <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
   Gerenciar
 </a>
@@ -16,6 +16,27 @@
 
 {% block estilos_extras %}
 <style>
+  /* ── Tabs ── */
+  .aj-tabs {
+    display: flex; gap: 4px; margin-bottom: 24px;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0;
+  }
+  .aj-tab-btn {
+    padding: 9px 20px; font-size: 13px; font-weight: 600;
+    border: none; background: none; cursor: pointer;
+    font-family: inherit; color: #64748b;
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .aj-tab-btn.ativo { color: #2563eb; border-bottom-color: #2563eb; }
+  .aj-tab-btn:hover:not(.ativo) { color: #334155; }
+  .aj-tab-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .aj-tab-painel { display: none; }
+  .aj-tab-painel.ativo { display: block; }
+
+  /* ── Manuais ── */
   .aj-topico { margin-bottom: 32px; }
   .aj-topico-titulo {
     font-size: 14px; font-weight: 700; color: #1e293b;
@@ -32,14 +53,9 @@
   }
 
   .aj-card {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 18px;
-    text-decoration: none;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+    padding: 18px; text-decoration: none; display: flex;
+    flex-direction: column; gap: 10px;
     transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
   }
   .aj-card:hover { box-shadow: 0 6px 20px rgba(30,79,196,0.10); border-color: #bfdbfe; transform: translateY(-1px); }
@@ -49,9 +65,12 @@
     background: #eff6ff; display: flex; align-items: center; justify-content: center;
   }
   .aj-card-icone svg { width: 18px; height: 18px; stroke: #2563eb; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .aj-card-icone.col { background: #f0fdf4; }
+  .aj-card-icone.col svg { stroke: #16a34a; }
 
   .aj-card-titulo { font-size: 14px; font-weight: 700; color: #1e293b; line-height: 1.4; }
-  .aj-card-desc { font-size: 12.5px; color: #64748b; line-height: 1.5; flex: 1; }
+  .aj-card-banco  { font-size: 11px; font-weight: 600; color: #2563eb; text-transform: uppercase; letter-spacing: 0.4px; }
+  .aj-card-desc   { font-size: 12.5px; color: #64748b; line-height: 1.5; flex: 1; }
   .aj-card-rodape {
     font-size: 11px; color: #94a3b8;
     display: flex; align-items: center; gap: 6px;
@@ -64,6 +83,20 @@
     background: #fff; border: 1px dashed #e2e8f0; border-radius: 14px;
   }
 
+  /* ── Collections: agrupamento por banco ── */
+  .col-banco-grupo { margin-bottom: 30px; }
+  .col-banco-titulo {
+    font-size: 13px; font-weight: 700; color: #1e293b;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .col-banco-titulo svg { width: 15px; height: 15px; stroke: #16a34a; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+  /* ── Dark mode ── */
+  [data-tema="dark"] .aj-tabs         { border-color: var(--z-border-s); }
+  [data-tema="dark"] .aj-tab-btn      { color: var(--z-text-3); }
+  [data-tema="dark"] .aj-tab-btn.ativo { color: #60a5fa; border-bottom-color: #60a5fa; }
+  [data-tema="dark"] .aj-tab-btn:hover:not(.ativo) { color: var(--z-text-1); }
   [data-tema="dark"] .aj-card        { background: var(--z-surface); border-color: var(--z-border-s); }
   [data-tema="dark"] .aj-card:hover  { border-color: var(--z-accent); }
   [data-tema="dark"] .aj-card-titulo { color: var(--z-text-1); }
@@ -71,48 +104,118 @@
   [data-tema="dark"] .aj-card-rodape { color: var(--z-text-3); border-color: var(--z-border-s); }
   [data-tema="dark"] .aj-card-icone  { background: rgba(99,102,241,0.12); }
   [data-tema="dark"] .aj-card-icone svg { stroke: var(--z-accent-t); }
+  [data-tema="dark"] .aj-card-icone.col { background: rgba(22,163,74,0.12); }
+  [data-tema="dark"] .aj-card-icone.col svg { stroke: #4ade80; }
+  [data-tema="dark"] .aj-card-banco  { color: #60a5fa; }
   [data-tema="dark"] .aj-topico-titulo { color: var(--z-text-1); }
+  [data-tema="dark"] .col-banco-titulo { color: var(--z-text-1); }
   [data-tema="dark"] .aj-empty       { background: var(--z-surface); border-color: var(--z-border-s); color: var(--z-text-3); }
 </style>
 {% endblock %}
 
 {% block conteudo %}
 
-{% set tem_post = topicos | selectattr('posts') | list %}
+<div class="aj-tabs">
+  <button class="aj-tab-btn ativo" id="tab-manuais" onclick="trocarAba('manuais')">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Manuais
+  </button>
+  <button class="aj-tab-btn" id="tab-collections" onclick="trocarAba('collections')">
+    <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+    Collections API
+    {% if collections_por_banco %}<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;">{{ collections_por_banco.values() | sum(start=[]) | list | length }}</span>{% endif %}
+  </button>
+</div>
 
-{% if not topicos or not tem_post %}
-<div class="aj-empty">
-  Nenhum manual cadastrado ainda.
-  {% if nivel_acesso == 'master' or 'ajuda_gerenciar' in telas_acesso %}
-  <br><a href="/ajuda/gerenciar" style="color:#2563eb;font-weight:600;">Cadastrar o primeiro manual</a>
+<!-- ── Painel: Manuais ── -->
+<div class="aj-tab-painel ativo" id="painel-manuais">
+  {% set tem_post = topicos | selectattr('posts') | list %}
+  {% if not topicos or not tem_post %}
+  <div class="aj-empty">
+    Nenhum manual cadastrado ainda.
+    {% if nivel_acesso == 'master' or 'ajuda_gerenciar' in telas_acesso %}
+    <br><a href="/ajuda/gerenciar" style="color:#2563eb;font-weight:600;">Cadastrar o primeiro manual</a>
+    {% endif %}
+  </div>
+  {% else %}
+    {% for topico in topicos %}
+    {% if topico.posts %}
+    <div class="aj-topico">
+      <div class="aj-topico-titulo">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        {{ topico.nome }}
+      </div>
+      <div class="aj-grid">
+        {% for post in topico.posts %}
+        <a class="aj-card" href="/ajuda/post/{{ post.id }}">
+          <div class="aj-card-icone">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="aj-card-titulo">{{ post.titulo }}</div>
+          <div class="aj-card-desc">{{ post.descricao or 'Sem descrição.' }}</div>
+          <div class="aj-card-rodape">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Atualizado em {{ post.atualizado_em }}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
   {% endif %}
 </div>
-{% else %}
-  {% for topico in topicos %}
-  {% if topico.posts %}
-  <div class="aj-topico">
-    <div class="aj-topico-titulo">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      {{ topico.nome }}
-    </div>
-    <div class="aj-grid">
-      {% for post in topico.posts %}
-      <a class="aj-card" href="/ajuda/post/{{ post.id }}">
-        <div class="aj-card-icone">
-          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        </div>
-        <div class="aj-card-titulo">{{ post.titulo }}</div>
-        <div class="aj-card-desc">{{ post.descricao or 'Sem descrição.' }}</div>
-        <div class="aj-card-rodape">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Atualizado em {{ post.atualizado_em }}
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-  {% endfor %}
-{% endif %}
 
+<!-- ── Painel: Collections ── -->
+<div class="aj-tab-painel" id="painel-collections">
+  {% if not collections_por_banco %}
+  <div class="aj-empty">
+    Nenhuma collection cadastrada ainda.
+    {% if nivel_acesso == 'master' or 'ajuda_gerenciar' in telas_acesso %}
+    <br><a href="/ajuda/gerenciar?aba=collections" style="color:#2563eb;font-weight:600;">Cadastrar a primeira collection</a>
+    {% endif %}
+  </div>
+  {% else %}
+    {% for banco_nome, cols in collections_por_banco.items() %}
+    <div class="col-banco-grupo">
+      <div class="col-banco-titulo">
+        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+        {{ banco_nome }}
+      </div>
+      <div class="aj-grid">
+        {% for col in cols %}
+        <a class="aj-card" href="/ajuda/collections/{{ col.id }}">
+          <div class="aj-card-icone col">
+            <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+          </div>
+          <div class="aj-card-banco">{{ col.banco }}</div>
+          <div class="aj-card-titulo">{{ col.titulo }}</div>
+          <div class="aj-card-desc">{{ col.descricao or 'Sem descrição.' }}</div>
+          <div class="aj-card-rodape">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Atualizado em {{ col.atualizado_em }}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+  function trocarAba(aba) {
+    document.querySelectorAll('.aj-tab-btn').forEach(b => b.classList.remove('ativo'));
+    document.querySelectorAll('.aj-tab-painel').forEach(p => p.classList.remove('ativo'));
+    document.getElementById('tab-' + aba).classList.add('ativo');
+    document.getElementById('painel-' + aba).classList.add('ativo');
+  }
+
+  // Abre na aba certa se vier com ?aba=collections
+  const _paramAba = new URLSearchParams(location.search).get('aba');
+  if (_paramAba === 'collections') trocarAba('collections');
+</script>
 {% endblock %}
