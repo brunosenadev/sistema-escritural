@@ -888,9 +888,10 @@
               <td>
                 <select class="select-destino" data-servico="{{ servico.texto }}" onchange="atualizarDestinoServico(this)">
                   <option value=""          {% if not servico.destino_homologado %}selected{% endif %}>— Automático</option>
-                  <option value="cobranca"  {% if servico.destino_homologado == 'cobranca' %}selected{% endif %}>Hom. Cobrança</option>
-                  <option value="pagamentos"{% if servico.destino_homologado == 'pagamentos' %}selected{% endif %}>Hom. Pagamentos</option>
-                  <option value="extrato"   {% if servico.destino_homologado == 'extrato' %}selected{% endif %}>Hom. Extrato Cartão</option>
+                  <option value="cobranca"     {% if servico.destino_homologado == 'cobranca' %}selected{% endif %}>Hom. Cobrança</option>
+                  <option value="pagamentos"  {% if servico.destino_homologado == 'pagamentos' %}selected{% endif %}>Hom. Pagamentos</option>
+                  <option value="extrato"     {% if servico.destino_homologado == 'extrato' %}selected{% endif %}>Hom. Extrato Cartão</option>
+                  <option value="ext_bancario"{% if servico.destino_homologado == 'ext_bancario' %}selected{% endif %}>Hom. Extrato Bancário</option>
                 </select>
               </td>
               <td>
@@ -1662,7 +1663,7 @@
     .then(r => r.json())
     .then(d => {
       if (d.sucesso) {
-        const nomes = { '': 'Automático', cobranca: 'Hom. Cobrança', pagamentos: 'Hom. Pagamentos', extrato: 'Hom. Extrato Cartão' };
+        const nomes = { '': 'Automático', cobranca: 'Hom. Cobrança', pagamentos: 'Hom. Pagamentos', extrato: 'Hom. Extrato Cartão', ext_bancario: 'Hom. Extrato Bancário' };
         mostrarToast('sucesso', `${servico} → ${nomes[destino] || destino}`);
       } else {
         mostrarToast('erro', d.erro || 'Erro ao atualizar destino.');

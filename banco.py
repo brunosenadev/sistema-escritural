@@ -1342,9 +1342,10 @@ def _aba_homologado(servico):
 
 
 _TABELA_HOMOLOGADO = {
-    'cobranca':   'homologados_cobranca',
-    'pagamentos': 'homologados_pagamentos',
-    'extrato':    'homologados_extrato',
+    'cobranca':     'homologados_cobranca',
+    'pagamentos':   'homologados_pagamentos',
+    'extrato':      'homologados_extrato',
+    'ext_bancario': 'homologados_ext_bancario',
 }
 
 
