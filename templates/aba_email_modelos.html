@@ -3,11 +3,34 @@
 
 {% block titulo %}Modelos de E-mail{% endblock %}
 {% block titulo_pagina %}Modelos de E-mail{% endblock %}
-{% block breadcrumb %}Escritural / Modelos de E-mail{% endblock %}
+{% block breadcrumb %}Configurações / Modelos de E-mail{% endblock %}
 
 {% block estilos_extras %}
 <style>
-  .em-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  /* ── Modal base (copiado de aba_escritural para funcionar nesta página) ── */
+  .overlay-modal { display: none; position: fixed; inset: 0; background: rgba(10,22,40,0.55); z-index: 500; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+  .overlay-modal.aberto { display: flex; }
+  .card-modal { background: #fff; border-radius: 16px; padding: 28px; width: 100%; max-width: 640px; box-shadow: 0 16px 48px rgba(0,0,0,0.18); max-height: 92vh; overflow-y: auto; animation: modal-entrar 0.2s ease; }
+  @keyframes modal-entrar { from{opacity:0;transform:translateY(-12px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; gap: 10px; }
+  .modal-titulo { font-size: 16px; font-weight: 700; color: #1e293b; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .botao-fechar-modal { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; border-radius: 6px; display: flex; align-items: center; }
+  .botao-fechar-modal:hover { color: #ef4444; background: #fef2f2; }
+  .botao-fechar-modal svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .grade-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+  .campo-completo { grid-column: 1 / -1; }
+  .grupo-form { display: flex; flex-direction: column; gap: 5px; }
+  .grupo-form label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; }
+  .input-form { padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.15s; color: #1e293b; width: 100%; background: #f8fafc; }
+  .input-form:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
+  .rodape-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #f1f5f9; }
+  .botao-cancelar { padding: 9px 18px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 13px; font-family: inherit; cursor: pointer; }
+  .botao-cancelar:hover { background: #f1f5f9; }
+  .botao-salvar { padding: 9px 20px; border-radius: 8px; border: none; background: #0a1628; color: #fff; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .botao-salvar:hover { background: #1a3a7a; }
+
+  /* ── Página ── */
+  .em-header { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 20px; }
   .em-table-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
   table.em-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .em-table th { padding: 11px 14px; text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; border-bottom: 2px solid #f1f5f9; background: #f8fafc; white-space: nowrap; }
@@ -15,62 +38,60 @@
   .em-table tr:last-child td { border-bottom: none; }
   .em-table tr:hover td { background: #f8fafc; }
   .td-nome { font-weight: 600; color: #1e293b; }
-  .td-servico { font-size: 12px; color: #475569; }
-  .td-assunto { font-size: 12px; color: #64748b; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .td-assunto { font-size: 12px; color: #64748b; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .badge-inativo { background: #fee2e2; color: #b91c1c; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
-  .badge-ativo { background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+  .badge-ativo   { background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
   .td-acoes { white-space: nowrap; }
-  .btn-editar-em, .btn-deletar-em {
-    padding: 5px 11px; border: none; border-radius: 7px; font-size: 12px; font-weight: 600;
-    cursor: pointer; font-family: inherit;
-  }
-  .btn-editar-em  { background: #f1f5f9; color: #334155; margin-right: 4px; }
+  .btn-editar-em  { padding: 5px 11px; border: none; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; background: #f1f5f9; color: #334155; margin-right: 4px; }
   .btn-editar-em:hover  { background: #e2e8f0; }
-  .btn-deletar-em { background: #fee2e2; color: #b91c1c; }
+  .btn-deletar-em { padding: 5px 11px; border: none; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; background: #fee2e2; color: #b91c1c; }
   .btn-deletar-em:hover { background: #fecaca; }
   .em-vazio { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; }
 
-  /* Modal */
-  #overlay-em .card-modal { max-width: 860px; width: 96vw; }
-  .em-modal-corpo { display: flex; gap: 20px; align-items: flex-start; }
-  .em-form-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0; }
-  .em-side-col { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
+  /* ── Modal largo com duas colunas ── */
+  #overlay-em .card-modal { max-width: 880px; }
+  .em-cols { display: flex; gap: 22px; align-items: flex-start; }
+  .em-col-form { flex: 1; min-width: 0; }
+  .em-col-side { width: 256px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
 
-  .em-params-box {
-    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;
-    max-height: 240px; overflow-y: auto;
-  }
-  .em-params-titulo { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 8px; }
-  .em-param-row { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; cursor: pointer; border-radius: 5px; padding: 3px 5px; }
+  .em-params-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; max-height: 220px; overflow-y: auto; }
+  .em-params-titulo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; }
+  .em-params-hint  { font-size: 10px; color: #94a3b8; margin-bottom: 8px; }
+  .em-param-row { display: flex; align-items: baseline; gap: 6px; padding: 3px 5px; border-radius: 5px; cursor: pointer; }
   .em-param-row:hover { background: #e2e8f0; }
-  .em-param-token { font-family: monospace; font-size: 11.5px; font-weight: 700; color: #0891b2; white-space: nowrap; }
-  .em-param-desc { font-size: 11px; color: #64748b; }
+  .em-param-token { font-family: monospace; font-size: 11px; font-weight: 700; color: #0891b2; white-space: nowrap; }
+  .em-param-desc  { font-size: 10.5px; color: #64748b; }
 
-  .em-preview-box {
-    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px;
-    flex: 1; min-height: 180px;
-  }
-  .em-preview-titulo { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 8px; }
-  .em-preview-assunto { font-size: 12px; font-weight: 600; color: #1e293b; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
-  .em-preview-corpo { font-size: 12.5px; color: #334155; white-space: pre-wrap; line-height: 1.6; }
-  .em-preview-vazio { font-size: 12px; color: #94a3b8; font-style: italic; }
+  .em-preview-box { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .em-preview-titulo  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; }
+  .em-preview-assunto { font-size: 11.5px; font-weight: 600; color: #1e293b; margin-bottom: 8px; padding-bottom: 7px; border-bottom: 1px solid #f1f5f9; word-break: break-word; }
+  .em-preview-corpo   { font-size: 11.5px; color: #334155; white-space: pre-wrap; line-height: 1.6; word-break: break-word; max-height: 180px; overflow-y: auto; }
+  .em-preview-vazio   { font-size: 11px; color: #94a3b8; font-style: italic; }
 
+  /* Dark mode */
+  [data-tema="dark"] .card-modal  { background: var(--z-surface); border: 1px solid var(--z-border-s); }
+  [data-tema="dark"] .modal-titulo { color: var(--z-text-1); }
+  [data-tema="dark"] .modal-header { border-bottom-color: var(--z-border-s); }
+  [data-tema="dark"] .rodape-modal { border-top-color: var(--z-border-s); }
+  [data-tema="dark"] .grupo-form label { color: var(--z-text-3); }
+  [data-tema="dark"] .input-form { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .input-form:focus { border-color: #3b82f6; background: var(--z-surface); }
+  [data-tema="dark"] .botao-cancelar { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
   [data-tema="dark"] .em-table-wrap { background: var(--z-card); border-color: var(--z-border); }
   [data-tema="dark"] .em-table th { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-3); }
   [data-tema="dark"] .em-table td { border-color: var(--z-border-s); color: var(--z-text-2); }
   [data-tema="dark"] .em-table tr:hover td { background: var(--z-elevated); }
   [data-tema="dark"] .td-nome { color: var(--z-text-1); }
   [data-tema="dark"] .em-params-box { background: var(--z-elevated); border-color: var(--z-border); }
+  [data-tema="dark"] .em-param-row:hover { background: var(--z-border); }
   [data-tema="dark"] .em-preview-box { background: var(--z-card); border-color: var(--z-border); }
   [data-tema="dark"] .em-preview-assunto { border-color: var(--z-border-s); color: var(--z-text-1); }
   [data-tema="dark"] .em-preview-corpo { color: var(--z-text-2); }
-  [data-tema="dark"] .em-param-row:hover { background: var(--z-border); }
 </style>
 {% endblock %}
 
 {% block conteudo %}
 <div class="em-header">
-  <div></div>
   <button class="botao-salvar" onclick="abrirNovoModelo()">+ Novo modelo</button>
 </div>
 
@@ -87,12 +108,12 @@
     </thead>
     <tbody id="em-tbody">
       {% if not modelos %}
-      <tr><td colspan="5" class="em-vazio">Nenhum modelo cadastrado ainda. Clique em "Novo modelo" para começar.</td></tr>
+      <tr><td colspan="5" class="em-vazio">Nenhum modelo cadastrado ainda. Clique em "+ Novo modelo" para começar.</td></tr>
       {% else %}
       {% for m in modelos %}
       <tr data-id="{{ m.id }}">
         <td class="td-nome">{{ m.nome }}</td>
-        <td class="td-servico">{{ m.servico or '— todos —' }}</td>
+        <td>{{ m.servico or '— todos —' }}</td>
         <td class="td-assunto" title="{{ m.assunto }}">{{ m.assunto }}</td>
         <td><span class="{{ 'badge-ativo' if m.ativo else 'badge-inativo' }}">{{ 'Ativo' if m.ativo else 'Inativo' }}</span></td>
         <td class="td-acoes">
@@ -106,7 +127,7 @@
   </table>
 </div>
 
-<!-- ═══ Modal: Criar/Editar modelo ════ -->
+<!-- ═══ Modal: Criar/Editar ════ -->
 <div class="overlay-modal" id="overlay-em" onclick="if(event.target===this) fecharModalEm()">
   <div class="card-modal">
     <div class="modal-header">
@@ -117,48 +138,46 @@
     </div>
     <input type="hidden" id="em-id">
 
-    <div class="em-modal-corpo">
+    <div class="em-cols">
       <!-- Coluna esquerda: formulário -->
-      <div class="em-form-col">
+      <div class="em-col-form">
         <div class="grade-form">
           <div class="grupo-form campo-completo">
             <label>Nome do modelo</label>
-            <input class="input-form" id="em-nome" placeholder="Ex: Orçamento Cobrança Bancária" oninput="atualizarPreview()">
+            <input class="input-form" id="em-nome" placeholder="Ex: Orçamento Cobrança Bancária" autocomplete="off" oninput="atualizarPreview()">
           </div>
           <div class="grupo-form" style="flex:1;">
             <label>Serviço</label>
             <select class="input-form" id="em-servico" onchange="atualizarPreview()">
-              <option value="">— nenhum (modelo padrão) —</option>
+              <option value="">— nenhum (padrão geral) —</option>
               {% for s in servicos %}
               <option value="{{ s }}">{{ s }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="grupo-form" style="flex:0 0 auto;">
+          <div class="grupo-form">
             <label>Ativo</label>
-            <select class="input-form" id="em-ativo" style="min-width:100px;">
+            <select class="input-form" id="em-ativo">
               <option value="1">Sim</option>
               <option value="0">Não</option>
             </select>
           </div>
           <div class="grupo-form campo-completo">
             <label>Assunto do e-mail</label>
-            <input class="input-form" id="em-assunto" placeholder="Ex: Orçamento — Homologação #servico# #banco#" oninput="atualizarPreview()">
+            <input class="input-form" id="em-assunto" placeholder="Ex: Orçamento — Homologação #servico# #banco#" autocomplete="off" oninput="atualizarPreview()">
           </div>
           <div class="grupo-form campo-completo">
-            <label>Corpo da mensagem</label>
-            <textarea class="input-form" id="em-corpo" rows="12" style="resize:vertical;font-family:monospace;font-size:12.5px;" placeholder="Prezado(a) #responsavel#,
-
-Segue orçamento..." oninput="atualizarPreview()"></textarea>
+            <label>Mensagem</label>
+            <textarea class="input-form" id="em-corpo" rows="11" style="resize:vertical;font-family:monospace;font-size:12px;line-height:1.5;" placeholder="Prezado(a) #responsavel#,&#10;&#10;Segue orçamento..." oninput="atualizarPreview()"></textarea>
           </div>
         </div>
       </div>
 
       <!-- Coluna direita: parâmetros + preview -->
-      <div class="em-side-col">
+      <div class="em-col-side">
         <div class="em-params-box">
-          <div class="em-params-titulo">Parâmetros disponíveis</div>
-          <div style="font-size:10.5px;color:#94a3b8;margin-bottom:8px;">Clique para inserir no cursor</div>
+          <div class="em-params-titulo">Parâmetros</div>
+          <div class="em-params-hint">Clique para inserir no cursor</div>
           {% for token, (campo, desc) in params %}
           <div class="em-param-row" onclick="inserirParam('{{ token }}')">
             <span class="em-param-token">{{ token }}</span>
@@ -169,13 +188,15 @@ Segue orçamento..." oninput="atualizarPreview()"></textarea>
 
         <div class="em-preview-box">
           <div class="em-preview-titulo">Preview</div>
-          <div class="em-preview-assunto" id="prev-assunto"></div>
-          <div class="em-preview-corpo" id="prev-corpo"><span class="em-preview-vazio">Escreva a mensagem para ver o preview.</span></div>
+          <div class="em-preview-assunto" id="prev-assunto" style="display:none;"></div>
+          <div class="em-preview-corpo" id="prev-corpo">
+            <span class="em-preview-vazio">Escreva a mensagem para ver o preview.</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="rodape-modal" style="margin-top:16px;">
+    <div class="rodape-modal">
       <button type="button" class="botao-cancelar" onclick="fecharModalEm()">Cancelar</button>
       <button type="button" class="botao-salvar" onclick="salvarModelo()">Salvar</button>
     </div>
@@ -186,26 +207,25 @@ Segue orçamento..." oninput="atualizarPreview()"></textarea>
 
 {% block scripts_extras %}
 <script>
-  // Valores de exemplo para o preview
-  const _PREVIEW_EXEMPLOS = {
-    '#empresa#':      'Empresa Exemplo LTDA',
-    '#cnpj#':         '12.345.678/0001-90',
-    '#responsavel#':  'João da Silva',
-    '#fone#':         '(11) 99999-1234',
-    '#email#':        'joao@empresa.com',
-    '#banco#':        'Banco do Brasil',
-    '#conta#':        '12345-6',
-    '#agencia#':      '0001',
-    '#convenio#':     '789012',
-    '#servico#':      document.getElementById('em-servico') ? document.getElementById('em-servico').value || 'Cobrança Bancária' : 'Cobrança Bancária',
-    '#carteira#':     '17',
-    '#variacao#':     '019',
-    '#cnab#':         '240',
-    '#data_solic#':   '{{ now }}',
-    '#status#':       'Em andamento',
-    '#tecnico#':      'Bruno',
-    '#obs#':          '',
-    '#meu_nome#':     '{{ nome_usuario }}',
+  const _PREV = {
+    '#empresa#':     'Empresa Exemplo LTDA',
+    '#cnpj#':        '12.345.678/0001-90',
+    '#responsavel#': 'João da Silva',
+    '#fone#':        '(11) 99999-1234',
+    '#email#':       'joao@empresa.com',
+    '#banco#':       'Banco do Brasil',
+    '#conta#':       '12345-6',
+    '#agencia#':     '0001',
+    '#convenio#':    '789012',
+    '#servico#':     'Cobrança Bancária',
+    '#carteira#':    '17',
+    '#variacao#':    '019',
+    '#cnab#':        '240',
+    '#data_solic#':  '{{ now }}',
+    '#status#':      'Em andamento',
+    '#tecnico#':     'Bruno',
+    '#obs#':         '',
+    '#meu_nome#':    '{{ nome_usuario }}',
   };
 
   let _idEditando = null;
@@ -221,12 +241,12 @@ Segue orçamento..." oninput="atualizarPreview()"></textarea>
     document.getElementById('em-corpo').value   = '';
     atualizarPreview();
     document.getElementById('overlay-em').classList.add('aberto');
-    document.getElementById('em-nome').focus();
+    setTimeout(() => document.getElementById('em-nome').focus(), 50);
   }
 
   function editarModelo(id, m) {
     _idEditando = id;
-    document.getElementById('em-modal-titulo').textContent = 'Editar modelo de e-mail';
+    document.getElementById('em-modal-titulo').textContent = 'Editar modelo';
     document.getElementById('em-id').value      = id;
     document.getElementById('em-nome').value    = m.nome    || '';
     document.getElementById('em-servico').value = m.servico || '';
@@ -235,7 +255,6 @@ Segue orçamento..." oninput="atualizarPreview()"></textarea>
     document.getElementById('em-corpo').value   = m.corpo   || '';
     atualizarPreview();
     document.getElementById('overlay-em').classList.add('aberto');
-    document.getElementById('em-nome').focus();
   }
 
   function fecharModalEm() {
@@ -244,38 +263,38 @@ Segue orçamento..." oninput="atualizarPreview()"></textarea>
 
   function inserirParam(token) {
     const ta = document.getElementById('em-corpo');
-    ta.focus();
-    const ini = ta.selectionStart;
-    const fim = ta.selectionEnd;
-    const antes = ta.value.slice(0, ini);
-    const depois = ta.value.slice(fim);
-    ta.value = antes + token + depois;
+    const ini = ta.selectionStart ?? ta.value.length;
+    const fim = ta.selectionEnd   ?? ta.value.length;
+    ta.value = ta.value.slice(0, ini) + token + ta.value.slice(fim);
     ta.selectionStart = ta.selectionEnd = ini + token.length;
+    ta.focus();
     atualizarPreview();
   }
 
-  function _aplicarPreview(texto) {
+  function _aplicar(texto) {
     let r = texto;
-    const servico = document.getElementById('em-servico').value || 'Cobrança Bancária';
-    _PREVIEW_EXEMPLOS['#servico#'] = servico;
-    for (const [tok, val] of Object.entries(_PREVIEW_EXEMPLOS)) {
-      r = r.split(tok).join(val);
-    }
+    const servico = document.getElementById('em-servico').value;
+    const pre = Object.assign({}, _PREV);
+    if (servico) pre['#servico#'] = servico;
+    for (const [tok, val] of Object.entries(pre)) r = r.split(tok).join(val);
     return r;
   }
 
   function atualizarPreview() {
     const assunto = document.getElementById('em-assunto').value;
     const corpo   = document.getElementById('em-corpo').value;
-    document.getElementById('prev-assunto').textContent = _aplicarPreview(assunto) || '(assunto vazio)';
-    const prevCorpo = document.getElementById('prev-corpo');
-    if (corpo.trim()) {
-      prevCorpo.innerHTML = '';
-      const span = document.createElement('span');
-      span.textContent = _aplicarPreview(corpo);
-      prevCorpo.appendChild(span);
+    const elAs = document.getElementById('prev-assunto');
+    const elCo = document.getElementById('prev-corpo');
+    if (assunto.trim()) {
+      elAs.textContent = _aplicar(assunto);
+      elAs.style.display = '';
     } else {
-      prevCorpo.innerHTML = '<span class="em-preview-vazio">Escreva a mensagem para ver o preview.</span>';
+      elAs.style.display = 'none';
+    }
+    if (corpo.trim()) {
+      elCo.textContent = _aplicar(corpo);
+    } else {
+      elCo.innerHTML = '<span class="em-preview-vazio">Escreva a mensagem para ver o preview.</span>';
     }
   }
 
@@ -286,18 +305,17 @@ Segue orçamento..." oninput="atualizarPreview()"></textarea>
     const corpo   = document.getElementById('em-corpo').value.trim();
     const ativo   = parseInt(document.getElementById('em-ativo').value);
     if (!nome) { mostrarToast('erro', 'Informe o nome do modelo.'); return; }
+    if (!corpo) { mostrarToast('erro', 'Escreva o corpo da mensagem.'); return; }
 
-    const dados = { nome, servico, assunto, corpo, ativo };
     const url    = _idEditando ? `/api/email-modelos/${_idEditando}` : '/api/email-modelos';
     const method = _idEditando ? 'PUT' : 'POST';
-
-    fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) })
+    fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, servico, assunto, corpo, ativo }) })
       .then(r => r.json())
       .then(resp => {
         if (resp.sucesso) {
           mostrarToast('sucesso', _idEditando ? 'Modelo atualizado!' : 'Modelo criado!');
           fecharModalEm();
-          setTimeout(() => location.reload(), 800);
+          setTimeout(() => location.reload(), 700);
         } else {
           mostrarToast('erro', resp.erro || 'Erro ao salvar.');
         }
@@ -317,7 +335,8 @@ Segue orçamento..." oninput="atualizarPreview()"></textarea>
           .then(resp => {
             if (resp.sucesso) {
               mostrarToast('sucesso', 'Modelo excluído.');
-              document.querySelector(`tr[data-id="${id}"]`)?.remove();
+              const tr = document.querySelector(`tr[data-id="${id}"]`);
+              tr?.remove();
               if (!document.querySelector('#em-tbody tr[data-id]')) {
                 document.getElementById('em-tbody').innerHTML =
                   '<tr><td colspan="5" class="em-vazio">Nenhum modelo cadastrado ainda.</td></tr>';

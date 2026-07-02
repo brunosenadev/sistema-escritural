@@ -115,11 +115,11 @@ TELAS_AGRUPADAS = [
         ('cancelados',             'Cancelados'),
         ('sispbol',                'SispBol'),
         ('escritural',             'Novos Escriturais'),
-        ('email_modelos',          'Modelos de E-mail'),
     ]),
     ('Sistema', [
         ('melhorias',                          'Melhorias'),
         ('config',                             'Configurações'),
+        ('email_modelos',                      'Modelos de E-mail'),
         ('importar_homologacoes_pendentes',    'Importar Homologações Pendentes'),
         ('importar_novas_homologacoes',        'Importar Novas Homologações'),
         ('logs',                               'Logs do Sistema'),
