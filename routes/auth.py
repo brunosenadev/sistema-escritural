@@ -60,11 +60,26 @@ def pagina_login():
             session['cor']               = usuario.get('cor') or ''
             session['telas']             = '__all__' if usuario['nivel'] == 'master' else banco.listar_telas_usuario(usuario['id'])
 
+            banco.registrar_log(
+                usuario=usuario['nome'] or usuario['usuario'],
+                tela='Login', acao='LOGIN',
+                descricao='Entrou no sistema',
+                usuario_id=usuario['id'],
+                nivel=usuario['nivel'],
+                ip=request.remote_addr,
+            )
+
             destino = url_for('auth.trocar_senha') if usuario.get('mudar_senha') else url_for('auth.inicio')
             resp = make_response(redirect(destino))
             _set_tokens(resp, usuario)
             return resp
 
+        banco.registrar_log(
+            usuario=request.form.get('usuario', '').strip(),
+            tela='Login', acao='LOGIN_FALHA',
+            descricao='Tentativa de login com credenciais inválidas',
+            ip=request.remote_addr,
+        )
         erro = 'Usuário ou senha incorretos.'
 
     return render_template('login.html', erro=erro)
@@ -85,6 +100,14 @@ def trocar_senha():
         else:
             id_u = session.get('id_usuario') or banco.buscar_id_usuario(session.get('usuario', ''))
             banco.alterar_minha_senha(id_u, nova)
+            banco.registrar_log(
+                usuario=session.get('nome') or session.get('usuario', ''),
+                tela='Login', acao='SENHA',
+                descricao='Alterou a própria senha',
+                usuario_id=id_u,
+                nivel=session.get('nivel_acesso', ''),
+                ip=request.remote_addr,
+            )
             u = banco.buscar_usuario_por_id(id_u)
             resp = make_response(redirect(url_for('auth.inicio')))
             _set_tokens(resp, u)
@@ -104,7 +127,6 @@ def api_meu_tema():
     session['tema'] = tema
     u = banco.buscar_usuario_por_id(id_usuario)
     resp = make_response(jsonify({'sucesso': True}))
-    # Emite novo access token com tema atualizado
     access, _ = criar_tokens(u)
     resp.set_cookie('access_token', access, max_age=15*60, **_COOKIE_OPTS)
     return resp
@@ -125,11 +147,27 @@ def api_minha_senha():
     if len(nova) < 6:
         return jsonify({'erro': 'Senha deve ter pelo menos 6 caracteres.'}), 400
     banco.alterar_minha_senha(id_usuario, nova)
+    banco.registrar_log(
+        usuario=session.get('nome') or session.get('usuario', ''),
+        tela='Login', acao='SENHA',
+        descricao='Alterou a própria senha',
+        usuario_id=id_usuario,
+        nivel=session.get('nivel_acesso', ''),
+        ip=request.remote_addr,
+    )
     return jsonify({'sucesso': True})
 
 
 @auth_bp.route('/sair')
 def sair():
+    banco.registrar_log(
+        usuario=session.get('nome') or session.get('usuario', ''),
+        tela='Login', acao='LOGOUT',
+        descricao='Saiu do sistema',
+        usuario_id=session.get('id_usuario'),
+        nivel=session.get('nivel_acesso', ''),
+        ip=request.remote_addr,
+    )
     session.clear()
     resp = make_response(redirect(url_for('auth.pagina_login')))
     resp.delete_cookie('access_token',  path='/')

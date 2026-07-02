@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% set aba_ativa = 'logs' %}
+
+{% block titulo %}Logs do Sistema{% endblock %}
+{% block titulo_pagina %}Logs do Sistema{% endblock %}
+{% block breadcrumb %}Administração / Logs{% endblock %}
+
+{% block estilos_extras %}
+<style>
+  .logs-filtros {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+    padding: 18px 20px; margin-bottom: 20px;
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+  }
+  .logs-filtros .grupo-f { display: flex; flex-direction: column; gap: 4px; }
+  .logs-filtros .grupo-f label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }
+  .logs-filtros .input-f {
+    padding: 7px 10px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 12.5px; font-family: inherit; color: #1e293b; background: #f8fafc;
+    outline: none; min-width: 120px;
+  }
+  .logs-filtros .input-f:focus { border-color: #3b82f6; background: #fff; }
+  .logs-filtros .input-f.busca-f { min-width: 200px; }
+  .btn-filtrar {
+    padding: 8px 18px; background: #1e293b; color: #fff; border: none;
+    border-radius: 8px; font-size: 13px; font-weight: 600; font-family: inherit;
+    cursor: pointer; white-space: nowrap; align-self: flex-end;
+  }
+  .btn-filtrar:hover { background: #0f172a; }
+  .btn-limpar {
+    padding: 8px 14px; background: #f1f5f9; color: #475569; border: 1.5px solid #e2e8f0;
+    border-radius: 8px; font-size: 13px; font-weight: 500; font-family: inherit;
+    cursor: pointer; white-space: nowrap; align-self: flex-end;
+  }
+  .btn-limpar:hover { background: #e2e8f0; }
+
+  /* Tabela */
+  .logs-tabela-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+  .logs-info { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #f1f5f9; }
+  .logs-total { font-size: 12.5px; color: #64748b; }
+  .logs-total strong { color: #1e293b; }
+  table.logs-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .logs-table th { padding: 10px 12px; text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; border-bottom: 2px solid #f1f5f9; background: #f8fafc; white-space: nowrap; }
+  .logs-table td { padding: 9px 12px; border-bottom: 1px solid #f8fafc; color: #334155; vertical-align: middle; }
+  .logs-table tr:hover td { background: #f8fafc; }
+  .logs-table tr:last-child td { border-bottom: none; }
+  .td-hora { white-space: nowrap; color: #64748b; font-size: 11.5px; }
+  .td-usuario { font-weight: 600; color: #1e293b; }
+  .td-nivel { font-size: 10.5px; color: #94a3b8; }
+  .td-ip { font-size: 10.5px; color: #94a3b8; font-family: monospace; }
+  .td-desc { max-width: 340px; }
+
+  /* Badges de ação */
+  .badge-acao {
+    display: inline-flex; align-items: center; padding: 2px 9px;
+    border-radius: 99px; font-size: 10.5px; font-weight: 700;
+    white-space: nowrap; letter-spacing: 0.3px;
+  }
+  .badge-LOGIN      { background: #eff6ff; color: #1d4ed8; }
+  .badge-LOGIN_FALHA{ background: #fef2f2; color: #dc2626; }
+  .badge-LOGOUT     { background: #f1f5f9; color: #475569; }
+  .badge-INSERIU    { background: #f0fdf4; color: #15803d; }
+  .badge-EDITOU     { background: #fffbeb; color: #b45309; }
+  .badge-DELETOU    { background: #fef2f2; color: #dc2626; }
+  .badge-STATUS     { background: #f5f3ff; color: #7c3aed; }
+  .badge-MOVEU      { background: #fff7ed; color: #c2410c; }
+  .badge-ASSUMIU    { background: #ecfdf5; color: #065f46; }
+  .badge-EMAIL      { background: #fdf4ff; color: #7e22ce; }
+  .badge-IMPORTOU   { background: #eff6ff; color: #1d4ed8; }
+  .badge-SENHA      { background: #f0f9ff; color: #0369a1; }
+  .badge-ACESSO     { background: #f0fdf4; color: #15803d; }
+
+  /* Paginação */
+  .logs-paginacao { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px; border-top: 1px solid #f1f5f9; }
+  .btn-pag { padding: 5px 11px; border: 1.5px solid #e2e8f0; border-radius: 7px; background: #fff; color: #475569; font-size: 12.5px; cursor: pointer; font-family: inherit; }
+  .btn-pag:hover:not(:disabled) { background: #f1f5f9; }
+  .btn-pag.ativo { background: #1e293b; color: #fff; border-color: #1e293b; font-weight: 700; }
+  .btn-pag:disabled { opacity: 0.4; cursor: default; }
+
+  .logs-vazio { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; }
+
+  /* Dark mode */
+  [data-tema="dark"] .logs-filtros { background: var(--z-surface); border-color: var(--z-border); }
+  [data-tema="dark"] .logs-filtros .grupo-f label { color: var(--z-text-3); }
+  [data-tema="dark"] .input-f { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .input-f:focus { border-color: var(--z-accent-t); }
+  [data-tema="dark"] .btn-limpar { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] .logs-tabela-wrap { background: var(--z-surface); border-color: var(--z-border); }
+  [data-tema="dark"] .logs-info { border-color: var(--z-border-s); }
+  [data-tema="dark"] .logs-total { color: var(--z-text-3); }
+  [data-tema="dark"] .logs-total strong { color: var(--z-text-1); }
+  [data-tema="dark"] .logs-table th { background: var(--z-elevated); color: var(--z-text-3); border-color: var(--z-border-s); }
+  [data-tema="dark"] .logs-table td { color: var(--z-text-2); border-color: var(--z-border-s); }
+  [data-tema="dark"] .logs-table tr:hover td { background: var(--z-elevated); }
+  [data-tema="dark"] .td-usuario { color: var(--z-text-1); }
+  [data-tema="dark"] .logs-paginacao { border-color: var(--z-border-s); }
+  [data-tema="dark"] .btn-pag { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] .btn-pag.ativo { background: var(--z-accent-t); border-color: var(--z-accent-t); color: #fff; }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+
+<!-- Filtros -->
+<div class="logs-filtros">
+  <div class="grupo-f">
+    <label>Busca</label>
+    <input class="input-f busca-f" id="f-busca" type="text" placeholder="Empresa, usuário, descrição...">
+  </div>
+  <div class="grupo-f">
+    <label>Usuário</label>
+    <select class="input-f" id="f-usuario">
+      <option value="">Todos</option>
+      {% for u in usuarios %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="grupo-f">
+    <label>Tela</label>
+    <select class="input-f" id="f-tela">
+      <option value="">Todas</option>
+      {% for t in telas %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="grupo-f">
+    <label>Ação</label>
+    <select class="input-f" id="f-acao">
+      <option value="">Todas</option>
+      {% for a in acoes %}<option value="{{ a }}">{{ a }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="grupo-f">
+    <label>De</label>
+    <input class="input-f" id="f-data-ini" type="date">
+  </div>
+  <div class="grupo-f">
+    <label>Até</label>
+    <input class="input-f" id="f-data-fim" type="date">
+  </div>
+  <button class="btn-filtrar" onclick="buscarLogs(1)">Filtrar</button>
+  <button class="btn-limpar" onclick="limparFiltros()">Limpar</button>
+</div>
+
+<!-- Tabela -->
+<div class="logs-tabela-wrap">
+  <div class="logs-info">
+    <span class="logs-total" id="logs-total">Carregando...</span>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="logs-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Data / Hora</th>
+          <th>Usuário</th>
+          <th>Tela</th>
+          <th>Ação</th>
+          <th>Descrição</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody id="logs-tbody">
+        <tr><td colspan="7" class="logs-vazio">Carregando logs...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="logs-paginacao" id="logs-paginacao"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+  let _pagAtual = 1;
+  const _POR_PAG = 100;
+
+  function _fmt(iso) {
+    if (!iso) return '—';
+    // "2026-07-01 19:15:32" → "01/07/2026 19:15:32"
+    const [d, t] = iso.split(' ');
+    if (!d) return iso;
+    const [y, m, dd] = d.split('-');
+    return `${dd}/${m}/${y} ${t || ''}`.trim();
+  }
+
+  const _COR = {
+    LOGIN:'badge-LOGIN', LOGIN_FALHA:'badge-LOGIN_FALHA', LOGOUT:'badge-LOGOUT',
+    INSERIU:'badge-INSERIU', EDITOU:'badge-EDITOU', DELETOU:'badge-DELETOU',
+    STATUS:'badge-STATUS', MOVEU:'badge-MOVEU', ASSUMIU:'badge-ASSUMIU',
+    EMAIL:'badge-EMAIL', IMPORTOU:'badge-IMPORTOU', SENHA:'badge-SENHA',
+    ACESSO:'badge-ACESSO',
+  };
+
+  function buscarLogs(pagina) {
+    _pagAtual = pagina || 1;
+    const params = new URLSearchParams({
+      pagina: _pagAtual,
+      por_pagina: _POR_PAG,
+      busca:    document.getElementById('f-busca').value.trim(),
+      usuario:  document.getElementById('f-usuario').value,
+      tela:     document.getElementById('f-tela').value,
+      acao:     document.getElementById('f-acao').value,
+      data_ini: document.getElementById('f-data-ini').value,
+      data_fim: document.getElementById('f-data-fim').value,
+    });
+    document.getElementById('logs-total').textContent = 'Buscando...';
+    fetch('/api/logs?' + params).then(r => r.json()).then(d => {
+      _renderLogs(d.registros || [], d.total || 0, d.pagina, d.por_pagina);
+    }).catch(() => {
+      document.getElementById('logs-tbody').innerHTML = '<tr><td colspan="7" class="logs-vazio">Erro ao carregar logs.</td></tr>';
+    });
+  }
+
+  function _renderLogs(regs, total, pagina, porPag) {
+    const tbody = document.getElementById('logs-tbody');
+    document.getElementById('logs-total').innerHTML =
+      `<strong>${total.toLocaleString('pt-BR')}</strong> registros encontrados`;
+
+    if (!regs.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="logs-vazio">Nenhum log encontrado.</td></tr>';
+      document.getElementById('logs-paginacao').innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = regs.map(r => {
+      const cls = _COR[r.acao] || 'badge-EDITOU';
+      const esc = t => (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<tr>
+        <td class="td-hora">${r.id}</td>
+        <td class="td-hora">${_fmt(r.data_hora)}</td>
+        <td><div class="td-usuario">${esc(r.usuario)}</div><div class="td-nivel">${esc(r.nivel)}</div></td>
+        <td>${esc(r.tela)}</td>
+        <td><span class="badge-acao ${cls}">${esc(r.acao)}</span></td>
+        <td class="td-desc">${esc(r.descricao)}</td>
+        <td class="td-ip">${esc(r.ip)}</td>
+      </tr>`;
+    }).join('');
+
+    // Paginação
+    const totalPags = Math.ceil(total / porPag);
+    const pag = document.getElementById('logs-paginacao');
+    if (totalPags <= 1) { pag.innerHTML = ''; return; }
+
+    let html = `<button class="btn-pag" onclick="buscarLogs(${pagina-1})" ${pagina===1?'disabled':''}>‹ Ant</button>`;
+    const inicio = Math.max(1, pagina - 3);
+    const fim    = Math.min(totalPags, pagina + 3);
+    if (inicio > 1) html += `<button class="btn-pag" onclick="buscarLogs(1)">1</button><span style="color:#94a3b8">…</span>`;
+    for (let p = inicio; p <= fim; p++) {
+      html += `<button class="btn-pag ${p===pagina?'ativo':''}" onclick="buscarLogs(${p})">${p}</button>`;
+    }
+    if (fim < totalPags) html += `<span style="color:#94a3b8">…</span><button class="btn-pag" onclick="buscarLogs(${totalPags})">${totalPags}</button>`;
+    html += `<button class="btn-pag" onclick="buscarLogs(${pagina+1})" ${pagina===totalPags?'disabled':''}>Próx ›</button>`;
+    pag.innerHTML = html;
+  }
+
+  function limparFiltros() {
+    ['f-busca','f-usuario','f-tela','f-acao','f-data-ini','f-data-fim'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el.tagName === 'SELECT') el.value = '';
+      else el.value = '';
+    });
+    buscarLogs(1);
+  }
+
+  // Enter no campo de busca dispara filtro
+  document.getElementById('f-busca').addEventListener('keydown', e => {
+    if (e.key === 'Enter') buscarLogs(1);
+  });
+
+  buscarLogs(1);
+</script>
+{% endblock %}

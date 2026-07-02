@@ -370,6 +370,14 @@ def email_enviar():
         'direcao': 'enviado',
         'enviado_por': session.get('nome', ''),
     })
+    banco.registrar_log(
+        usuario=session.get('nome') or session.get('usuario', 'sistema'),
+        tela='Escritural', acao='EMAIL',
+        descricao=f'Enviou email para {destinatario} — escritural #{escritural_id} ({assunto})',
+        usuario_id=session.get('id_usuario'),
+        nivel=session.get('nivel_acesso', ''),
+        ip=request.remote_addr,
+    )
     return jsonify({'sucesso': True, 'message_id': msg_id})
 
 
@@ -402,6 +410,32 @@ def admin_email_config_set(usuario_id):
     dados = request.get_json(silent=True) or {}
     banco.salvar_email_config(usuario_id, dados)
     return jsonify({'sucesso': True})
+
+
+@email_escritural_bp.route('/api/email-modelo/para-registro/<int:escritural_id>')
+def api_modelo_para_registro(escritural_id):
+    if checar_tela('escritural'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    conn = banco.conectar()
+    row = conn.execute("SELECT * FROM escritural WHERE id=?", (escritural_id,)).fetchone()
+    conn.close()
+    if not row:
+        return jsonify({}), 200
+    registro = dict(row)
+    servico = registro.get('servico') or ''
+    modelo = banco.buscar_email_modelo_por_servico(servico)
+    if not modelo:
+        return jsonify({}), 200
+    usuario_nome = session.get('nome', '')
+    corpo_final, assunto_final = banco.aplicar_parametros_modelo(
+        modelo['corpo'], modelo['assunto'], registro, usuario_nome
+    )
+    return jsonify({
+        'modelo_id': modelo['id'],
+        'nome': modelo['nome'],
+        'assunto': assunto_final,
+        'corpo': corpo_final,
+    })
 
 
 @email_escritural_bp.route('/api/email-config/<int:usuario_id>/testar', methods=['POST'])

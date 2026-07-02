@@ -194,11 +194,24 @@ def aba_escritural():
     )
 
 
+def _log(tela, acao, descricao):
+    banco.registrar_log(
+        usuario=session.get('nome') or session.get('usuario', 'sistema'),
+        tela=tela, acao=acao, descricao=descricao,
+        usuario_id=session.get('id_usuario'),
+        nivel=session.get('nivel_acesso', ''),
+        ip=request.remote_addr,
+    )
+
+
 @escritural_bp.route('/escritural/adicionar', methods=['POST'])
 def adicionar_escritural():
     if checar_tela('escritural'):
         return jsonify({'erro': 'Sem permissão'}), 403
-    id_novo = banco.adicionar_escritural(request.get_json() or {}, criado_por=session.get('usuario', ''))
+    dados = request.get_json() or {}
+    id_novo = banco.adicionar_escritural(dados, criado_por=session.get('usuario', ''))
+    _log('Escritural', 'INSERIU',
+         f'Inseriu escritural #{id_novo} — {dados.get("empresa","?")} ({dados.get("banco","?")} · {dados.get("servico","?")})')
     return jsonify({'sucesso': True, 'id': id_novo})
 
 
@@ -206,7 +219,10 @@ def adicionar_escritural():
 def atualizar_escritural(id_registro):
     if checar_tela('escritural'):
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.atualizar_escritural(id_registro, request.get_json() or {})
+    dados = request.get_json() or {}
+    banco.atualizar_escritural(id_registro, dados)
+    _log('Escritural', 'EDITOU',
+         f'Editou escritural #{id_registro} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True})
 
 
@@ -214,7 +230,9 @@ def atualizar_escritural(id_registro):
 def deletar_escritural(id_registro):
     if checar_tela('escritural'):
         return jsonify({'erro': 'Sem permissão'}), 403
+    empresa = banco.buscar_empresa_log('escritural', id_registro)
     banco.deletar_escritural(id_registro)
+    _log('Escritural', 'DELETOU', f'Deletou escritural #{id_registro} — {empresa}')
     return jsonify({'sucesso': True})
 
 
@@ -226,6 +244,7 @@ def atualizar_status_escritural(id_registro):
     if not novo_status:
         return jsonify({'erro': 'Status não informado'}), 400
     banco.atualizar_status_escritural(id_registro, novo_status)
+    _log('Escritural', 'STATUS', f'Alterou status do escritural #{id_registro} → {novo_status}')
     return jsonify({'sucesso': True})
 
 
@@ -250,6 +269,8 @@ def importar_escritural():
         return jsonify({'erro': 'Não foi possível reconhecer colunas/registros nessa planilha.'}), 400
 
     novos = banco.importar_escritural(registros, criado_por=session.get('usuario', '') or 'importação planilha')
+    _log('Escritural', 'IMPORTOU',
+         f'Importou planilha: {len(registros)} lidos, {novos} novos, {len(registros)-novos} duplicados')
     return jsonify({
         'sucesso': True,
         'lidos': len(registros),

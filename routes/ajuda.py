@@ -8,6 +8,17 @@ from utils import checar_tela
 ajuda_bp = Blueprint('ajuda', __name__)
 
 
+def _log(acao, descricao):
+    from flask import request as _req, session as _sess
+    banco.registrar_log(
+        usuario=_sess.get('nome') or _sess.get('usuario', 'sistema'),
+        tela='Ajuda', acao=acao, descricao=descricao,
+        usuario_id=_sess.get('id_usuario'),
+        nivel=_sess.get('nivel_acesso', ''),
+        ip=_req.remote_addr,
+    )
+
+
 # ── Conversão de PDF para HTML ────────────────────────────
 
 _MARCADORES_LISTA = ('-', '•', '*', '–')
@@ -58,7 +69,7 @@ def _pdf_para_html(arquivo) -> str:
         for page in doc:
             for bloco in page.get_text('dict')['blocks']:
                 if bloco['type'] != 0:
-                    continue  # ignora imagens/figuras
+                    continue 
 
                 for linha in bloco['lines']:
                     spans = [s for s in linha['spans'] if s['text'].strip()]
@@ -220,6 +231,7 @@ def api_adicionar_topico():
     if not nome:
         return jsonify({'erro': 'Informe o nome do tópico.'}), 400
     novo_id = banco.adicionar_ajuda_topico(nome, d.get('ordem', 99))
+    _log('INSERIU', f'Criou tópico Ajuda #{novo_id} — {nome}')
     return jsonify({'sucesso': True, 'id': novo_id})
 
 
@@ -232,6 +244,7 @@ def api_atualizar_topico(id_topico):
     if not nome:
         return jsonify({'erro': 'Informe o nome do tópico.'}), 400
     banco.atualizar_ajuda_topico(id_topico, nome, d.get('ordem', 99))
+    _log('EDITOU', f'Editou tópico Ajuda #{id_topico} — {nome}')
     return jsonify({'sucesso': True})
 
 
@@ -240,6 +253,7 @@ def api_remover_topico(id_topico):
     if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.remover_ajuda_topico(id_topico)
+    _log('DELETOU', f'Removeu tópico Ajuda #{id_topico}')
     return jsonify({'sucesso': True})
 
 
@@ -255,6 +269,7 @@ def api_adicionar_post():
     if not d.get('topico_id'):
         return jsonify({'erro': 'Selecione um tópico.'}), 400
     novo_id = banco.adicionar_ajuda_post(d, criado_por=session.get('nome', ''))
+    _log('INSERIU', f'Criou post Ajuda #{novo_id} — {d.get("titulo","")}')
     return jsonify({'sucesso': True, 'id': novo_id})
 
 
@@ -268,6 +283,7 @@ def api_atualizar_post(id_post):
     if not d.get('topico_id'):
         return jsonify({'erro': 'Selecione um tópico.'}), 400
     banco.atualizar_ajuda_post(id_post, d)
+    _log('EDITOU', f'Editou post Ajuda #{id_post} — {d.get("titulo","")}')
     return jsonify({'sucesso': True})
 
 
@@ -276,6 +292,7 @@ def api_remover_post(id_post):
     if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.remover_ajuda_post(id_post)
+    _log('DELETOU', f'Removeu post Ajuda #{id_post}')
     return jsonify({'sucesso': True})
 
 
@@ -291,6 +308,7 @@ def api_adicionar_collection():
     if not (d.get('banco') or '').strip():
         return jsonify({'erro': 'Informe o banco.'}), 400
     novo_id = banco.adicionar_collection(d, criado_por=session.get('nome', ''))
+    _log('INSERIU', f'Criou collection #{novo_id} — {d.get("banco","")} / {d.get("titulo","")}')
     return jsonify({'sucesso': True, 'id': novo_id})
 
 
@@ -304,6 +322,7 @@ def api_atualizar_collection(id_col):
     if not (d.get('banco') or '').strip():
         return jsonify({'erro': 'Informe o banco.'}), 400
     banco.atualizar_collection(id_col, d)
+    _log('EDITOU', f'Editou collection #{id_col} — {d.get("banco","")} / {d.get("titulo","")}')
     return jsonify({'sucesso': True})
 
 
@@ -312,6 +331,7 @@ def api_remover_collection(id_col):
     if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.remover_collection(id_col)
+    _log('DELETOU', f'Removeu collection #{id_col}')
     return jsonify({'sucesso': True})
 
 

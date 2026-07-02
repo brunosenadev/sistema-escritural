@@ -10,6 +10,17 @@ def _checar_edicao():
         return jsonify({'erro': 'Sem permissão para editar.'}), 403
     return None
 
+
+def _log(acao, descricao):
+    banco.registrar_log(
+        usuario=session.get('nome') or session.get('usuario', 'sistema'),
+        tela='Cancelados', acao=acao, descricao=descricao,
+        usuario_id=session.get('id_usuario'),
+        nivel=session.get('nivel_acesso', ''),
+        ip=request.remote_addr,
+    )
+
+
 cancelados_bp = Blueprint('cancelados', __name__)
 
 
@@ -43,7 +54,9 @@ def aba_cancelados():
 def adicionar_cancelado():
     err = _checar_edicao()
     if err: return err
-    id_novo = banco.adicionar_cancelado(request.get_json(), criado_por=session.get('usuario', ''))
+    dados = request.get_json() or {}
+    id_novo = banco.adicionar_cancelado(dados, criado_por=session.get('usuario', ''))
+    _log('INSERIU', f'Inseriu cancelado #{id_novo} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True, 'id': id_novo})
 
 
@@ -51,7 +64,9 @@ def adicionar_cancelado():
 def atualizar_cancelado(id_registro):
     err = _checar_edicao()
     if err: return err
-    banco.atualizar_cancelado(id_registro, request.get_json())
+    dados = request.get_json() or {}
+    banco.atualizar_cancelado(id_registro, dados)
+    _log('EDITOU', f'Editou cancelado #{id_registro} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True})
 
 
@@ -59,5 +74,7 @@ def atualizar_cancelado(id_registro):
 def deletar_cancelado(id_registro):
     err = _checar_edicao()
     if err: return err
+    empresa = banco.buscar_empresa_log('cancelados', id_registro)
     banco.deletar_cancelado(id_registro)
+    _log('DELETOU', f'Deletou cancelado #{id_registro} — {empresa}')
     return jsonify({'sucesso': True})

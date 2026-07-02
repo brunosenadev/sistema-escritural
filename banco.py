@@ -115,12 +115,14 @@ TELAS_AGRUPADAS = [
         ('cancelados',             'Cancelados'),
         ('sispbol',                'SispBol'),
         ('escritural',             'Novos Escriturais'),
+        ('email_modelos',          'Modelos de E-mail'),
     ]),
     ('Sistema', [
         ('melhorias',                          'Melhorias'),
         ('config',                             'Configurações'),
         ('importar_homologacoes_pendentes',    'Importar Homologações Pendentes'),
         ('importar_novas_homologacoes',        'Importar Novas Homologações'),
+        ('logs',                               'Logs do Sistema'),
     ]),
     ('Referência', [
         ('hub',                    'Hub Bancário'),
@@ -243,6 +245,26 @@ def inicializar_banco():
             criado_por    TEXT    DEFAULT '',
             criado_em     TEXT    DEFAULT (datetime('now','localtime')),
             atualizado_em TEXT    DEFAULT (datetime('now','localtime'))
+        );
+        CREATE TABLE IF NOT EXISTS email_modelos (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome      TEXT    NOT NULL,
+            servico   TEXT    NOT NULL DEFAULT '',
+            assunto   TEXT    DEFAULT '',
+            corpo     TEXT    DEFAULT '',
+            ativo     INTEGER DEFAULT 1,
+            criado_em TEXT    DEFAULT (datetime('now','localtime'))
+        );
+        CREATE TABLE IF NOT EXISTS logs (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            data_hora   TEXT    NOT NULL,
+            usuario     TEXT    DEFAULT '',
+            usuario_id  INTEGER,
+            nivel       TEXT    DEFAULT '',
+            tela        TEXT    DEFAULT '',
+            acao        TEXT    DEFAULT '',
+            descricao   TEXT    DEFAULT '',
+            ip          TEXT    DEFAULT ''
         );
         CREATE TABLE IF NOT EXISTS pendentes (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1919,3 +1941,169 @@ def contar_nao_lidos_escritural():
     ).fetchall()
     conn.close()
     return {r['escritural_id']: r['qtd'] for r in rows}
+
+
+# ── Modelos de e-mail ─────────────────────────────────────
+
+# Parâmetros disponíveis para interpolação nas mensagens.
+# Chave = token usado na mensagem (ex: #empresa#)
+# Valor = (campo_em_escritural_ou_None, descrição legível)
+PARAMS_EMAIL_MODELO = [
+    ('#empresa#',       ('empresa',           'Nome da empresa')),
+    ('#cnpj#',          ('cnpj',              'CNPJ da empresa')),
+    ('#responsavel#',   ('responsavel',       'Nome do responsável / contato')),
+    ('#fone#',          ('fone_responsavel',  'Fone do responsável')),
+    ('#email#',         ('email_responsavel', 'E-mail do responsável')),
+    ('#banco#',         ('banco',             'Banco do registro')),
+    ('#conta#',         ('conta_corrente',    'Conta corrente')),
+    ('#agencia#',       ('agencia',           'Agência')),
+    ('#convenio#',      ('convenio',          'Convênio')),
+    ('#servico#',       ('servico',           'Serviço contratado')),
+    ('#carteira#',      ('carteira',          'Carteira')),
+    ('#variacao#',      ('variacao',          'Variação')),
+    ('#cnab#',          ('cnab',              'CNAB')),
+    ('#data_solic#',    ('data_solicitacao',  'Data de solicitação')),
+    ('#status#',        ('status',            'Status atual do registro')),
+    ('#tecnico#',       ('tecnico',           'Técnico responsável')),
+    ('#obs#',           ('obs_emissao',       'Obs. de emissão')),
+    ('#meu_nome#',      (None,               'Seu nome (usuário logado que envia o e-mail)')),
+]
+
+
+def listar_email_modelos():
+    conn = conectar()
+    rows = conn.execute("SELECT * FROM email_modelos ORDER BY nome").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def buscar_email_modelo(id_modelo):
+    conn = conectar()
+    row = conn.execute("SELECT * FROM email_modelos WHERE id=?", (id_modelo,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def buscar_email_modelo_por_servico(servico):
+    if not servico:
+        return None
+    conn = conectar()
+    row = conn.execute(
+        "SELECT * FROM email_modelos WHERE UPPER(TRIM(servico))=UPPER(TRIM(?)) AND ativo=1 ORDER BY id LIMIT 1",
+        (servico,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def adicionar_email_modelo(dados):
+    conn = conectar()
+    try:
+        cur = conn.execute(
+            "INSERT INTO email_modelos (nome, servico, assunto, corpo) VALUES (?,?,?,?)",
+            (dados.get('nome', '').strip(),
+             dados.get('servico', '').strip(),
+             dados.get('assunto', '').strip(),
+             dados.get('corpo', '').strip())
+        )
+        id_novo = cur.lastrowid
+        conn.commit()
+        return id_novo
+    finally:
+        conn.close()
+
+
+def atualizar_email_modelo(id_modelo, dados):
+    conn = conectar()
+    try:
+        conn.execute(
+            "UPDATE email_modelos SET nome=?, servico=?, assunto=?, corpo=?, ativo=? WHERE id=?",
+            (dados.get('nome', '').strip(),
+             dados.get('servico', '').strip(),
+             dados.get('assunto', '').strip(),
+             dados.get('corpo', '').strip(),
+             int(dados.get('ativo', 1)),
+             id_modelo)
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def remover_email_modelo(id_modelo):
+    conn = conectar()
+    try:
+        conn.execute("DELETE FROM email_modelos WHERE id=?", (id_modelo,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def aplicar_parametros_modelo(corpo, assunto, registro, usuario_nome=''):
+    """Substitui tokens #param# no corpo e assunto pelos valores do registro escritural."""
+    valores = {token: (registro.get(campo) or '') for token, (campo, _) in PARAMS_EMAIL_MODELO if campo}
+    valores['#meu_nome#'] = usuario_nome or ''
+    for token, valor in valores.items():
+        corpo   = corpo.replace(token, valor)
+        assunto = assunto.replace(token, valor)
+    return corpo, assunto
+
+
+# ── Logs do sistema ───────────────────────────────────────
+
+def registrar_log(usuario, tela, acao, descricao, usuario_id=None, nivel=None, ip=None):
+    """Registra uma ação no log. Nunca lança exceção para não impactar o fluxo principal."""
+    conn = conectar()
+    try:
+        conn.execute(
+            "INSERT INTO logs (data_hora,usuario,usuario_id,nivel,tela,acao,descricao,ip) VALUES (?,?,?,?,?,?,?,?)",
+            (datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+             usuario or '', usuario_id, nivel or '', tela or '', acao or '', descricao or '', ip or '')
+        )
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
+def listar_logs(busca=None, usuario=None, tela=None, acao=None,
+                data_ini=None, data_fim=None, pagina=1, por_pagina=100):
+    conn = conectar()
+    cond, params = ['1=1'], []
+    if usuario:
+        cond.append('LOWER(usuario) LIKE ?'); params.append(f'%{usuario.lower()}%')
+    if tela:
+        cond.append('tela=?'); params.append(tela)
+    if acao:
+        cond.append('acao=?'); params.append(acao)
+    if busca:
+        cond.append('(descricao LIKE ? OR usuario LIKE ?)'); params += [f'%{busca}%', f'%{busca}%']
+    if data_ini:
+        cond.append('data_hora >= ?'); params.append(data_ini + ' 00:00:00')
+    if data_fim:
+        cond.append('data_hora <= ?'); params.append(data_fim + ' 23:59:59')
+    sql = ' AND '.join(cond)
+    total = conn.execute(f'SELECT COUNT(*) FROM logs WHERE {sql}', params).fetchone()[0]
+    offset = (pagina - 1) * por_pagina
+    rows = conn.execute(
+        f'SELECT * FROM logs WHERE {sql} ORDER BY id DESC LIMIT ? OFFSET ?',
+        params + [por_pagina, offset]
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows], total
+
+
+def buscar_empresa_log(tabela, id_registro):
+    """Busca nome da empresa para usar em descrições de log antes de deletar."""
+    if tabela not in {'pendentes', 'homologados_cobranca', 'homologados_pagamentos',
+                      'homologados_extrato', 'homologados_ext_bancario', 'cancelados', 'escritural'}:
+        return ''
+    conn = conectar()
+    try:
+        row = conn.execute(f'SELECT empresa FROM {tabela} WHERE id=?', (id_registro,)).fetchone()
+        return row['empresa'] if row else ''
+    except Exception:
+        return ''
+    finally:
+        conn.close()

@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% set aba_ativa = 'email_modelos' %}
+
+{% block titulo %}Modelos de E-mail{% endblock %}
+{% block titulo_pagina %}Modelos de E-mail{% endblock %}
+{% block breadcrumb %}Escritural / Modelos de E-mail{% endblock %}
+
+{% block estilos_extras %}
+<style>
+  .em-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .em-table-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+  table.em-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .em-table th { padding: 11px 14px; text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; border-bottom: 2px solid #f1f5f9; background: #f8fafc; white-space: nowrap; }
+  .em-table td { padding: 11px 14px; border-bottom: 1px solid #f8fafc; color: #334155; vertical-align: middle; }
+  .em-table tr:last-child td { border-bottom: none; }
+  .em-table tr:hover td { background: #f8fafc; }
+  .td-nome { font-weight: 600; color: #1e293b; }
+  .td-servico { font-size: 12px; color: #475569; }
+  .td-assunto { font-size: 12px; color: #64748b; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge-inativo { background: #fee2e2; color: #b91c1c; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+  .badge-ativo { background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+  .td-acoes { white-space: nowrap; }
+  .btn-editar-em, .btn-deletar-em {
+    padding: 5px 11px; border: none; border-radius: 7px; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-editar-em  { background: #f1f5f9; color: #334155; margin-right: 4px; }
+  .btn-editar-em:hover  { background: #e2e8f0; }
+  .btn-deletar-em { background: #fee2e2; color: #b91c1c; }
+  .btn-deletar-em:hover { background: #fecaca; }
+  .em-vazio { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; }
+
+  /* Modal */
+  #overlay-em .card-modal { max-width: 860px; width: 96vw; }
+  .em-modal-corpo { display: flex; gap: 20px; align-items: flex-start; }
+  .em-form-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0; }
+  .em-side-col { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
+
+  .em-params-box {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;
+    max-height: 240px; overflow-y: auto;
+  }
+  .em-params-titulo { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 8px; }
+  .em-param-row { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; cursor: pointer; border-radius: 5px; padding: 3px 5px; }
+  .em-param-row:hover { background: #e2e8f0; }
+  .em-param-token { font-family: monospace; font-size: 11.5px; font-weight: 700; color: #0891b2; white-space: nowrap; }
+  .em-param-desc { font-size: 11px; color: #64748b; }
+
+  .em-preview-box {
+    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px;
+    flex: 1; min-height: 180px;
+  }
+  .em-preview-titulo { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 8px; }
+  .em-preview-assunto { font-size: 12px; font-weight: 600; color: #1e293b; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+  .em-preview-corpo { font-size: 12.5px; color: #334155; white-space: pre-wrap; line-height: 1.6; }
+  .em-preview-vazio { font-size: 12px; color: #94a3b8; font-style: italic; }
+
+  [data-tema="dark"] .em-table-wrap { background: var(--z-card); border-color: var(--z-border); }
+  [data-tema="dark"] .em-table th { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-3); }
+  [data-tema="dark"] .em-table td { border-color: var(--z-border-s); color: var(--z-text-2); }
+  [data-tema="dark"] .em-table tr:hover td { background: var(--z-elevated); }
+  [data-tema="dark"] .td-nome { color: var(--z-text-1); }
+  [data-tema="dark"] .em-params-box { background: var(--z-elevated); border-color: var(--z-border); }
+  [data-tema="dark"] .em-preview-box { background: var(--z-card); border-color: var(--z-border); }
+  [data-tema="dark"] .em-preview-assunto { border-color: var(--z-border-s); color: var(--z-text-1); }
+  [data-tema="dark"] .em-preview-corpo { color: var(--z-text-2); }
+  [data-tema="dark"] .em-param-row:hover { background: var(--z-border); }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="em-header">
+  <div></div>
+  <button class="botao-salvar" onclick="abrirNovoModelo()">+ Novo modelo</button>
+</div>
+
+<div class="em-table-wrap">
+  <table class="em-table">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Serviço</th>
+        <th>Assunto</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="em-tbody">
+      {% if not modelos %}
+      <tr><td colspan="5" class="em-vazio">Nenhum modelo cadastrado ainda. Clique em "Novo modelo" para começar.</td></tr>
+      {% else %}
+      {% for m in modelos %}
+      <tr data-id="{{ m.id }}">
+        <td class="td-nome">{{ m.nome }}</td>
+        <td class="td-servico">{{ m.servico or '— todos —' }}</td>
+        <td class="td-assunto" title="{{ m.assunto }}">{{ m.assunto }}</td>
+        <td><span class="{{ 'badge-ativo' if m.ativo else 'badge-inativo' }}">{{ 'Ativo' if m.ativo else 'Inativo' }}</span></td>
+        <td class="td-acoes">
+          <button class="btn-editar-em" onclick="editarModelo({{ m.id }}, {{ m | tojson | e }})">Editar</button>
+          <button class="btn-deletar-em" onclick="confirmarDeletar({{ m.id }}, '{{ m.nome | e }}')">Excluir</button>
+        </td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══ Modal: Criar/Editar modelo ════ -->
+<div class="overlay-modal" id="overlay-em" onclick="if(event.target===this) fecharModalEm()">
+  <div class="card-modal">
+    <div class="modal-header">
+      <span class="modal-titulo" id="em-modal-titulo">Novo modelo de e-mail</span>
+      <button class="botao-fechar-modal" onclick="fecharModalEm()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <input type="hidden" id="em-id">
+
+    <div class="em-modal-corpo">
+      <!-- Coluna esquerda: formulário -->
+      <div class="em-form-col">
+        <div class="grade-form">
+          <div class="grupo-form campo-completo">
+            <label>Nome do modelo</label>
+            <input class="input-form" id="em-nome" placeholder="Ex: Orçamento Cobrança Bancária" oninput="atualizarPreview()">
+          </div>
+          <div class="grupo-form" style="flex:1;">
+            <label>Serviço</label>
+            <select class="input-form" id="em-servico" onchange="atualizarPreview()">
+              <option value="">— nenhum (modelo padrão) —</option>
+              {% for s in servicos %}
+              <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="grupo-form" style="flex:0 0 auto;">
+            <label>Ativo</label>
+            <select class="input-form" id="em-ativo" style="min-width:100px;">
+              <option value="1">Sim</option>
+              <option value="0">Não</option>
+            </select>
+          </div>
+          <div class="grupo-form campo-completo">
+            <label>Assunto do e-mail</label>
+            <input class="input-form" id="em-assunto" placeholder="Ex: Orçamento — Homologação #servico# #banco#" oninput="atualizarPreview()">
+          </div>
+          <div class="grupo-form campo-completo">
+            <label>Corpo da mensagem</label>
+            <textarea class="input-form" id="em-corpo" rows="12" style="resize:vertical;font-family:monospace;font-size:12.5px;" placeholder="Prezado(a) #responsavel#,
+
+Segue orçamento..." oninput="atualizarPreview()"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna direita: parâmetros + preview -->
+      <div class="em-side-col">
+        <div class="em-params-box">
+          <div class="em-params-titulo">Parâmetros disponíveis</div>
+          <div style="font-size:10.5px;color:#94a3b8;margin-bottom:8px;">Clique para inserir no cursor</div>
+          {% for token, (campo, desc) in params %}
+          <div class="em-param-row" onclick="inserirParam('{{ token }}')">
+            <span class="em-param-token">{{ token }}</span>
+            <span class="em-param-desc">{{ desc }}</span>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="em-preview-box">
+          <div class="em-preview-titulo">Preview</div>
+          <div class="em-preview-assunto" id="prev-assunto"></div>
+          <div class="em-preview-corpo" id="prev-corpo"><span class="em-preview-vazio">Escreva a mensagem para ver o preview.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rodape-modal" style="margin-top:16px;">
+      <button type="button" class="botao-cancelar" onclick="fecharModalEm()">Cancelar</button>
+      <button type="button" class="botao-salvar" onclick="salvarModelo()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+  // Valores de exemplo para o preview
+  const _PREVIEW_EXEMPLOS = {
+    '#empresa#':      'Empresa Exemplo LTDA',
+    '#cnpj#':         '12.345.678/0001-90',
+    '#responsavel#':  'João da Silva',
+    '#fone#':         '(11) 99999-1234',
+    '#email#':        'joao@empresa.com',
+    '#banco#':        'Banco do Brasil',
+    '#conta#':        '12345-6',
+    '#agencia#':      '0001',
+    '#convenio#':     '789012',
+    '#servico#':      document.getElementById('em-servico') ? document.getElementById('em-servico').value || 'Cobrança Bancária' : 'Cobrança Bancária',
+    '#carteira#':     '17',
+    '#variacao#':     '019',
+    '#cnab#':         '240',
+    '#data_solic#':   '{{ now }}',
+    '#status#':       'Em andamento',
+    '#tecnico#':      'Bruno',
+    '#obs#':          '',
+    '#meu_nome#':     '{{ nome_usuario }}',
+  };
+
+  let _idEditando = null;
+
+  function abrirNovoModelo() {
+    _idEditando = null;
+    document.getElementById('em-modal-titulo').textContent = 'Novo modelo de e-mail';
+    document.getElementById('em-id').value      = '';
+    document.getElementById('em-nome').value    = '';
+    document.getElementById('em-servico').value = '';
+    document.getElementById('em-ativo').value   = '1';
+    document.getElementById('em-assunto').value = '';
+    document.getElementById('em-corpo').value   = '';
+    atualizarPreview();
+    document.getElementById('overlay-em').classList.add('aberto');
+    document.getElementById('em-nome').focus();
+  }
+
+  function editarModelo(id, m) {
+    _idEditando = id;
+    document.getElementById('em-modal-titulo').textContent = 'Editar modelo de e-mail';
+    document.getElementById('em-id').value      = id;
+    document.getElementById('em-nome').value    = m.nome    || '';
+    document.getElementById('em-servico').value = m.servico || '';
+    document.getElementById('em-ativo').value   = m.ativo ? '1' : '0';
+    document.getElementById('em-assunto').value = m.assunto || '';
+    document.getElementById('em-corpo').value   = m.corpo   || '';
+    atualizarPreview();
+    document.getElementById('overlay-em').classList.add('aberto');
+    document.getElementById('em-nome').focus();
+  }
+
+  function fecharModalEm() {
+    document.getElementById('overlay-em').classList.remove('aberto');
+  }
+
+  function inserirParam(token) {
+    const ta = document.getElementById('em-corpo');
+    ta.focus();
+    const ini = ta.selectionStart;
+    const fim = ta.selectionEnd;
+    const antes = ta.value.slice(0, ini);
+    const depois = ta.value.slice(fim);
+    ta.value = antes + token + depois;
+    ta.selectionStart = ta.selectionEnd = ini + token.length;
+    atualizarPreview();
+  }
+
+  function _aplicarPreview(texto) {
+    let r = texto;
+    const servico = document.getElementById('em-servico').value || 'Cobrança Bancária';
+    _PREVIEW_EXEMPLOS['#servico#'] = servico;
+    for (const [tok, val] of Object.entries(_PREVIEW_EXEMPLOS)) {
+      r = r.split(tok).join(val);
+    }
+    return r;
+  }
+
+  function atualizarPreview() {
+    const assunto = document.getElementById('em-assunto').value;
+    const corpo   = document.getElementById('em-corpo').value;
+    document.getElementById('prev-assunto').textContent = _aplicarPreview(assunto) || '(assunto vazio)';
+    const prevCorpo = document.getElementById('prev-corpo');
+    if (corpo.trim()) {
+      prevCorpo.innerHTML = '';
+      const span = document.createElement('span');
+      span.textContent = _aplicarPreview(corpo);
+      prevCorpo.appendChild(span);
+    } else {
+      prevCorpo.innerHTML = '<span class="em-preview-vazio">Escreva a mensagem para ver o preview.</span>';
+    }
+  }
+
+  function salvarModelo() {
+    const nome    = document.getElementById('em-nome').value.trim();
+    const servico = document.getElementById('em-servico').value.trim();
+    const assunto = document.getElementById('em-assunto').value.trim();
+    const corpo   = document.getElementById('em-corpo').value.trim();
+    const ativo   = parseInt(document.getElementById('em-ativo').value);
+    if (!nome) { mostrarToast('erro', 'Informe o nome do modelo.'); return; }
+
+    const dados = { nome, servico, assunto, corpo, ativo };
+    const url    = _idEditando ? `/api/email-modelos/${_idEditando}` : '/api/email-modelos';
+    const method = _idEditando ? 'PUT' : 'POST';
+
+    fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) })
+      .then(r => r.json())
+      .then(resp => {
+        if (resp.sucesso) {
+          mostrarToast('sucesso', _idEditando ? 'Modelo atualizado!' : 'Modelo criado!');
+          fecharModalEm();
+          setTimeout(() => location.reload(), 800);
+        } else {
+          mostrarToast('erro', resp.erro || 'Erro ao salvar.');
+        }
+      })
+      .catch(() => mostrarToast('erro', 'Erro de conexão.'));
+  }
+
+  function confirmarDeletar(id, nome) {
+    abrirDialogo({
+      titulo: 'Excluir modelo?',
+      mensagem: `Deseja excluir o modelo <strong>${nome}</strong>?`,
+      tipo: 'perigo',
+      textoBotao: 'Excluir',
+      callback: () => {
+        fetch(`/api/email-modelos/${id}`, { method: 'DELETE' })
+          .then(r => r.json())
+          .then(resp => {
+            if (resp.sucesso) {
+              mostrarToast('sucesso', 'Modelo excluído.');
+              document.querySelector(`tr[data-id="${id}"]`)?.remove();
+              if (!document.querySelector('#em-tbody tr[data-id]')) {
+                document.getElementById('em-tbody').innerHTML =
+                  '<tr><td colspan="5" class="em-vazio">Nenhum modelo cadastrado ainda.</td></tr>';
+              }
+            } else {
+              mostrarToast('erro', resp.erro || 'Erro ao excluir.');
+            }
+          })
+          .catch(() => mostrarToast('erro', 'Erro de conexão.'));
+      }
+    });
+  }
+</script>
+{% endblock %}

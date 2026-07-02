@@ -13,6 +13,16 @@ def _sem_permissao():
     return None
 
 
+def _log(acao, descricao):
+    banco.registrar_log(
+        usuario=session.get('nome') or session.get('usuario', 'sistema'),
+        tela='Pendentes', acao=acao, descricao=descricao,
+        usuario_id=session.get('id_usuario'),
+        nivel=session.get('nivel_acesso', ''),
+        ip=request.remote_addr,
+    )
+
+
 @pendente_bp.route('/pendente')
 def aba_pendente():
     bloqueio = checar_tela('pendente')
@@ -65,7 +75,9 @@ def aba_pendente():
 def adicionar_pendente():
     err = _sem_permissao()
     if err: return err
-    id_novo = banco.adicionar_pendente(request.get_json(), criado_por=session.get('usuario', ''))
+    dados = request.get_json() or {}
+    id_novo = banco.adicionar_pendente(dados, criado_por=session.get('usuario', ''))
+    _log('INSERIU', f'Inseriu pendente #{id_novo} — {dados.get("empresa","?")} ({dados.get("banco","?")} · {dados.get("servico","?")})')
     return jsonify({'sucesso': True, 'id': id_novo})
 
 
@@ -73,7 +85,9 @@ def adicionar_pendente():
 def atualizar_pendente(id_registro):
     err = _sem_permissao()
     if err: return err
-    banco.atualizar_pendente(id_registro, request.get_json())
+    dados = request.get_json() or {}
+    banco.atualizar_pendente(id_registro, dados)
+    _log('EDITOU', f'Editou pendente #{id_registro} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True})
 
 
@@ -86,6 +100,7 @@ def atualizar_status_pendente(id_registro):
         return jsonify({'erro': 'Status não informado'}), 400
     from datetime import datetime as _dt
     banco.atualizar_status_pendente(id_registro, novo_status)
+    _log('STATUS', f'Alterou status do pendente #{id_registro} → {novo_status}')
     return jsonify({'sucesso': True, 'dt_status': _dt.now().strftime('%d/%m/%Y')})
 
 
@@ -93,7 +108,9 @@ def atualizar_status_pendente(id_registro):
 def deletar_pendente(id_registro):
     err = _sem_permissao()
     if err: return err
+    empresa = banco.buscar_empresa_log('pendentes', id_registro)
     banco.deletar_pendente(id_registro)
+    _log('DELETOU', f'Deletou pendente #{id_registro} — {empresa}')
     return jsonify({'sucesso': True})
 
 
@@ -101,8 +118,10 @@ def deletar_pendente(id_registro):
 def cancelar_pendente(id_registro):
     err = _sem_permissao()
     if err: return err
+    empresa = banco.buscar_empresa_log('pendentes', id_registro)
     id_novo = banco.mover_pendente_para_cancelado(id_registro)
     if id_novo:
+        _log('MOVEU', f'Moveu pendente #{id_registro} ({empresa}) → Cancelados #{id_novo}')
         return jsonify({'sucesso': True, 'id_cancelado': id_novo})
     return jsonify({'erro': 'Registro não encontrado'}), 404
 
@@ -117,6 +136,7 @@ def assumir_pendente(id_registro):
         return jsonify({'erro': 'Nenhum técnico selecionado.'}), 400
     ok = banco.assumir_pendente(id_registro, tecnico)
     if ok:
+        _log('ASSUMIU', f'Assumiu pendente #{id_registro} → técnico {tecnico}')
         return jsonify({'sucesso': True, 'tecnico': tecnico})
     return jsonify({'erro': 'Registro não encontrado ou já possui técnico.'}), 404
 
@@ -125,12 +145,15 @@ def assumir_pendente(id_registro):
 def homologar_pendente(id_registro):
     err = _sem_permissao()
     if err: return err
+    empresa = banco.buscar_empresa_log('pendentes', id_registro)
     id_novo, aba = banco.mover_pendente_para_homologado(id_registro)
     if id_novo:
         nomes = {
-            'cobranca':   'Homologados Cobrança',
-            'pagamentos': 'Homologados Pagamentos',
-            'extrato':    'Homologados Extrato Cartão',
+            'cobranca':   'Hom. Cobrança',
+            'pagamentos': 'Hom. Pagamentos',
+            'extrato':    'Hom. Extrato Cartão',
+            'ext_bancario': 'Hom. Extrato Bancário',
         }
+        _log('MOVEU', f'Homologou pendente #{id_registro} ({empresa}) → {nomes.get(aba, aba)} #{id_novo}')
         return jsonify({'sucesso': True, 'id_homologado': id_novo, 'aba': aba, 'nome_aba': nomes.get(aba, aba)})
     return jsonify({'erro': 'Registro não encontrado'}), 404

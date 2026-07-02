@@ -21,6 +21,8 @@ from routes.ajuda           import ajuda_bp
 from routes.escritural      import escritural_bp
 from routes.discord_notif       import discord_bp
 from routes.email_escritural    import email_escritural_bp, iniciar_polling
+from routes.logs                import logs_bp
+from routes.email_modelos       import email_modelos_bp
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
@@ -41,6 +43,8 @@ app.register_blueprint(ajuda_bp)
 app.register_blueprint(escritural_bp)
 app.register_blueprint(discord_bp)
 app.register_blueprint(email_escritural_bp)
+app.register_blueprint(logs_bp)
+app.register_blueprint(email_modelos_bp)
 
 iniciar_polling()
 

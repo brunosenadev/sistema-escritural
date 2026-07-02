@@ -131,8 +131,8 @@
   .card-modal.modal-largo { max-width: 760px; }
   .card-modal.modal-estreito { max-width: 520px; }
   @keyframes modal-entrar { from{opacity:0;transform:translateY(-12px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
-  .modal-titulo { font-size: 16px; font-weight: 700; color: #1e293b; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; gap: 12px; overflow: hidden; }
+  .modal-titulo { font-size: 16px; font-weight: 700; color: #1e293b; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .botao-fechar-modal { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; border-radius: 6px; transition: color 0.15s, background 0.15s; display: flex; align-items: center; }
   .botao-fechar-modal:hover { color: #ef4444; background: #fef2f2; }
   .botao-fechar-modal svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
@@ -193,7 +193,11 @@
   .es-preview-valor { font-size: 13.5px; color: #1e293b; white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
 
   /* ── Chat de e-mail ── */
-  .chat-email-wrap { display: flex; flex-direction: column; gap: 14px; max-height: 56vh; overflow-y: auto; padding-right: 4px; margin-bottom: 16px; }
+  /* Layout do modal de chat: flex-column, sem overflow externo */
+  #overlay-chat-email .card-modal { display: flex; flex-direction: column; overflow: hidden; max-height: 90vh; }
+  #overlay-chat-email .modal-header { flex-shrink: 0; }
+  #overlay-chat-email .chat-resposta-area { flex-shrink: 0; }
+  .chat-email-wrap { display: flex; flex-direction: column; gap: 14px; flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; margin-bottom: 16px; }
   .chat-item { display: flex; flex-direction: column; }
 
   .chat-balao {
@@ -547,6 +551,7 @@
   <div class="card-modal" style="max-width:580px;">
     <div class="modal-header">
       <span class="modal-titulo">Enviar orçamento</span>
+      <span id="orc-modelo-tag" style="font-size:11px;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:6px;white-space:nowrap;"></span>
       <button class="botao-fechar-modal" onclick="fecharOrcamento()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <input type="hidden" id="orc-escritural-id">
@@ -868,21 +873,6 @@
   }
 
   // ── Orçamento ────────────────────────────────────────────
-  const TEMPLATE_ORCAMENTO = (empresa, servico, banco) =>
-`Prezado(a),
-
-Segue orçamento para homologação do serviço de ${servico} junto ao ${banco} para a empresa ${empresa}.
-
-O custo estimado é de 1 a 4 horas técnicas (conforme complexidade da instituição financeira).
-O atendimento ocorre em partes e pode levar até 7 dias para ser totalmente concluído.
-
-Para darmos início, solicitamos a aprovação formal via resposta a este e-mail.
-
-Qualquer dúvida estamos à disposição.
-
-Atenciosamente,
-Sisplan Sistemas`;
-
   let _chatLastMessageId = null;
   let _chatLastReferences = null;
 
@@ -891,10 +881,22 @@ Sisplan Sistemas`;
     document.getElementById('orc-in-reply-to').value   = '';
     document.getElementById('orc-destinatario').value  = reg.email_responsavel || '';
     document.getElementById('orc-assunto').value       = `Orçamento — Homologação ${reg.servico || ''} ${reg.banco || ''}`.trim();
-    document.getElementById('orc-corpo').value         = TEMPLATE_ORCAMENTO(reg.empresa || '', reg.servico || '', reg.banco || '');
+    document.getElementById('orc-corpo').value         = '';
+    document.getElementById('orc-modelo-tag').textContent = '';
     const btn = document.getElementById('btn-enviar-orc');
     btn.disabled = false; btn.textContent = 'Enviar';
     document.getElementById('overlay-orcamento').classList.add('aberto');
+
+    fetch(`/api/email-modelo/para-registro/${reg.id}`)
+      .then(r => r.json())
+      .then(m => {
+        if (m && m.corpo) {
+          document.getElementById('orc-assunto').value = m.assunto || document.getElementById('orc-assunto').value;
+          document.getElementById('orc-corpo').value   = m.corpo;
+          document.getElementById('orc-modelo-tag').textContent = `Modelo: ${m.nome}`;
+        }
+      })
+      .catch(() => {});
   }
   function fecharOrcamento() { document.getElementById('overlay-orcamento').classList.remove('aberto'); }
   function enviarOrcamento() {
@@ -950,10 +952,10 @@ Sisplan Sistemas`;
           _chatLastReferences = (_chatLastReferences ? _chatLastReferences + ' ' : '') + m.message_id;
         }
 
-        const texto = m.direcao === 'recebido' ? _stripQuotedText(m.corpo_texto) : (m.corpo_texto || '');
+        const texto = _stripQuotedText(m.corpo_texto || '');
         const html  = (m.corpo_html || '').trim();
 
-        if (!texto && !html && m.direcao === 'recebido') return;
+        if (!texto && !html) return;
 
         const item = document.createElement('div');
         item.className = 'chat-item';

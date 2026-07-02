@@ -40,6 +40,16 @@ def _guard_mover():
     return None
 
 
+def _log(acao, descricao):
+    banco.registrar_log(
+        usuario=session.get('nome') or session.get('usuario', 'sistema'),
+        tela='Melhorias', acao=acao, descricao=descricao,
+        usuario_id=session.get('id_usuario'),
+        nivel=session.get('nivel_acesso', ''),
+        ip=request.remote_addr,
+    )
+
+
 @melhorias_bp.route('/melhorias')
 def aba_melhorias():
     err = _guard_ver()
@@ -67,10 +77,10 @@ def api_adicionar_melhoria():
         return err
     dados = request.get_json() or {}
     dados['criado_por'] = session.get('nome', '')
-    # SUPORTE só pode criar em análise
     if not _pode_mover():
         dados['estagio'] = 'em_analise'
     novo_id = banco.adicionar_melhoria(dados)
+    _log('INSERIU', f'Criou melhoria #{novo_id} — {dados.get("titulo", dados.get("descricao","?"))[:80]}')
     return jsonify({'sucesso': True, 'id': novo_id})
 
 
@@ -79,7 +89,9 @@ def api_atualizar_melhoria(id_melhoria):
     err = _guard_mover()
     if err:
         return err
-    banco.atualizar_melhoria(id_melhoria, request.get_json() or {})
+    dados = request.get_json() or {}
+    banco.atualizar_melhoria(id_melhoria, dados)
+    _log('EDITOU', f'Editou melhoria #{id_melhoria}')
     return jsonify({'sucesso': True})
 
 
@@ -93,6 +105,7 @@ def api_mover_melhoria(id_melhoria):
     if estagio not in ('em_analise', 'em_programacao', 'concluida', 'rejeitada'):
         return jsonify({'erro': 'Estágio inválido'}), 400
     banco.mover_estagio_melhoria(id_melhoria, estagio, dados.get('motivo', ''))
+    _log('MOVEU', f'Moveu melhoria #{id_melhoria} → {estagio}')
     return jsonify({'sucesso': True})
 
 
@@ -102,4 +115,5 @@ def api_deletar_melhoria(id_melhoria):
     if err:
         return err
     banco.remover_melhoria(id_melhoria)
+    _log('DELETOU', f'Deletou melhoria #{id_melhoria}')
     return jsonify({'sucesso': True})

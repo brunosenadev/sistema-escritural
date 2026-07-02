@@ -19,11 +19,34 @@ _CONFIGS = {
     'ext-bancario': ('listar_homologados_ext_bancario',  'Homologados Extrato Bancário',   'homologados_ext_bancario'),
 }
 
+_NOME_ABA = {
+    'cobranca':     'Hom. Cobrança',
+    'pagamentos':   'Hom. Pagamentos',
+    'extrato':      'Hom. Extrato Cartão',
+    'ext-bancario': 'Hom. Extrato Bancário',
+}
+
+_TABELA_DB = {
+    'cobranca':     'homologados_cobranca',
+    'pagamentos':   'homologados_pagamentos',
+    'extrato':      'homologados_extrato',
+    'ext-bancario': 'homologados_ext_bancario',
+}
+
+
+def _log(tipo, acao, descricao):
+    banco.registrar_log(
+        usuario=session.get('nome') or session.get('usuario', 'sistema'),
+        tela=_NOME_ABA.get(tipo, tipo), acao=acao, descricao=descricao,
+        usuario_id=session.get('id_usuario'),
+        nivel=session.get('nivel_acesso', ''),
+        ip=request.remote_addr,
+    )
+
 
 def _chave_data(s):
-    """Converte 'dd/mm/yyyy' para chave de ordenação 'yyyy/mm/dd'. Vazio vai para o fim."""
     if not s or s.strip() == '':
-        return '0000/00/00'  # vai para o fim com reverse=True
+        return '0000/00/00'
     partes = s.strip().split('/')
     if len(partes) == 3:
         return f'{partes[2]}/{partes[1]}/{partes[0]}'
@@ -45,7 +68,6 @@ def _render(tipo):
     lista_tecnicos = banco.listar_tecnicos()
     cores_tecnicos = banco.cores_por_tecnico()
 
-    # Ordena: registro mais recente (maior id) primeiro — reflete a ordem da planilha invertida
     registros.sort(key=lambda r: r.get('id', 0), reverse=True)
 
     resumo_tecnicos = {}
@@ -73,21 +95,27 @@ def aba_homologados_cobranca():
 def adicionar_hom_cobranca():
     err = _sem_permissao()
     if err: return err
-    id_novo = banco.adicionar_homologado_cobranca(request.get_json(), session.get('usuario', ''))
+    dados = request.get_json() or {}
+    id_novo = banco.adicionar_homologado_cobranca(dados, session.get('usuario', ''))
+    _log('cobranca', 'INSERIU', f'Inseriu Hom. Cobrança #{id_novo} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True, 'id': id_novo})
 
 @homologados_bp.route('/homologados-cobranca/atualizar/<int:id_registro>', methods=['PUT'])
 def atualizar_hom_cobranca(id_registro):
     err = _sem_permissao()
     if err: return err
-    banco.atualizar_homologado_cobranca(id_registro, request.get_json())
+    dados = request.get_json() or {}
+    banco.atualizar_homologado_cobranca(id_registro, dados)
+    _log('cobranca', 'EDITOU', f'Editou Hom. Cobrança #{id_registro} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True})
 
 @homologados_bp.route('/homologados-cobranca/deletar/<int:id_registro>', methods=['DELETE'])
 def deletar_hom_cobranca(id_registro):
     err = _sem_permissao()
     if err: return err
+    empresa = banco.buscar_empresa_log('homologados_cobranca', id_registro)
     banco.deletar_homologado_cobranca(id_registro)
+    _log('cobranca', 'DELETOU', f'Deletou Hom. Cobrança #{id_registro} — {empresa}')
     return jsonify({'sucesso': True})
 
 
@@ -101,21 +129,27 @@ def aba_homologados_pagamentos():
 def adicionar_hom_pagamentos():
     err = _sem_permissao()
     if err: return err
-    id_novo = banco.adicionar_homologado_pagamentos(request.get_json(), session.get('usuario', ''))
+    dados = request.get_json() or {}
+    id_novo = banco.adicionar_homologado_pagamentos(dados, session.get('usuario', ''))
+    _log('pagamentos', 'INSERIU', f'Inseriu Hom. Pagamentos #{id_novo} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True, 'id': id_novo})
 
 @homologados_bp.route('/homologados-pagamentos/atualizar/<int:id_registro>', methods=['PUT'])
 def atualizar_hom_pagamentos(id_registro):
     err = _sem_permissao()
     if err: return err
-    banco.atualizar_homologado_pagamentos(id_registro, request.get_json())
+    dados = request.get_json() or {}
+    banco.atualizar_homologado_pagamentos(id_registro, dados)
+    _log('pagamentos', 'EDITOU', f'Editou Hom. Pagamentos #{id_registro} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True})
 
 @homologados_bp.route('/homologados-pagamentos/deletar/<int:id_registro>', methods=['DELETE'])
 def deletar_hom_pagamentos(id_registro):
     err = _sem_permissao()
     if err: return err
+    empresa = banco.buscar_empresa_log('homologados_pagamentos', id_registro)
     banco.deletar_homologado_pagamentos(id_registro)
+    _log('pagamentos', 'DELETOU', f'Deletou Hom. Pagamentos #{id_registro} — {empresa}')
     return jsonify({'sucesso': True})
 
 
@@ -129,21 +163,27 @@ def aba_homologados_extrato():
 def adicionar_hom_extrato():
     err = _sem_permissao()
     if err: return err
-    id_novo = banco.adicionar_homologado_extrato(request.get_json(), session.get('usuario', ''))
+    dados = request.get_json() or {}
+    id_novo = banco.adicionar_homologado_extrato(dados, session.get('usuario', ''))
+    _log('extrato', 'INSERIU', f'Inseriu Hom. Extrato Cartão #{id_novo} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True, 'id': id_novo})
 
 @homologados_bp.route('/homologados-extrato/atualizar/<int:id_registro>', methods=['PUT'])
 def atualizar_hom_extrato(id_registro):
     err = _sem_permissao()
     if err: return err
-    banco.atualizar_homologado_extrato(id_registro, request.get_json())
+    dados = request.get_json() or {}
+    banco.atualizar_homologado_extrato(id_registro, dados)
+    _log('extrato', 'EDITOU', f'Editou Hom. Extrato Cartão #{id_registro} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True})
 
 @homologados_bp.route('/homologados-extrato/deletar/<int:id_registro>', methods=['DELETE'])
 def deletar_hom_extrato(id_registro):
     err = _sem_permissao()
     if err: return err
+    empresa = banco.buscar_empresa_log('homologados_extrato', id_registro)
     banco.deletar_homologado_extrato(id_registro)
+    _log('extrato', 'DELETOU', f'Deletou Hom. Extrato Cartão #{id_registro} — {empresa}')
     return jsonify({'sucesso': True})
 
 
@@ -157,21 +197,27 @@ def aba_homologados_ext_bancario():
 def adicionar_hom_ext_bancario():
     err = _sem_permissao()
     if err: return err
-    id_novo = banco.adicionar_homologado_ext_bancario(request.get_json(), session.get('usuario', ''))
+    dados = request.get_json() or {}
+    id_novo = banco.adicionar_homologado_ext_bancario(dados, session.get('usuario', ''))
+    _log('ext-bancario', 'INSERIU', f'Inseriu Hom. Extrato Bancário #{id_novo} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True, 'id': id_novo})
 
 @homologados_bp.route('/homologados-ext-bancario/atualizar/<int:id_registro>', methods=['PUT'])
 def atualizar_hom_ext_bancario(id_registro):
     err = _sem_permissao()
     if err: return err
-    banco.atualizar_homologado_ext_bancario(id_registro, request.get_json())
+    dados = request.get_json() or {}
+    banco.atualizar_homologado_ext_bancario(id_registro, dados)
+    _log('ext-bancario', 'EDITOU', f'Editou Hom. Extrato Bancário #{id_registro} — {dados.get("empresa","?")}')
     return jsonify({'sucesso': True})
 
 @homologados_bp.route('/homologados-ext-bancario/deletar/<int:id_registro>', methods=['DELETE'])
 def deletar_hom_ext_bancario(id_registro):
     err = _sem_permissao()
     if err: return err
+    empresa = banco.buscar_empresa_log('homologados_ext_bancario', id_registro)
     banco.deletar_homologado_ext_bancario(id_registro)
+    _log('ext-bancario', 'DELETOU', f'Deletou Hom. Extrato Bancário #{id_registro} — {empresa}')
     return jsonify({'sucesso': True})
 
 
@@ -185,8 +231,10 @@ def retornar_homologado_pendente(tipo, id_registro):
         return jsonify({'erro': 'Não autenticado'}), 401
     dados = request.get_json() or {}
     novo_status = dados.get('status', 'AGUARDANDO BANCO')
+    empresa = banco.buscar_empresa_log(_TABELA_DB.get(tipo, ''), id_registro)
     id_novo = banco.mover_homologado_para_pendente(id_registro, tipo, novo_status)
     if id_novo:
+        _log(tipo, 'MOVEU', f'Retornou {_NOME_ABA[tipo]} #{id_registro} ({empresa}) → Pendentes #{id_novo}')
         return jsonify({'sucesso': True, 'id_pendente': id_novo})
     return jsonify({'erro': 'Registro não encontrado'}), 404
 
@@ -202,6 +250,7 @@ def assumir_homologado(tipo, id_registro):
         return jsonify({'erro': 'Seu usuário não tem técnico vinculado.'}), 400
     ok = banco.assumir_homologado(id_registro, tipo, tecnico)
     if ok:
+        _log(tipo, 'ASSUMIU', f'Assumiu {_NOME_ABA[tipo]} #{id_registro} → técnico {tecnico}')
         return jsonify({'sucesso': True, 'tecnico': tecnico})
     return jsonify({'erro': 'Registro não encontrado ou já possui técnico.'}), 404
 
@@ -212,7 +261,9 @@ def cancelar_homologado(tipo, id_registro):
         return jsonify({'erro': 'Tipo inválido'}), 400
     if not usuario_logado():
         return jsonify({'erro': 'Não autenticado'}), 401
+    empresa = banco.buscar_empresa_log(_TABELA_DB.get(tipo, ''), id_registro)
     id_novo = banco.mover_homologado_para_cancelado(id_registro, tipo)
     if id_novo:
+        _log(tipo, 'MOVEU', f'Cancelou {_NOME_ABA[tipo]} #{id_registro} ({empresa}) → Cancelados #{id_novo}')
         return jsonify({'sucesso': True, 'id_cancelado': id_novo})
     return jsonify({'erro': 'Registro não encontrado'}), 404
