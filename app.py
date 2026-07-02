@@ -31,6 +31,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-
 
 banco.inicializar_banco()
 banco.migrar_pendentes_legados()
+banco.migrar_senhas_plaintext()
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(pendente_bp)
@@ -70,15 +71,19 @@ def _jwt_guard():
     payload = _payload_access()
     if payload:
         jti = payload.get('jti')
-        if jti and not banco.sessao_valida(jti):
-            session.clear()
-            from flask import request as req
-            if req.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
-               req.headers.get('Content-Type', '').startswith('application/json') or \
-               req.path.startswith('/api/'):
-                from flask import jsonify as _json
-                return _json({'erro': 'Sessão encerrada', 'redirect': '/login'}), 401
-            return redirect(url_for('auth.pagina_login'))
+        if jti:
+            info = banco.sessao_valida(jti)
+            if info is None:
+                # sessão foi encerrada (force logout)
+                session.clear()
+                from flask import request as req
+                if req.path.startswith('/api/'):
+                    from flask import jsonify as _json
+                    return _json({'erro': 'Sessão encerrada', 'redirect': '/login'}), 401
+                return redirect(url_for('auth.pagina_login'))
+            # sobrescreve mp com valor real do banco (evita bypass via JWT antigo)
+            payload = dict(payload)
+            payload['mp'] = info.get('mudar_senha', payload.get('mp', 0))
         _preencher_sessao(payload)
         return
 

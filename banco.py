@@ -696,9 +696,28 @@ def cores_por_tecnico() -> dict:
 
 def resetar_senha_usuario(id_usuario):
     conn = conectar()
-    conn.execute("UPDATE usuarios SET senha=?,mudar_senha=1 WHERE id=?", (_hash_senha('123456'), id_usuario))
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute("UPDATE usuarios SET senha=?,mudar_senha=1 WHERE id=?", (_hash_senha('123456'), id_usuario))
+        conn.execute("DELETE FROM sessoes_ativas WHERE usuario_id=?", (id_usuario,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def migrar_senhas_plaintext():
+    """Hasheia senhas em texto puro deixadas por versões anteriores."""
+    conn = conectar()
+    try:
+        rows = conn.execute("SELECT id, senha FROM usuarios").fetchall()
+        for r in rows:
+            s = r['senha'] or ''
+            if s and not s.startswith('pbkdf2:') and not s.startswith('scrypt:'):
+                conn.execute("UPDATE usuarios SET senha=? WHERE id=?", (_hash_senha(s), r['id']))
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
 
 
 def limpar_mudar_senha(id_usuario):
@@ -2167,17 +2186,26 @@ def encerrar_sessao_por_id(id_sessao: int):
         conn.close()
 
 
-def sessao_valida(jti: str) -> bool:
+def sessao_valida(jti: str):
+    """Retorna dict com info da sessão ou None se inválida/encerrada.
+    O dict inclui mudar_senha atual do banco (não do JWT, para evitar bypass)."""
     conn = conectar()
     try:
-        row = conn.execute("SELECT id FROM sessoes_ativas WHERE jti=?", (jti,)).fetchone()
+        row = conn.execute(
+            """SELECT s.id, u.mudar_senha
+               FROM sessoes_ativas s
+               JOIN usuarios u ON u.id = s.usuario_id
+               WHERE s.jti=?""",
+            (jti,)
+        ).fetchone()
         if row:
             agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             conn.execute("UPDATE sessoes_ativas SET ultimo_acesso=? WHERE jti=?", (agora, jti))
             conn.commit()
-        return row is not None
+            return {'mudar_senha': int(row['mudar_senha'] or 0)}
+        return None
     except Exception:
-        return True  # em caso de erro de I/O, não derruba o usuário
+        return {}  # em caso de erro de I/O, não derruba o usuário
     finally:
         conn.close()
 

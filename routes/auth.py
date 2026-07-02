@@ -97,6 +97,8 @@ def trocar_senha():
         confirma = request.form.get('confirma_senha', '').strip()
         if len(nova) < 6:
             erro = 'A senha deve ter pelo menos 6 caracteres.'
+        elif nova == '123456':
+            erro = 'Escolha uma senha diferente da senha padrão.'
         elif nova != confirma:
             erro = 'As senhas não coincidem.'
         else:
@@ -148,6 +150,8 @@ def api_minha_senha():
     nova = d.get('nova_senha', '').strip()
     if len(nova) < 6:
         return jsonify({'erro': 'Senha deve ter pelo menos 6 caracteres.'}), 400
+    if nova == '123456':
+        return jsonify({'erro': 'Escolha uma senha diferente da senha padrão.'}), 400
     banco.alterar_minha_senha(id_usuario, nova)
     banco.registrar_log(
         usuario=session.get('nome') or session.get('usuario', ''),
