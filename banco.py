@@ -123,6 +123,7 @@ TELAS_AGRUPADAS = [
         ('importar_homologacoes_pendentes',    'Importar Homologações Pendentes'),
         ('importar_novas_homologacoes',        'Importar Novas Homologações'),
         ('logs',                               'Logs do Sistema'),
+        ('editor_sql',                         'Editor SQL'),
     ]),
     ('Referência', [
         ('hub',                    'Hub Bancário'),

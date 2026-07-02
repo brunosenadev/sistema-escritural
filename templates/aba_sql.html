@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block titulo %}Editor SQL{% endblock %}
+{% block titulo_pagina %}Editor SQL{% endblock %}
+{% block breadcrumb %}Sistema / Editor SQL{% endblock %}
+
+{% block estilos_extras %}
+<style>
+  .sql-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: calc(100vh - 120px);
+  }
+
+  .sql-editor-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(30,79,196,0.05);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .sql-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+
+  .sql-toolbar-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sql-toolbar-title svg {
+    width: 15px; height: 15px;
+    stroke: #6366f1; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  .btn-sql {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+
+  .btn-sql svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .btn-executar { background: #2563eb; color: #fff; border-color: #1d4ed8; }
+  .btn-executar:hover { background: #1d4ed8; }
+  .btn-formatar { background: #fff; color: #4b5563; border-color: #d1d5db; }
+  .btn-formatar:hover { background: #f1f5f9; border-color: #94a3b8; }
+  .btn-limpar   { background: #fff; color: #ef4444; border-color: #fca5a5; }
+  .btn-limpar:hover { background: #fef2f2; }
+
+  .kbd-hint {
+    font-size: 10px;
+    color: #94a3b8;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: monospace;
+  }
+
+  #sql-input {
+    width: 100%;
+    min-height: 180px;
+    resize: vertical;
+    font-family: 'Fira Mono', 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 14px 16px;
+    border: none;
+    outline: none;
+    color: #1e293b;
+    background: #fff;
+    tab-size: 2;
+    box-sizing: border-box;
+  }
+
+  /* ── Resultados ───────────────────────── */
+  .sql-resultados {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .resultado-bloco {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .resultado-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 12px;
+  }
+
+  .resultado-badge {
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .badge-select  { background: #dbeafe; color: #1d4ed8; }
+  .badge-dml     { background: #dcfce7; color: #15803d; }
+  .badge-erro    { background: #fee2e2; color: #991b1b; }
+
+  .resultado-sql-preview {
+    font-family: monospace;
+    font-size: 11px;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  .resultado-info {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .resultado-wrap {
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .tabela-sql {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .tabela-sql thead th {
+    position: sticky;
+    top: 0;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+    z-index: 1;
+  }
+
+  .tabela-sql tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    white-space: nowrap;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 12px;
+  }
+
+  .tabela-sql tbody tr:last-child td { border-bottom: none; }
+  .tabela-sql tbody tr:hover td { background: #f8fafc; }
+
+  .td-null { color: #94a3b8 !important; font-style: italic; }
+
+  .dml-msg {
+    padding: 16px;
+    font-size: 13px;
+    color: #15803d;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dml-msg svg { width: 16px; height: 16px; stroke: #16a34a; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .erro-msg {
+    padding: 14px 16px;
+    font-size: 13px;
+    color: #991b1b;
+    font-family: monospace;
+    background: #fef2f2;
+    white-space: pre-wrap;
+  }
+
+  .placeholder-sql {
+    padding: 40px 16px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+  }
+  .placeholder-sql svg { width: 32px; height: 32px; stroke: #cbd5e1; fill: none; stroke-width: 1.5; margin: 0 auto 10px; display: block; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ── Dark mode ─────────────────────────── */
+  [data-tema="dark"] .sql-editor-card,
+  [data-tema="dark"] .resultado-bloco { background: var(--z-surface) !important; border-color: var(--z-border-s) !important; }
+  [data-tema="dark"] .sql-toolbar,
+  [data-tema="dark"] .resultado-header { background: var(--z-elevated) !important; border-color: var(--z-border-s) !important; }
+  [data-tema="dark"] #sql-input { background: var(--z-surface) !important; color: var(--z-text-1) !important; }
+  [data-tema="dark"] .sql-toolbar-title { color: var(--z-text-1) !important; }
+  [data-tema="dark"] .btn-formatar { background: var(--z-elevated) !important; color: var(--z-text-2) !important; border-color: var(--z-border) !important; }
+  [data-tema="dark"] .btn-formatar:hover { background: var(--z-border-s) !important; }
+  [data-tema="dark"] .btn-limpar { background: var(--z-elevated) !important; border-color: #7f1d1d !important; }
+  [data-tema="dark"] .tabela-sql thead th { background: var(--z-elevated) !important; color: var(--z-text-2) !important; border-color: var(--z-border-s) !important; }
+  [data-tema="dark"] .tabela-sql tbody td { color: var(--z-text-1) !important; border-color: var(--z-border-s) !important; }
+  [data-tema="dark"] .tabela-sql tbody tr:hover td { background: var(--z-elevated) !important; }
+  [data-tema="dark"] .resultado-sql-preview { color: var(--z-text-3) !important; }
+  [data-tema="dark"] .kbd-hint { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-3) !important; }
+  [data-tema="dark"] .dml-msg { color: #86efac !important; }
+  [data-tema="dark"] .placeholder-sql { color: var(--z-text-3) !important; }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="sql-layout">
+
+  <!-- Editor -->
+  <div class="sql-editor-card">
+    <div class="sql-toolbar">
+      <span class="sql-toolbar-title">
+        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        Editor SQL
+      </span>
+      <span class="kbd-hint">Ctrl+Enter</span>
+      <button class="btn-sql btn-executar" onclick="executarSQL()">
+        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Executar
+      </button>
+      <button class="btn-sql btn-formatar" onclick="formatarSQL()">
+        <svg viewBox="0 0 24 24"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+        Formatar
+      </button>
+      <button class="btn-sql btn-limpar" onclick="limparTudo()">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        Limpar
+      </button>
+    </div>
+    <textarea id="sql-input" placeholder="SELECT * FROM pendente LIMIT 10;&#10;&#10;-- Ctrl+Enter para executar | Múltiplos comandos separados por ;"></textarea>
+  </div>
+
+  <!-- Resultados -->
+  <div class="sql-resultados" id="sql-resultados">
+    <div class="placeholder-sql">
+      <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Execute uma query para ver os resultados
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+const input = document.getElementById('sql-input');
+
+// Ctrl+Enter executa
+input.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); executarSQL(); }
+  // Tab insere espaços
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = input.selectionStart, end = input.selectionEnd;
+    input.value = input.value.substring(0, s) + '  ' + input.value.substring(end);
+    input.selectionStart = input.selectionEnd = s + 2;
+  }
+});
+
+function executarSQL() {
+  const sql = input.value.trim();
+  if (!sql) return;
+  const area = document.getElementById('sql-resultados');
+  area.innerHTML = '<div class="placeholder-sql">Executando...</div>';
+
+  fetch('/api/sql/executar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sql }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    area.innerHTML = '';
+    if (data.erro) {
+      area.innerHTML = `<div class="resultado-bloco">
+        <div class="resultado-header">
+          <span class="resultado-badge badge-erro">ERRO</span>
+        </div>
+        <div class="erro-msg">${escHtml(data.erro)}</div>
+      </div>`;
+      return;
+    }
+    if (!data.resultados || !data.resultados.length) {
+      area.innerHTML = '<div class="placeholder-sql">Nenhum resultado.</div>';
+      return;
+    }
+    data.resultados.forEach(r => {
+      const bloco = document.createElement('div');
+      bloco.className = 'resultado-bloco';
+      if (r.tipo === 'select') {
+        const header = `<div class="resultado-header">
+          <span class="resultado-badge badge-select">SELECT</span>
+          <span class="resultado-sql-preview">${escHtml(r.sql)}</span>
+          <span class="resultado-info">${r.total} linha${r.total !== 1 ? 's' : ''}</span>
+        </div>`;
+        const thead = '<thead><tr>' + r.colunas.map(c => `<th>${escHtml(c)}</th>`).join('') + '</tr></thead>';
+        const tbody = '<tbody>' + r.linhas.map(row =>
+          '<tr>' + row.map(v => v === null
+            ? '<td class="td-null">NULL</td>'
+            : `<td title="${escHtml(String(v))}">${escHtml(String(v))}</td>`
+          ).join('') + '</tr>'
+        ).join('') + '</tbody>';
+        bloco.innerHTML = header + `<div class="resultado-wrap"><table class="tabela-sql">${thead}${tbody}</table></div>`;
+      } else {
+        const header = `<div class="resultado-header">
+          <span class="resultado-badge badge-dml">DML</span>
+          <span class="resultado-sql-preview">${escHtml(r.sql)}</span>
+        </div>`;
+        bloco.innerHTML = header + `<div class="dml-msg">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          ${r.afetadas} linha${r.afetadas !== 1 ? 's' : ''} afetada${r.afetadas !== 1 ? 's' : ''}
+        </div>`;
+      }
+      area.appendChild(bloco);
+    });
+  })
+  .catch(() => {
+    document.getElementById('sql-resultados').innerHTML =
+      '<div class="resultado-bloco"><div class="erro-msg">Erro de conexão.</div></div>';
+  });
+}
+
+const KEYWORDS = ['SELECT','FROM','WHERE','JOIN','LEFT JOIN','RIGHT JOIN','INNER JOIN','ON','GROUP BY',
+  'ORDER BY','HAVING','LIMIT','OFFSET','INSERT INTO','VALUES','UPDATE','SET','DELETE FROM',
+  'CREATE TABLE','DROP TABLE','ALTER TABLE','AND','OR','NOT','IN','IS NULL','IS NOT NULL',
+  'BETWEEN','LIKE','DISTINCT','AS','COUNT','SUM','AVG','MIN','MAX','CASE','WHEN','THEN','ELSE','END'];
+
+function formatarSQL() {
+  let sql = input.value.trim();
+  if (!sql) return;
+  // Uppercase keywords
+  KEYWORDS.forEach(kw => {
+    const re = new RegExp('\\b' + kw + '\\b', 'gi');
+    sql = sql.replace(re, kw);
+  });
+  // Newline antes dos principais
+  const quebras = ['SELECT','FROM','WHERE','LEFT JOIN','RIGHT JOIN','INNER JOIN','JOIN',
+    'GROUP BY','ORDER BY','HAVING','LIMIT','UNION','INSERT INTO','UPDATE','DELETE FROM'];
+  quebras.forEach(kw => {
+    const re = new RegExp('\\s+' + kw + '\\b', 'g');
+    sql = sql.replace(re, '\n' + kw);
+  });
+  // Vírgulas com quebra de linha
+  sql = sql.replace(/,\s*/g, ',\n  ');
+  // Limpa espaços extras
+  sql = sql.replace(/[ \t]+/g, ' ').replace(/\n[ \t]+/g, '\n').trim();
+  input.value = sql;
+}
+
+function limparTudo() {
+  input.value = '';
+  document.getElementById('sql-resultados').innerHTML = `<div class="placeholder-sql">
+    <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+    Execute uma query para ver os resultados
+  </div>`;
+  input.focus();
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+{% endblock %}
