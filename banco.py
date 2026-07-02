@@ -2153,8 +2153,10 @@ def registrar_sessao(jti: str, usuario_id: int, nome: str, nivel: str, ip: str):
     agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     conn = conectar()
     try:
+        # encerra sessões anteriores do mesmo usuário (garante sessão única)
+        conn.execute("DELETE FROM sessoes_ativas WHERE usuario_id=?", (usuario_id,))
         conn.execute(
-            "INSERT OR REPLACE INTO sessoes_ativas (jti,usuario_id,nome,nivel,ip,login_em,ultimo_acesso) VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO sessoes_ativas (jti,usuario_id,nome,nivel,ip,login_em,ultimo_acesso) VALUES (?,?,?,?,?,?,?)",
             (jti, usuario_id, nome, nivel, ip, agora, agora)
         )
         conn.commit()
