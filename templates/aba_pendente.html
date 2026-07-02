@@ -196,6 +196,9 @@
   stroke-linejoin: round;
 }
 
+[data-tema="dark"] .botao-acao.duplicar { color: #a78bfa !important; }
+[data-tema="dark"] .botao-acao.duplicar:hover { background: rgba(139,92,246,0.12) !important; }
+
 [data-tema="dark"] .botao-secundario {
   color: var(--z-text-2) !important;
   border-color: var(--z-border) !important;
@@ -325,6 +328,8 @@
   .botao-acao.editar:hover { background: #eff6ff; }
   .botao-acao.assumir { color: #16a34a; }
   .botao-acao.assumir:hover { background: #f0fdf4; }
+  .botao-acao.duplicar { color: #8b5cf6; }
+  .botao-acao.duplicar:hover { background: #f5f3ff; }
   .botao-acao.deletar { color: #ef4444; }
   .botao-acao.deletar:hover { background: #fef2f2; }
 
@@ -679,6 +684,16 @@
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                   </button>
+                  <button
+                    class="botao-acao duplicar"
+                    title="Duplicar"
+                    data-reg='{{ reg | tojson }}'
+                    onclick="duplicarRegistro(JSON.parse(this.dataset.reg))"
+                  >
+                    <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                  </button>
                   {% if not reg.tecnico or reg.tecnico.upper().strip() in ('', 'SEM TEC.') %}
                   <button
                     class="botao-acao assumir"
@@ -1020,6 +1035,23 @@
     document.getElementById('campo-status').value     = registro.status;
     document.getElementById('campo-obs').value        = registro.obs;
     document.getElementById('overlay-modal').classList.add('aberto');
+  }
+
+  function duplicarRegistro(registro) {
+    modoEdicao = false;
+    document.getElementById('titulo-modal').textContent = 'Duplicar Registro';
+    document.getElementById('botao-salvar-texto').textContent = 'Adicionar';
+    document.getElementById('campo-id').value            = '';
+    document.getElementById('campo-tecnico').value       = registro.tecnico  || 'SEM TEC.';
+    document.getElementById('campo-empresa').value       = registro.empresa  || '';
+    document.getElementById('campo-servico').value       = registro.servico  || '';
+    document.getElementById('campo-banco').value         = registro.banco    || '';
+    document.getElementById('campo-dt-solicita').value   = dataDeHoje();
+    document.getElementById('campo-dt-status').value     = dataDeHoje();
+    document.getElementById('campo-status').value        = registro.status   || '';
+    document.getElementById('campo-obs').value           = registro.obs      || '';
+    document.getElementById('overlay-modal').classList.add('aberto');
+    document.getElementById('campo-empresa').focus();
   }
 
   function fecharModal() {
