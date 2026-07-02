@@ -32,6 +32,7 @@ def criar_tokens(usuario_row: dict, jti: str | None = None) -> tuple[str, str, s
         'tema':  usuario_row.get('tema') or 'light',
         'cor':   usuario_row.get('cor') or '',
         'mp':    int(usuario_row.get('mudar_senha') or 0),
+        'jti':   jti,
         'type':  'access',
         'exp':   agora + datetime.timedelta(minutes=ACCESS_TTL),
     })

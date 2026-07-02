@@ -69,6 +69,16 @@ def _jwt_guard():
 
     payload = _payload_access()
     if payload:
+        jti = payload.get('jti')
+        if jti and not banco.sessao_valida(jti):
+            session.clear()
+            from flask import request as req
+            if req.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+               req.headers.get('Content-Type', '').startswith('application/json') or \
+               req.path.startswith('/api/'):
+                from flask import jsonify as _json
+                return _json({'erro': 'Sessão encerrada', 'redirect': '/login'}), 401
+            return redirect(url_for('auth.pagina_login'))
         _preencher_sessao(payload)
         return
 
