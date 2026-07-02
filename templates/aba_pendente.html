@@ -163,6 +163,50 @@
     stroke-width: 2.5; stroke-linecap: round;
   }
 
+.botao-secundario {
+  padding: 8px 16px;
+  background: transparent;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all .2s ease;
+  white-space: nowrap;
+}
+
+.botao-secundario:hover {
+  background: #eef2ff;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.botao-secundario svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+[data-tema="dark"] .botao-secundario {
+  color: var(--z-text-2) !important;
+  border-color: var(--z-border) !important;
+  background: var(--z-elevated) !important;
+}
+[data-tema="dark"] .botao-secundario:hover {
+  color: var(--z-text-1) !important;
+  border-color: var(--z-text-2) !important;
+  background: var(--z-border-s) !important;
+}
+
   /* ── Card envolvendo a tabela ────────────────── */
   .card-tabela {
     background: #fff;
@@ -535,11 +579,8 @@
 {% block conteudo %}
 
 <div class="grade-pendente">
-
-  <!-- ═══ COLUNA ESQUERDA: tabela ═══════════════ -->
   <div>
     <div class="toolbar-tabela">
-      <!-- Busca -->
       <div class="campo-busca">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/>
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -553,7 +594,6 @@
         >
       </div>
 
-      <!-- Filtro por técnico -->
       <select class="select-filtro" id="filtro-tecnico" onchange="filtrarTabela()">
         <option value="">Todos os técnicos</option>
         {% for tecnico in resumo_tecnicos.keys() %}
@@ -568,6 +608,13 @@
         <option value="{{ status }}">{{ status }}</option>
         {% endfor %}
       </select>
+
+      <button class="botao-secundario" onclick="limparFiltros()">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+        Limpar Filtros
+      </button>
     </div>
 
     <div class="card-tabela">
@@ -720,7 +767,6 @@
   </div><!-- /coluna-resumo -->
 </div><!-- /grade-pendente -->
 
-<!-- ═══ Modal: Adicionar / Editar registro ════ -->
 <div class="overlay-modal" id="overlay-modal" onclick="fecharModalSeClicarFora(event)">
   <div class="modal" id="modal-registro">
     <div class="modal-titulo">
@@ -954,6 +1000,12 @@
     document.getElementById('campo-empresa').focus();
   }
 
+  function limparFiltros() {
+    document.getElementById('filtro-status').value = '';
+    document.getElementById('filtro-tecnico').value = '';
+    filtrarTabela();
+  }
+
   function abrirModalEditar(registro) {
     modoEdicao = true;
     document.getElementById('titulo-modal').textContent = 'Editar Registro';
@@ -1161,7 +1213,6 @@
       return;
     }
 
-    // Troca a classe de cor do select
     el.className = el.className.replace(/\bstatus-\S+/g, '').trim();
     const novaClasse = _mapaClasseStatus[novoStatus.toLowerCase().trim()] || 'status-padrao';
     el.classList.add(novaClasse);
