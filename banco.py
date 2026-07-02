@@ -9,6 +9,7 @@ import os
 import sqlite3
 import time
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 CAMINHO_BANCO = os.environ.get('DB_PATH', os.path.join(os.path.dirname(__file__), 'banco_dados.db'))
 
@@ -550,14 +551,41 @@ def buscar_usuario_por_id(user_id):
     return dict(row) if row else None
 
 
+def _hash_senha(senha: str) -> str:
+    return generate_password_hash(senha)
+
+def _verificar_senha(senha_digitada: str, hash_armazenado: str) -> bool:
+    # compatibilidade com senhas antigas em texto puro
+    if not hash_armazenado.startswith('pbkdf2:') and not hash_armazenado.startswith('scrypt:'):
+        return senha_digitada == hash_armazenado
+    return check_password_hash(hash_armazenado, senha_digitada)
+
 def buscar_usuario_por_login(usuario_digitado, senha_digitada):
     conn = conectar()
     row = conn.execute(
-        "SELECT * FROM usuarios WHERE LOWER(usuario)=LOWER(?) AND senha=?",
-        (usuario_digitado.strip(), senha_digitada)
+        "SELECT * FROM usuarios WHERE LOWER(usuario)=LOWER(?)",
+        (usuario_digitado.strip(),)
     ).fetchone()
     conn.close()
-    return dict(row) if row else None
+    if not row:
+        return None
+    u = dict(row)
+    if not _verificar_senha(senha_digitada, u.get('senha', '')):
+        return None
+    # migra senha plain-text para hash na primeira vez que logar
+    if not u['senha'].startswith('pbkdf2:') and not u['senha'].startswith('scrypt:'):
+        _migrar_senha(u['id'], senha_digitada)
+    return u
+
+def _migrar_senha(id_usuario: int, senha_plain: str):
+    conn = conectar()
+    try:
+        conn.execute("UPDATE usuarios SET senha=? WHERE id=?", (_hash_senha(senha_plain), id_usuario))
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
 
 # ── Técnicos ──────────────────────────────────────────────
 
@@ -616,7 +644,7 @@ def adicionar_usuario(dados):
         conn = conectar()
         conn.execute(
             "INSERT INTO usuarios (usuario,senha,nome,nivel,tecnico_vinculado,setor,cor,mudar_senha) VALUES (?,?,?,?,?,?,?,1)",
-            (dados['usuario'].strip().lower(), dados['senha'], dados['nome'].strip(),
+            (dados['usuario'].strip().lower(), _hash_senha(dados['senha']), dados['nome'].strip(),
              dados['nivel'], dados.get('tecnico_vinculado') or None,
              dados.get('setor') or '', dados.get('cor') or '')
         )
@@ -634,7 +662,7 @@ def atualizar_usuario(id_usuario, campos):
         conn.execute(
             "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=?,cor=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             campos['senha'], campos.get('setor') or '', cor, id_usuario)
+             _hash_senha(campos['senha']), campos.get('setor') or '', cor, id_usuario)
         )
     else:
         conn.execute(
@@ -658,7 +686,7 @@ def cores_por_tecnico() -> dict:
 
 def resetar_senha_usuario(id_usuario):
     conn = conectar()
-    conn.execute("UPDATE usuarios SET senha=?,mudar_senha=1 WHERE id=?", ('123456', id_usuario))
+    conn.execute("UPDATE usuarios SET senha=?,mudar_senha=1 WHERE id=?", (_hash_senha('123456'), id_usuario))
     conn.commit()
     conn.close()
 
@@ -679,7 +707,7 @@ def atualizar_tema(id_usuario, tema):
 
 def alterar_minha_senha(id_usuario, nova_senha):
     conn = conectar()
-    conn.execute("UPDATE usuarios SET senha=?,mudar_senha=0 WHERE id=?", (nova_senha, id_usuario))
+    conn.execute("UPDATE usuarios SET senha=?,mudar_senha=0 WHERE id=?", (_hash_senha(nova_senha), id_usuario))
     conn.commit()
     conn.close()
 
