@@ -11,7 +11,7 @@ def _tem_acesso():
         return False
     if session.get('nivel_acesso') == 'master':
         return True
-    return 'editor_sql' in session.get('telas_acesso', [])
+    return 'editor_sql' in (session.get('telas') or [])
 
 
 @sql_editor_bp.route('/editor-sql')
@@ -19,6 +19,24 @@ def pagina_sql():
     if not _tem_acesso():
         return 'Acesso negado', 403
     return render_template('aba_sql.html', aba_ativa='sql_editor')
+
+
+@sql_editor_bp.route('/api/sql/tabelas')
+def listar_tabelas():
+    if not _tem_acesso():
+        return jsonify({'erro': 'Acesso negado'}), 403
+    conn = banco.conectar()
+    try:
+        tabelas = [r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+        ).fetchall()]
+        resultado = {}
+        for t in tabelas:
+            cols = conn.execute(f'PRAGMA table_info("{t}")').fetchall()
+            resultado[t] = [{'nome': c[1], 'tipo': c[2]} for c in cols]
+        return jsonify(resultado)
+    finally:
+        conn.close()
 
 
 @sql_editor_bp.route('/api/sql/executar', methods=['POST'])
