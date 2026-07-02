@@ -7,8 +7,10 @@ auth_bp = Blueprint('auth', __name__)
 _COOKIE_OPTS = dict(httponly=True, samesite='Lax', path='/')
 
 
-def _set_tokens(response, usuario_row: dict):
-    access, refresh = criar_tokens(usuario_row)
+def _set_tokens(response, usuario_row: dict, ip: str = '', registrar: bool = False):
+    access, refresh, jti = criar_tokens(usuario_row)
+    if registrar:
+        banco.registrar_sessao(jti, usuario_row['id'], usuario_row.get('nome', ''), usuario_row.get('nivel', ''), ip)
     response.set_cookie('access_token',  access,  max_age=15*60,   **_COOKIE_OPTS)
     response.set_cookie('refresh_token', refresh, max_age=7*86400, **_COOKIE_OPTS)
     return response
@@ -71,7 +73,7 @@ def pagina_login():
 
             destino = url_for('auth.trocar_senha') if usuario.get('mudar_senha') else url_for('auth.inicio')
             resp = make_response(redirect(destino))
-            _set_tokens(resp, usuario)
+            _set_tokens(resp, usuario, ip=request.remote_addr, registrar=True)
             return resp
 
         banco.registrar_log(
@@ -127,7 +129,7 @@ def api_meu_tema():
     session['tema'] = tema
     u = banco.buscar_usuario_por_id(id_usuario)
     resp = make_response(jsonify({'sucesso': True}))
-    access, _ = criar_tokens(u)
+    access, *_ = criar_tokens(u)
     resp.set_cookie('access_token', access, max_age=15*60, **_COOKIE_OPTS)
     return resp
 
@@ -168,6 +170,10 @@ def sair():
         nivel=session.get('nivel_acesso', ''),
         ip=request.remote_addr,
     )
+    from utils import _payload_refresh
+    payload_r = _payload_refresh()
+    if payload_r and payload_r.get('jti'):
+        banco.encerrar_sessao(payload_r['jti'])
     session.clear()
     resp = make_response(redirect(url_for('auth.pagina_login')))
     resp.delete_cookie('access_token',  path='/')

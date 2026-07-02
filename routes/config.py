@@ -116,7 +116,7 @@ def api_atualizar_usuario(id_usuario):
             'sub': u['id'], 'mp': int(u.get('mudar_senha') or 0),
             'cor': u.get('cor') or '', 'setor': u.get('setor') or '',
         })
-        access, _ = criar_tokens(u)
+        access, *_ = criar_tokens(u)
         resp = make_response(jsonify({'sucesso': True}))
         resp.set_cookie('access_token', access, max_age=15*60, httponly=True, samesite='Lax', path='/')
         return resp

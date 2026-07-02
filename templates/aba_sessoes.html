@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block titulo %}Sessões Ativas{% endblock %}
+{% block titulo_pagina %}Sessões Ativas{% endblock %}
+{% block breadcrumb %}Sistema / Sessões Ativas{% endblock %}
+
+{% block estilos_extras %}
+<style>
+  .sessoes-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(30,79,196,0.05);
+  }
+
+  .sessoes-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+
+  .sessoes-titulo {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .sessoes-titulo svg { width: 15px; height: 15px; stroke: #6366f1; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .btn-refresh {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 12px; border-radius: 8px;
+    font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif;
+    cursor: pointer; border: 1px solid #d1d5db;
+    background: #fff; color: #4b5563; transition: all .15s;
+  }
+  .btn-refresh:hover { background: #f1f5f9; border-color: #94a3b8; }
+  .btn-refresh svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .tabela-sessoes { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tabela-sessoes thead th {
+    background: #f1f5f9; color: #475569;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
+    padding: 9px 14px; text-align: left; border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .tabela-sessoes tbody td { padding: 11px 14px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+  .tabela-sessoes tbody tr:last-child td { border-bottom: none; }
+  .tabela-sessoes tbody tr:hover td { background: #f8fafc; }
+  .tabela-sessoes tbody tr.minha-sessao td { background: #f0fdf4; }
+  .tabela-sessoes tbody tr.minha-sessao:hover td { background: #dcfce7; }
+
+  .badge-nivel {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 99px;
+    font-size: 11px; font-weight: 700;
+  }
+  .nivel-master { background: #ede9fe; color: #6d28d9; }
+  .nivel-admin  { background: #dbeafe; color: #1d4ed8; }
+  .nivel-normal { background: #f1f5f9; color: #475569; }
+
+  .td-nome { font-weight: 600; }
+  .td-eu { font-size: 11px; color: #15803d; font-weight: 600; margin-left: 6px; }
+
+  .btn-derrubar {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 600; font-family: 'Inter', sans-serif;
+    cursor: pointer; border: 1px solid #fca5a5;
+    background: #fff; color: #ef4444; transition: all .15s;
+  }
+  .btn-derrubar:hover { background: #fef2f2; }
+  .btn-derrubar svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .btn-derrubar:disabled { opacity: 0.4; cursor: default; }
+
+  .linha-vazia td { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; }
+
+  /* Dark mode */
+  [data-tema="dark"] .sessoes-card { background: var(--z-surface) !important; border-color: var(--z-border-s) !important; }
+  [data-tema="dark"] .sessoes-toolbar { background: var(--z-elevated) !important; border-color: var(--z-border-s) !important; }
+  [data-tema="dark"] .sessoes-titulo { color: var(--z-text-1) !important; }
+  [data-tema="dark"] .btn-refresh { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-2) !important; }
+  [data-tema="dark"] .tabela-sessoes thead th { background: var(--z-elevated) !important; color: var(--z-text-2) !important; border-color: var(--z-border-s) !important; }
+  [data-tema="dark"] .tabela-sessoes tbody td { color: var(--z-text-1) !important; border-color: var(--z-border-s) !important; }
+  [data-tema="dark"] .tabela-sessoes tbody tr:hover td { background: var(--z-elevated) !important; }
+  [data-tema="dark"] .tabela-sessoes tbody tr.minha-sessao td { background: rgba(22,163,74,0.08) !important; }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="sessoes-card">
+  <div class="sessoes-toolbar">
+    <span class="sessoes-titulo">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Usuários Conectados
+    </span>
+    <button class="btn-refresh" onclick="carregar()">
+      <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Atualizar
+    </button>
+  </div>
+
+  <table class="tabela-sessoes">
+    <thead>
+      <tr>
+        <th>Usuário</th>
+        <th>Nível</th>
+        <th>IP</th>
+        <th>Login em</th>
+        <th>Último acesso</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="corpo-sessoes">
+      <tr class="linha-vazia"><td colspan="6">Carregando...</td></tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+function _fmt(iso) {
+  if (!iso) return '—';
+  const [d, t] = iso.split(' ');
+  if (!d) return iso;
+  const [y, m, dd] = d.split('-');
+  return `${dd}/${m}/${y} ${t || ''}`.trim();
+}
+
+function carregar() {
+  fetch('/api/sessoes')
+    .then(r => r.json())
+    .then(lista => {
+      const tbody = document.getElementById('corpo-sessoes');
+      if (!lista.length) {
+        tbody.innerHTML = '<tr class="linha-vazia"><td colspan="6">Nenhuma sessão ativa.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = lista.map(s => `
+        <tr class="${s.sou_eu ? 'minha-sessao' : ''}">
+          <td class="td-nome">
+            ${esc(s.nome || s.usuario || '?')}
+            ${s.sou_eu ? '<span class="td-eu">● você</span>' : ''}
+          </td>
+          <td><span class="badge-nivel nivel-${esc(s.nivel)}">${esc(s.nivel)}</span></td>
+          <td style="font-family:monospace;font-size:12px;">${esc(s.ip || '—')}</td>
+          <td>${_fmt(s.login_em)}</td>
+          <td>${_fmt(s.ultimo_acesso)}</td>
+          <td>
+            <button class="btn-derrubar" onclick="derrubar(${s.id}, this)" ${s.sou_eu ? 'disabled title="Não é possível derrubar a própria sessão"' : ''}>
+              <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Derrubar
+            </button>
+          </td>
+        </tr>`).join('');
+    });
+}
+
+function derrubar(id, btn) {
+  if (!confirm('Deseja encerrar esta sessão? O usuário será deslogado na próxima renovação de token (até 15 min).')) return;
+  btn.disabled = true;
+  fetch(`/api/sessoes/${id}`, { method: 'DELETE' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) {
+        carregar();
+      } else {
+        alert(d.erro || 'Erro ao encerrar sessão.');
+        btn.disabled = false;
+      }
+    });
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+carregar();
+</script>
+{% endblock %}

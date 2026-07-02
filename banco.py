@@ -308,6 +308,16 @@ def inicializar_banco():
             descricao   TEXT    DEFAULT '',
             ip          TEXT    DEFAULT ''
         );
+        CREATE TABLE IF NOT EXISTS sessoes_ativas (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            jti           TEXT    NOT NULL UNIQUE,
+            usuario_id    INTEGER NOT NULL,
+            nome          TEXT    DEFAULT '',
+            nivel         TEXT    DEFAULT '',
+            ip            TEXT    DEFAULT '',
+            login_em      TEXT    NOT NULL,
+            ultimo_acesso TEXT    NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS pendentes (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
             tecnico       TEXT,
@@ -2119,6 +2129,69 @@ def aplicar_parametros_modelo(corpo, assunto, registro, usuario_nome=''):
 
 
 # ── Logs do sistema ───────────────────────────────────────
+
+def registrar_sessao(jti: str, usuario_id: int, nome: str, nivel: str, ip: str):
+    agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    conn = conectar()
+    try:
+        conn.execute(
+            "INSERT OR REPLACE INTO sessoes_ativas (jti,usuario_id,nome,nivel,ip,login_em,ultimo_acesso) VALUES (?,?,?,?,?,?,?)",
+            (jti, usuario_id, nome, nivel, ip, agora, agora)
+        )
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
+def encerrar_sessao(jti: str):
+    conn = conectar()
+    try:
+        conn.execute("DELETE FROM sessoes_ativas WHERE jti=?", (jti,))
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
+def encerrar_sessao_por_id(id_sessao: int):
+    conn = conectar()
+    try:
+        conn.execute("DELETE FROM sessoes_ativas WHERE id=?", (id_sessao,))
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
+def sessao_valida(jti: str) -> bool:
+    conn = conectar()
+    try:
+        row = conn.execute("SELECT id FROM sessoes_ativas WHERE jti=?", (jti,)).fetchone()
+        if row:
+            agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            conn.execute("UPDATE sessoes_ativas SET ultimo_acesso=? WHERE jti=?", (agora, jti))
+            conn.commit()
+        return row is not None
+    except Exception:
+        return True  # em caso de erro de I/O, não derruba o usuário
+    finally:
+        conn.close()
+
+
+def listar_sessoes_ativas():
+    conn = conectar()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM sessoes_ativas ORDER BY ultimo_acesso DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
 
 def registrar_log(usuario, tela, acao, descricao, usuario_id=None, nivel=None, ip=None):
     """Registra uma ação no log. Nunca lança exceção para não impactar o fluxo principal."""

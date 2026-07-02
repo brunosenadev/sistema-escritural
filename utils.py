@@ -1,4 +1,5 @@
 import os
+import uuid
 import datetime
 import jwt as pyjwt
 from flask import request, g, session, redirect, url_for
@@ -17,7 +18,9 @@ def _decode(token: str) -> dict | None:
     except pyjwt.PyJWTError:
         return None
 
-def criar_tokens(usuario_row: dict) -> tuple[str, str]:
+def criar_tokens(usuario_row: dict, jti: str | None = None) -> tuple[str, str, str]:
+    if jti is None:
+        jti = str(uuid.uuid4())
     agora = datetime.datetime.utcnow()
     access = _encode({
         'sub':   usuario_row['id'],
@@ -34,10 +37,11 @@ def criar_tokens(usuario_row: dict) -> tuple[str, str]:
     })
     refresh = _encode({
         'sub':  usuario_row['id'],
+        'jti':  jti,
         'type': 'refresh',
         'exp':  agora + datetime.timedelta(days=REFRESH_TTL),
     })
-    return access, refresh
+    return access, refresh, jti
 
 
 def _payload_access() -> dict | None:
@@ -65,6 +69,7 @@ def _preencher_sessao(payload: dict):
     session['id_usuario']        = payload['sub']
     session['tema']              = payload.get('tema', 'light')
     session['cor']               = payload.get('cor', '')
+    session['mudar_senha']       = int(payload.get('mp', 0))
 
 
 def pode_editar() -> bool:

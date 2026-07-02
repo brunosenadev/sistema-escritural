@@ -24,6 +24,7 @@ from routes.email_escritural    import email_escritural_bp, iniciar_polling
 from routes.logs                import logs_bp
 from routes.email_modelos       import email_modelos_bp
 from routes.sql_editor          import sql_editor_bp
+from routes.sessoes             import sessoes_bp
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
@@ -47,6 +48,7 @@ app.register_blueprint(email_escritural_bp)
 app.register_blueprint(logs_bp)
 app.register_blueprint(email_modelos_bp)
 app.register_blueprint(sql_editor_bp)
+app.register_blueprint(sessoes_bp)
 
 iniciar_polling()
 
@@ -54,6 +56,8 @@ _ROTAS_PUBLICAS = {
     'auth.pagina_login', 'auth.sair', 'static',
     'escritural.formulario_publico', 'escritural.enviar_formulario_publico',
 }
+
+_ROTAS_TROCA_SENHA = {'auth.trocar_senha', 'auth.sair', 'static'}
 
 @app.before_request
 def _jwt_guard():
@@ -71,14 +75,18 @@ def _jwt_guard():
     # 2. Access expirado — tentar refresh token
     payload_r = _payload_refresh()
     if payload_r:
+        jti = payload_r.get('jti')
+        if jti and not banco.sessao_valida(jti):
+            session.clear()
+            return redirect(url_for('auth.pagina_login'))
         u = banco.buscar_usuario_por_id(payload_r['sub'])
         if u:
-            new_access, new_refresh = criar_tokens(u)
+            new_access, new_refresh, _ = criar_tokens(u, jti=jti)
             _preencher_sessao({
                 'usr':  u['usuario'], 'nome': u['nome'],
                 'niv':  u['nivel'],   'tec':  u.get('tecnico_vinculado') or '',
                 'setor': u.get('setor') or '',
-                'tema': u.get('tema') or 'light', 'sub': u['id'], 'mp': 0,
+                'tema': u.get('tema') or 'light', 'sub': u['id'], 'mp': int(u.get('mudar_senha') or 0),
             })
             session['cor']   = u.get('cor') or ''
             session['telas'] = '__all__' if u['nivel'] == 'master' else banco.listar_telas_usuario(u['id'])
@@ -88,6 +96,15 @@ def _jwt_guard():
 
     session.clear()
     return redirect(url_for('auth.pagina_login'))
+
+
+@app.before_request
+def _mudar_senha_guard():
+    from flask import request as req
+    if req.endpoint in _ROTAS_TROCA_SENHA or req.endpoint is None:
+        return
+    if session.get('mudar_senha'):
+        return redirect(url_for('auth.trocar_senha'))
 
 
 @app.after_request
