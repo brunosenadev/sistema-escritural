@@ -7,6 +7,7 @@ Localmente usa banco_dados.db na raiz do projeto.
 
 import os
 import sqlite3
+import time
 from datetime import datetime
 
 CAMINHO_BANCO = os.environ.get('DB_PATH', os.path.join(os.path.dirname(__file__), 'banco_dados.db'))
@@ -137,12 +138,51 @@ TELAS_SISTEMA = [tela for _, telas in TELAS_AGRUPADAS for tela in telas]
 
 # ── Conexão ───────────────────────────────────────────────
 
-def conectar():
+def _abrir_conn():
     conn = sqlite3.connect(CAMINHO_BANCO, timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA journal_mode=WAL')
     conn.execute('PRAGMA busy_timeout=30000')
     return conn
+
+
+class _ConexaoComRetry:
+    """Wrapper sobre sqlite3.Connection que reabre e repete em disk I/O error."""
+    _MAX = 4
+
+    def __init__(self):
+        self._conn = _abrir_conn()
+
+    def _reabrir(self):
+        try:
+            self._conn.close()
+        except Exception:
+            pass
+        self._conn = _abrir_conn()
+
+    def execute(self, sql, params=()):
+        for i in range(self._MAX):
+            try:
+                return self._conn.execute(sql, params)
+            except sqlite3.OperationalError as e:
+                if 'disk I/O' in str(e) and i < self._MAX - 1:
+                    time.sleep(0.4 * (i + 1))
+                    self._reabrir()
+                    continue
+                raise
+
+    def executescript(self, sql):
+        return self._conn.executescript(sql)
+
+    def commit(self):
+        return self._conn.commit()
+
+    def close(self):
+        return self._conn.close()
+
+
+def conectar():
+    return _ConexaoComRetry()
 
 # ── Inicialização ─────────────────────────────────────────
 
