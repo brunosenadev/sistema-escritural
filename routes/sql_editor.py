@@ -1,7 +1,10 @@
+import re
 from flask import Blueprint, render_template, request, jsonify, session
 import sqlite3
 import banco
 from utils import usuario_logado
+
+_RE_NOME_TABELA = re.compile(r'^[A-Za-z0-9_]+$')
 
 sql_editor_bp = Blueprint('sql_editor', __name__)
 
@@ -32,6 +35,8 @@ def listar_tabelas():
         ).fetchall()]
         resultado = {}
         for t in tabelas:
+            if not _RE_NOME_TABELA.match(t):
+                continue
             cols = conn.execute(f'PRAGMA table_info("{t}")').fetchall()
             resultado[t] = [{'nome': c[1], 'tipo': c[2]} for c in cols]
         return jsonify(resultado)

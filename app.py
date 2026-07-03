@@ -56,6 +56,7 @@ iniciar_polling()
 _ROTAS_PUBLICAS = {
     'auth.pagina_login', 'auth.sair', 'static',
     'escritural.formulario_publico', 'escritural.enviar_formulario_publico',
+    'escritural.api_publico_bancos',
 }
 
 _ROTAS_TROCA_SENHA = {'auth.trocar_senha', 'auth.sair', 'static'}

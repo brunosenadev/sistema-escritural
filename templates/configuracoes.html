@@ -547,6 +547,13 @@
     </svg>
     Setores
   </button>
+  <button class="tab-btn" onclick="trocarTab('bancos', this)">
+    <svg viewBox="0 0 24 24"><line x1="3" y1="22" x2="21" y2="22"/>
+      <rect x="5" y="11" width="4" height="11"/><rect x="10" y="11" width="4" height="11"/><rect x="15" y="11" width="4" height="11"/>
+      <polygon points="3 11 12 2 21 11"/>
+    </svg>
+    Bancos
+  </button>
   {% endif %}
   {% if nivel_acesso in ('admin', 'master') or 'escritural' in telas_acesso %}
   <button class="tab-btn" onclick="trocarTab('status-escritural', this)">
@@ -959,6 +966,80 @@
           Adicionar
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- TAB: Bancos                                 -->
+<!-- ════════════════════════════════════════════ -->
+<div id="tab-bancos" class="painel-tab">
+  <div class="card-config">
+    <div class="card-config-header">
+      <span class="card-config-titulo">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;">
+          <line x1="3" y1="22" x2="21" y2="22"/>
+          <rect x="5" y="11" width="4" height="11"/><rect x="10" y="11" width="4" height="11"/><rect x="15" y="11" width="4" height="11"/>
+          <polygon points="3 11 12 2 21 11"/>
+        </svg>
+        Bancos cadastrados
+      </span>
+      <button class="btn-primario-config" onclick="abrirModalNovoBanco()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo banco
+      </button>
+    </div>
+    <div class="card-config-body" style="padding:0;">
+      <table class="tabela-config" id="tabela-bancos">
+        <thead>
+          <tr>
+            <th style="width:80px;">Código</th>
+            <th>Nome</th>
+            <th style="width:80px;text-align:center;">Tem API</th>
+            <th style="width:70px;text-align:center;">Ativo</th>
+            <th style="width:100px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-bancos">
+          <tr><td colspan="5" style="text-align:center;padding:24px;color:#94a3b8;">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal banco -->
+<div class="modal-overlay" id="modal-banco" style="display:none;">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-titulo" id="modal-banco-titulo">Novo banco</span>
+      <button class="modal-fechar" onclick="fecharModalBanco()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-corpo">
+      <div style="display:grid;gap:14px;">
+        <div>
+          <label class="label-config">Código</label>
+          <input class="input-config" id="banco-modal-codigo" placeholder="Ex: 001" maxlength="10">
+        </div>
+        <div>
+          <label class="label-config">Nome</label>
+          <input class="input-config" id="banco-modal-nome" placeholder="Ex: Banco do Brasil" maxlength="100">
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" id="banco-modal-api" style="width:16px;height:16px;cursor:pointer;">
+          <label for="banco-modal-api" class="label-config" style="margin:0;cursor:pointer;">Possui integração via API (boleto)</label>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;" id="grupo-banco-ativo">
+          <input type="checkbox" id="banco-modal-ativo" checked style="width:16px;height:16px;cursor:pointer;">
+          <label for="banco-modal-ativo" class="label-config" style="margin:0;cursor:pointer;">Ativo (aparece no formulário)</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-rodape">
+      <button class="btn-secundario-modal" onclick="fecharModalBanco()">Cancelar</button>
+      <button class="btn-primario-modal" onclick="salvarBanco()">Salvar</button>
     </div>
   </div>
 </div>
@@ -1787,6 +1868,102 @@
 
   document.getElementById('campo-tecnico-nome').addEventListener('input', function() {
     document.getElementById('preview-cor').textContent = this.value || 'Prévia do nome';
+  });
+
+  // ─── Bancos Cadastro ─────────────────────────────────────
+  let _bancosData = [];
+  let _bancoEditandoId = null;
+
+  function carregarBancos() {
+    fetch('/api/bancos-cadastro')
+      .then(r => r.json())
+      .then(lista => {
+        _bancosData = lista;
+        const tbody = document.getElementById('tbody-bancos');
+        if (!lista.length) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:#94a3b8;">Nenhum banco cadastrado.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = lista.map(b => `
+          <tr style="${b.ativo ? '' : 'opacity:0.5;'}">
+            <td style="font-weight:600;font-family:monospace;">${b.codigo}</td>
+            <td>${b.nome}</td>
+            <td style="text-align:center;">${b.tem_api ? '<span style="color:#16a34a;font-weight:600;">✓ API</span>' : '<span style="color:#94a3b8;">—</span>'}</td>
+            <td style="text-align:center;">${b.ativo ? '<span style="color:#16a34a;">Sim</span>' : '<span style="color:#ef4444;">Não</span>'}</td>
+            <td style="display:flex;gap:6px;">
+              <button class="btn-acao-mini" onclick="editarBanco(${b.id})" style="color:#3b82f6;">Editar</button>
+              <button class="btn-acao-mini btn-deletar-mini" onclick="excluirBanco(${b.id}, '${b.nome.replace(/'/g,"\\'")}')">Remover</button>
+            </td>
+          </tr>
+        `).join('');
+      })
+      .catch(() => {
+        document.getElementById('tbody-bancos').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ef4444;">Erro ao carregar bancos.</td></tr>';
+      });
+  }
+
+  function abrirModalNovoBanco() {
+    _bancoEditandoId = null;
+    document.getElementById('modal-banco-titulo').textContent = 'Novo banco';
+    document.getElementById('banco-modal-codigo').value = '';
+    document.getElementById('banco-modal-nome').value = '';
+    document.getElementById('banco-modal-api').checked = false;
+    document.getElementById('banco-modal-ativo').checked = true;
+    document.getElementById('grupo-banco-ativo').style.display = 'none';
+    document.getElementById('modal-banco').style.display = 'flex';
+    document.getElementById('banco-modal-codigo').focus();
+  }
+
+  function editarBanco(id) {
+    const b = _bancosData.find(x => x.id === id);
+    if (!b) return;
+    _bancoEditandoId = id;
+    document.getElementById('modal-banco-titulo').textContent = 'Editar banco';
+    document.getElementById('banco-modal-codigo').value = b.codigo;
+    document.getElementById('banco-modal-nome').value = b.nome;
+    document.getElementById('banco-modal-api').checked = !!b.tem_api;
+    document.getElementById('banco-modal-ativo').checked = !!b.ativo;
+    document.getElementById('grupo-banco-ativo').style.display = 'flex';
+    document.getElementById('modal-banco').style.display = 'flex';
+    document.getElementById('banco-modal-nome').focus();
+  }
+
+  function fecharModalBanco() {
+    document.getElementById('modal-banco').style.display = 'none';
+    _bancoEditandoId = null;
+  }
+
+  function salvarBanco() {
+    const codigo = document.getElementById('banco-modal-codigo').value.trim();
+    const nome   = document.getElementById('banco-modal-nome').value.trim();
+    if (!codigo || !nome) { alert('Preencha código e nome.'); return; }
+    const payload = {
+      codigo,
+      nome,
+      tem_api: document.getElementById('banco-modal-api').checked ? 1 : 0,
+      ativo:   document.getElementById('banco-modal-ativo').checked ? 1 : 0,
+    };
+    const url    = _bancoEditandoId ? `/api/bancos-cadastro/${_bancoEditandoId}` : '/api/bancos-cadastro';
+    const method = _bancoEditandoId ? 'PUT' : 'POST';
+    fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      .then(r => r.json())
+      .then(d => {
+        if (d.erro) { alert(d.erro); return; }
+        fecharModalBanco();
+        carregarBancos();
+      });
+  }
+
+  function excluirBanco(id, nome) {
+    if (!confirm(`Remover "${nome}"?`)) return;
+    fetch(`/api/bancos-cadastro/${id}`, { method: 'DELETE' })
+      .then(r => r.json())
+      .then(() => carregarBancos());
+  }
+
+  // carrega a tab de bancos ao clicar
+  document.querySelector('[onclick="trocarTab(\'bancos\', this)"]').addEventListener('click', function() {
+    if (!_bancosData.length) carregarBancos();
   });
 </script>
 {% endblock %}

@@ -180,8 +180,8 @@
         <table class="tabela-dados">
           <thead>
             <tr>
-              <th>Técnico</th><th>Empresa</th><th>Serviço</th><th>Dt. Solicita</th>
-              <th>Dt. Homologação</th><th class="th-status">Status</th><th>Obs</th><th></th>
+              <th>Técnico</th><th>Empresa</th><th>Serviço</th><th>Banco</th>
+              <th>Dt. Solicita</th><th>Dt. Homologação</th><th class="th-status">Status</th><th>Obs</th><th></th>
             </tr>
           </thead>
           <tbody id="corpo-tabela">
@@ -192,8 +192,9 @@
                 <td class="celula-tecnico" style="color: {{ cores_tecnicos.get(reg.tecnico, '#64748b') }};">{{ reg.tecnico or '—' }}</td>
                 <td title="{{ reg.empresa }}">{{ reg.empresa or '—' }}</td>
                 <td>{{ reg.servico or '—' }}</td>
-                <td>{{ reg.banco | fmt_data }}</td>
+                <td>{{ reg.banco or '—' }}</td>
                 <td>{{ reg.dt_solicita or '—' }}</td>
+                <td>{{ reg.dt_status or '—' }}</td>
                 <td class="celula-status">
                   <select class="select-status-inline" data-id="{{ reg.id }}" onchange="alterarStatusHom(this)"
                     {% if not pode_editar %}disabled style="pointer-events:none;opacity:0.7;"{% endif %}>

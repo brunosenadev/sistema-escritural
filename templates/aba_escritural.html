@@ -538,6 +538,13 @@
     <div class="grade-form">
       <div class="grupo-form campo-completo"><label>Senha</label><input class="input-form" id="ec-senha" type="password" placeholder="Senha da conta de e-mail"></div>
     </div>
+    <div class="secao-form-titulo">Assinatura</div>
+    <div class="grade-form">
+      <div class="grupo-form campo-completo">
+        <label>Assinatura (adicionada automaticamente aos e-mails enviados)</label>
+        <textarea class="input-form" id="ec-assinatura" rows="5" style="resize:vertical;" placeholder="Ex:&#10;Atenciosamente,&#10;Bruno Silva&#10;Sisplan Sistemas — (47) 99999-9999"></textarea>
+      </div>
+    </div>
     <div class="rodape-modal">
       <button type="button" class="botao-cancelar" onclick="testarEmailConfig()">Testar conexão</button>
       <button type="button" class="botao-cancelar" onclick="fecharEmailConfig()">Cancelar</button>
@@ -840,21 +847,24 @@
       document.getElementById('ec-imap-port').value = cfg.imap_port || 993;
       document.getElementById('ec-imap-ssl').checked = cfg.imap_ssl !== 0;
       document.getElementById('ec-senha').value = '';
+      document.getElementById('ec-assinatura').value = cfg.assinatura || '';
     });
     document.getElementById('overlay-email-config').classList.add('aberto');
   }
   function fecharEmailConfig() { document.getElementById('overlay-email-config').classList.remove('aberto'); }
   function salvarEmailConfig() {
     const dados = {
-      email:     document.getElementById('ec-email').value.trim(),
-      smtp_host: document.getElementById('ec-smtp-host').value.trim(),
-      smtp_port: parseInt(document.getElementById('ec-smtp-port').value) || 587,
-      smtp_ssl:  document.getElementById('ec-smtp-ssl').checked,
-      imap_host: document.getElementById('ec-imap-host').value.trim(),
-      imap_port: parseInt(document.getElementById('ec-imap-port').value) || 993,
-      imap_ssl:  document.getElementById('ec-imap-ssl').checked,
-      senha:     document.getElementById('ec-senha').value,
+      email:      document.getElementById('ec-email').value.trim(),
+      smtp_host:  document.getElementById('ec-smtp-host').value.trim(),
+      smtp_port:  parseInt(document.getElementById('ec-smtp-port').value) || 587,
+      smtp_ssl:   document.getElementById('ec-smtp-ssl').checked,
+      imap_host:  document.getElementById('ec-imap-host').value.trim(),
+      imap_port:  parseInt(document.getElementById('ec-imap-port').value) || 993,
+      imap_ssl:   document.getElementById('ec-imap-ssl').checked,
+      senha:      document.getElementById('ec-senha').value,
+      assinatura: document.getElementById('ec-assinatura').value,
     };
+    _emailAssinatura = dados.assinatura;
     fetch('/email/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) })
     .then(r => r.json())
     .then(resp => {
@@ -875,13 +885,24 @@
   // ── Orçamento ────────────────────────────────────────────
   let _chatLastMessageId = null;
   let _chatLastReferences = null;
+  let _emailAssinatura = '';
+
+  // Carrega a assinatura salva ao abrir a página (para estar disponível nos modais)
+  fetch('/email/config').then(r => r.json()).then(cfg => {
+    _emailAssinatura = cfg.assinatura || '';
+  }).catch(() => {});
+
+  function _corpoComAssinatura(corpo) {
+    if (!_emailAssinatura.trim()) return corpo;
+    return corpo + '\n\n-- \n' + _emailAssinatura;
+  }
 
   function abrirOrcamento(reg) {
     document.getElementById('orc-escritural-id').value = reg.id;
     document.getElementById('orc-in-reply-to').value   = '';
     document.getElementById('orc-destinatario').value  = reg.email_responsavel || '';
     document.getElementById('orc-assunto').value       = `Orçamento — Homologação ${reg.servico || ''} ${reg.banco || ''}`.trim();
-    document.getElementById('orc-corpo').value         = '';
+    document.getElementById('orc-corpo').value         = _corpoComAssinatura('');
     document.getElementById('orc-modelo-tag').textContent = '';
     const btn = document.getElementById('btn-enviar-orc');
     btn.disabled = false; btn.textContent = 'Enviar';
@@ -892,7 +913,7 @@
       .then(m => {
         if (m && m.corpo) {
           document.getElementById('orc-assunto').value = m.assunto || document.getElementById('orc-assunto').value;
-          document.getElementById('orc-corpo').value   = m.corpo;
+          document.getElementById('orc-corpo').value   = _corpoComAssinatura(m.corpo);
           document.getElementById('orc-modelo-tag').textContent = `Modelo: ${m.nome}`;
         }
       })
@@ -922,7 +943,10 @@
   function abrirChatEmail(escrituralId, empresa) {
     document.getElementById('chat-escritural-id').value = escrituralId;
     document.getElementById('chat-titulo-empresa').textContent = `Conversa — ${empresa || '#' + escrituralId}`;
-    document.getElementById('chat-corpo-resposta').value = '';
+    const respEl = document.getElementById('chat-corpo-resposta');
+    respEl.value = _corpoComAssinatura('');
+    // posiciona o cursor no início para o usuário digitar acima da assinatura
+    respEl.setSelectionRange(0, 0);
     _chatLastMessageId = null; _chatLastReferences = null;
     document.getElementById('overlay-chat-email').classList.add('aberto');
     carregarThread(escrituralId);

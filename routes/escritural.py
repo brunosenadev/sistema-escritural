@@ -135,6 +135,12 @@ def formulario_publico():
     return render_template('escritural_publico.html')
 
 
+@escritural_bp.route('/api/publico/bancos', methods=['GET'])
+def api_publico_bancos():
+    bancos = banco.listar_bancos_cadastro(apenas_ativos=True)
+    return jsonify([{'id': b['id'], 'codigo': b['codigo'], 'nome': b['nome'], 'tem_api': b['tem_api']} for b in bancos])
+
+
 @escritural_bp.route('/escritural/formulario/enviar', methods=['POST'])
 def enviar_formulario_publico():
     corpo = request.get_json(silent=True) or {}

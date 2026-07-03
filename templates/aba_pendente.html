@@ -1271,7 +1271,7 @@
   }
 
   // ─── Assumir registro ───────────────────────────────────────
-  const _tecnicoVinculado = '{{ session.get("tecnico_vinculado", "") | e }}';
+  const _tecnicoVinculado = {{ session.get("tecnico_vinculado", "") | tojson }};
   let _idAssumirAtual = null;
 
   function assumirRegistro(id) {

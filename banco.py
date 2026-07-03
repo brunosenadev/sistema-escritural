@@ -48,6 +48,27 @@ SETORES_INICIAIS = [
     'GESTOR SUPORTE', 'GESTOR PROGRAMAÇÃO', 'PROGRAMAÇÃO', 'SUPORTE',
 ]
 
+BANCOS_CADASTRO_INICIAIS = [
+    # (codigo, nome, tem_api, ordem)
+    ('001', 'Banco do Brasil',              1,  1),
+    ('033', 'Banco Santander',              1,  2),
+    ('041', 'Banrisul',                     1,  3),
+    ('077', 'Banco Inter',                  0,  4),
+    ('084', 'Uniprime Norte do Paraná',     0,  5),
+    ('085', 'Ailos',                        1,  6),
+    ('104', 'Caixa Econômica Federal',      0,  7),
+    ('133', 'Cresol',                       0,  8),
+    ('136', 'Unicred',                      0,  9),
+    ('237', 'Banco Bradesco',               1, 10),
+    ('260', 'Nu Pagamentos (Nubank)',        0, 11),
+    ('341', 'Banco Itaú',                   1, 12),
+    ('422', 'Banco Safra',                  0, 13),
+    ('469', 'Banco Original',               0, 14),
+    ('655', 'Votorantim',                   0, 15),
+    ('748', 'Sicredi',                      1, 16),
+    ('756', 'Sicoob',                       1, 17),
+]
+
 HUB_BANCOS_INICIAIS = [
     # (nome, envio, instrucao, retorno, bol, pix, extrato, dda, ordem)
     ('Ailos',          1, 0, 1, 0, 0, 0, 0, 1),
@@ -415,7 +436,8 @@ def inicializar_banco():
             imap_host   TEXT    DEFAULT '',
             imap_port   INTEGER DEFAULT 993,
             imap_ssl    INTEGER DEFAULT 1,
-            senha       TEXT    DEFAULT ''
+            senha       TEXT    DEFAULT '',
+            assinatura  TEXT    DEFAULT ''
         );
         CREATE TABLE IF NOT EXISTS email_thread_escritural (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -430,6 +452,14 @@ def inicializar_banco():
             direcao       TEXT    DEFAULT 'enviado',
             lido          INTEGER DEFAULT 1,
             enviado_por   TEXT    DEFAULT ''
+        );
+        CREATE TABLE IF NOT EXISTS bancos_cadastro (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo   TEXT    NOT NULL,
+            nome     TEXT    NOT NULL,
+            tem_api  INTEGER NOT NULL DEFAULT 0,
+            ativo    INTEGER NOT NULL DEFAULT 1,
+            ordem    INTEGER          DEFAULT 999
         );
         CREATE TABLE IF NOT EXISTS escritural (
             id                     INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -496,6 +526,13 @@ def inicializar_banco():
     for s in SETORES_INICIAIS:
         conn.execute("INSERT OR IGNORE INTO setores_lista (texto) VALUES (?)", (s,))
 
+    # Bancos cadastro — seed apenas se vazio
+    if conn.execute("SELECT COUNT(*) FROM bancos_cadastro").fetchone()[0] == 0:
+        for b in BANCOS_CADASTRO_INICIAIS:
+            conn.execute(
+                "INSERT INTO bancos_cadastro (codigo,nome,tem_api,ordem) VALUES (?,?,?,?)", b
+            )
+
     # Hub bancário — seed apenas se vazio
     if conn.execute("SELECT COUNT(*) FROM hub_bancos").fetchone()[0] == 0:
         for b in HUB_BANCOS_INICIAIS:
@@ -536,6 +573,7 @@ def inicializar_banco():
         "ALTER TABLE escritural ADD COLUMN anexos TEXT",
         "ALTER TABLE email_thread_escritural ADD COLUMN enviado_por TEXT DEFAULT ''",
         "ALTER TABLE email_thread_escritural ADD COLUMN corpo_html TEXT DEFAULT ''",
+        "ALTER TABLE email_config_usuario ADD COLUMN assinatura TEXT DEFAULT ''",
     ]:
         try:
             conn.execute(ddl)
@@ -869,6 +907,51 @@ def adicionar_setor(texto):
 def remover_setor(texto):
     conn = conectar()
     conn.execute("DELETE FROM setores_lista WHERE texto=?", (texto,))
+    conn.commit()
+    conn.close()
+
+
+# ── Bancos Cadastro ───────────────────────────────────────
+
+def listar_bancos_cadastro(apenas_ativos=False):
+    conn = conectar()
+    sql = "SELECT * FROM bancos_cadastro"
+    if apenas_ativos:
+        sql += " WHERE ativo=1"
+    sql += " ORDER BY ordem, codigo"
+    rows = conn.execute(sql).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def adicionar_banco_cadastro(codigo, nome, tem_api=0):
+    conn = conectar()
+    try:
+        conn.execute(
+            "INSERT INTO bancos_cadastro (codigo,nome,tem_api) VALUES (?,?,?)",
+            (codigo.strip(), nome.strip(), int(bool(tem_api)))
+        )
+        conn.commit()
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
+
+def atualizar_banco_cadastro(id_banco, codigo, nome, tem_api, ativo):
+    conn = conectar()
+    conn.execute(
+        "UPDATE bancos_cadastro SET codigo=?,nome=?,tem_api=?,ativo=? WHERE id=?",
+        (codigo.strip(), nome.strip(), int(bool(tem_api)), int(bool(ativo)), id_banco)
+    )
+    conn.commit()
+    conn.close()
+
+
+def remover_banco_cadastro(id_banco):
+    conn = conectar()
+    conn.execute("DELETE FROM bancos_cadastro WHERE id=?", (id_banco,))
     conn.commit()
     conn.close()
 
@@ -1337,7 +1420,9 @@ def importar_escritural(lista_registros, criado_por='importação planilha'):
 
 
 def assumir_homologado(id_registro, tipo, nome_tecnico):
-    tabela = f'homologados_{tipo}'
+    tabela = _TABELA_HOMOLOGADO.get(tipo)
+    if not tabela:
+        return False
     agora = datetime.now().strftime('%d/%m/%Y %H:%M')
     conn = conectar()
     conn.execute(
@@ -1480,7 +1565,11 @@ _TABELA_HOMOLOGADO = {
     'pagamentos':   'homologados_pagamentos',
     'extrato':      'homologados_extrato',
     'ext_bancario': 'homologados_ext_bancario',
+    'ext-bancario': 'homologados_ext_bancario',
 }
+
+# conjunto de nomes de tabela permitidos para uso em queries dinâmicas
+_TABELAS_HOMOLOGADO_VALIDAS = frozenset(_TABELA_HOMOLOGADO.values())
 
 
 def mover_pendente_para_homologado(id_pendente):
@@ -1504,7 +1593,9 @@ def mover_pendente_para_homologado(id_pendente):
 
 
 def mover_homologado_para_pendente(id_registro, tipo, novo_status):
-    tabela = f'homologados_{tipo}'
+    tabela = _TABELA_HOMOLOGADO.get(tipo)
+    if not tabela:
+        return None
     conn = conectar()
     row = conn.execute(f"SELECT * FROM {tabela} WHERE id=?", (id_registro,)).fetchone()
     if not row:
@@ -1523,7 +1614,9 @@ def mover_homologado_para_pendente(id_registro, tipo, novo_status):
 
 
 def mover_homologado_para_cancelado(id_registro, tipo):
-    tabela = f'homologados_{tipo}'
+    tabela = _TABELA_HOMOLOGADO.get(tipo)
+    if not tabela:
+        return None
     conn = conectar()
     row = conn.execute(f"SELECT * FROM {tabela} WHERE id=?", (id_registro,)).fetchone()
     if not row:
@@ -1934,12 +2027,12 @@ def salvar_email_config(usuario_id, dados):
     conn = conectar()
     conn.execute("""
         INSERT INTO email_config_usuario
-            (usuario_id, email, smtp_host, smtp_port, smtp_ssl, imap_host, imap_port, imap_ssl, senha)
-        VALUES (?,?,?,?,?,?,?,?,?)
+            (usuario_id, email, smtp_host, smtp_port, smtp_ssl, imap_host, imap_port, imap_ssl, senha, assinatura)
+        VALUES (?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(usuario_id) DO UPDATE SET
             email=excluded.email, smtp_host=excluded.smtp_host, smtp_port=excluded.smtp_port,
             smtp_ssl=excluded.smtp_ssl, imap_host=excluded.imap_host, imap_port=excluded.imap_port,
-            imap_ssl=excluded.imap_ssl, senha=excluded.senha
+            imap_ssl=excluded.imap_ssl, senha=excluded.senha, assinatura=excluded.assinatura
     """, (
         usuario_id,
         dados.get('email', ''), dados.get('smtp_host', ''), int(dados.get('smtp_port', 587)),
@@ -1947,6 +2040,7 @@ def salvar_email_config(usuario_id, dados):
         dados.get('imap_host', ''), int(dados.get('imap_port', 993)),
         1 if dados.get('imap_ssl', True) else 0,
         dados.get('senha', ''),
+        dados.get('assinatura', ''),
     ))
     conn.commit()
     conn.close()

@@ -251,3 +251,50 @@ def api_remover_setor(texto):
     banco.remover_setor(texto)
     _log('Configurações', 'DELETOU', f'Removeu setor: {texto}')
     return jsonify({'sucesso': True})
+
+
+# ── API Bancos Cadastro ───────────────────────────────────
+
+@config_bp.route('/api/bancos-cadastro', methods=['GET'])
+def api_listar_bancos_cadastro():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    return jsonify(banco.listar_bancos_cadastro())
+
+
+@config_bp.route('/api/bancos-cadastro', methods=['POST'])
+def api_adicionar_banco_cadastro():
+    if checar_admin():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    d = request.get_json() or {}
+    codigo = (d.get('codigo') or '').strip()
+    nome   = (d.get('nome') or '').strip()
+    if not codigo or not nome:
+        return jsonify({'erro': 'Código e nome são obrigatórios.'}), 400
+    ok = banco.adicionar_banco_cadastro(codigo, nome, d.get('tem_api', 0))
+    if ok:
+        _log('Configurações', 'INSERIU', f'Adicionou banco: {codigo} - {nome}')
+    return jsonify({'sucesso': True}) if ok else (jsonify({'erro': 'Erro ao inserir banco.'}), 500)
+
+
+@config_bp.route('/api/bancos-cadastro/<int:id_banco>', methods=['PUT'])
+def api_atualizar_banco_cadastro(id_banco):
+    if checar_admin():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    d = request.get_json() or {}
+    codigo = (d.get('codigo') or '').strip()
+    nome   = (d.get('nome') or '').strip()
+    if not codigo or not nome:
+        return jsonify({'erro': 'Código e nome são obrigatórios.'}), 400
+    banco.atualizar_banco_cadastro(id_banco, codigo, nome, d.get('tem_api', 0), d.get('ativo', 1))
+    _log('Configurações', 'EDITOU', f'Editou banco #{id_banco}: {codigo} - {nome}')
+    return jsonify({'sucesso': True})
+
+
+@config_bp.route('/api/bancos-cadastro/<int:id_banco>', methods=['DELETE'])
+def api_remover_banco_cadastro(id_banco):
+    if checar_admin():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    banco.remover_banco_cadastro(id_banco)
+    _log('Configurações', 'DELETOU', f'Removeu banco #{id_banco}')
+    return jsonify({'sucesso': True})
