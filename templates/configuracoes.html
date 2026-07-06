@@ -1997,18 +1997,22 @@
       .then(r => r.json())
       .then(d => {
         if (d.erro) { mostrarToast('erro', d.erro); return; }
+        const imgTag = `<img src="${d.url}" style="max-width:200px;height:auto;">`;
         if (_assinaturaHtmlMode) {
           const ta = document.getElementById('eu-assinatura-html');
-          const pos = ta.selectionStart;
-          const tag = `<img src="${d.url}" style="max-width:200px;height:auto;">`;
-          ta.value = ta.value.slice(0, pos) + tag + ta.value.slice(pos);
+          const pos = ta.selectionStart || ta.value.length;
+          ta.value = ta.value.slice(0, pos) + imgTag + ta.value.slice(pos);
         } else {
-          _inserirNoCursor(`<img src="${d.url}" style="max-width:200px;height:auto;">`);
+          // Inserção direta no innerHTML — sem depender de Selection/Range
+          document.getElementById('eu-assinatura').innerHTML += imgTag;
         }
         mostrarToast('sucesso', 'Imagem enviada!');
         input.value = '';
       })
-      .catch(() => mostrarToast('erro', 'Erro ao enviar imagem.'));
+      .catch(err => {
+        console.error('[upload-assinatura]', err);
+        mostrarToast('erro', 'Erro ao enviar imagem.');
+      });
   }
 
   // ─── Bancos Cadastro ─────────────────────────────────────
