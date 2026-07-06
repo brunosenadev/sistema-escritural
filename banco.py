@@ -2025,23 +2025,35 @@ def remover_collection(id_col):
 
 def salvar_email_config(usuario_id, dados):
     conn = conectar()
-    conn.execute("""
-        INSERT INTO email_config_usuario
-            (usuario_id, email, smtp_host, smtp_port, smtp_ssl, imap_host, imap_port, imap_ssl, senha, assinatura)
-        VALUES (?,?,?,?,?,?,?,?,?,?)
-        ON CONFLICT(usuario_id) DO UPDATE SET
-            email=excluded.email, smtp_host=excluded.smtp_host, smtp_port=excluded.smtp_port,
-            smtp_ssl=excluded.smtp_ssl, imap_host=excluded.imap_host, imap_port=excluded.imap_port,
-            imap_ssl=excluded.imap_ssl, senha=excluded.senha, assinatura=excluded.assinatura
-    """, (
-        usuario_id,
+    senha_nova = (dados.get('senha') or '').strip()
+    campos_base = (
         dados.get('email', ''), dados.get('smtp_host', ''), int(dados.get('smtp_port', 587)),
         1 if dados.get('smtp_ssl') else 0,
         dados.get('imap_host', ''), int(dados.get('imap_port', 993)),
         1 if dados.get('imap_ssl', True) else 0,
-        dados.get('senha', ''),
         dados.get('assinatura', ''),
-    ))
+    )
+    if senha_nova:
+        conn.execute("""
+            INSERT INTO email_config_usuario
+                (usuario_id, email, smtp_host, smtp_port, smtp_ssl, imap_host, imap_port, imap_ssl, senha, assinatura)
+            VALUES (?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(usuario_id) DO UPDATE SET
+                email=excluded.email, smtp_host=excluded.smtp_host, smtp_port=excluded.smtp_port,
+                smtp_ssl=excluded.smtp_ssl, imap_host=excluded.imap_host, imap_port=excluded.imap_port,
+                imap_ssl=excluded.imap_ssl, senha=excluded.senha, assinatura=excluded.assinatura
+        """, (usuario_id,) + campos_base[:7] + (senha_nova, campos_base[7]))
+    else:
+        # Senha em branco → preserva a que já está no banco, não sobrescreve
+        conn.execute("""
+            INSERT INTO email_config_usuario
+                (usuario_id, email, smtp_host, smtp_port, smtp_ssl, imap_host, imap_port, imap_ssl, senha, assinatura)
+            VALUES (?,?,?,?,?,?,?,?,'',?)
+            ON CONFLICT(usuario_id) DO UPDATE SET
+                email=excluded.email, smtp_host=excluded.smtp_host, smtp_port=excluded.smtp_port,
+                smtp_ssl=excluded.smtp_ssl, imap_host=excluded.imap_host, imap_port=excluded.imap_port,
+                imap_ssl=excluded.imap_ssl, assinatura=excluded.assinatura
+        """, (usuario_id,) + campos_base)
     conn.commit()
     conn.close()
 
