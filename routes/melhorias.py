@@ -56,9 +56,9 @@ def aba_melhorias():
     if err:
         return err
     todas = banco.listar_melhorias()
-    por_estagio = {'em_analise': [], 'em_programacao': [], 'concluida': [], 'rejeitada': []}
+    por_estagio = {'analisa': [], 'em_analise': [], 'em_programacao': [], 'concluida': [], 'rejeitada': []}
     for m in todas:
-        estagio = m.get('estagio', 'em_analise')
+        estagio = m.get('estagio', 'analisa')
         if estagio in por_estagio:
             por_estagio[estagio].append(m)
     return render_template(
@@ -78,7 +78,7 @@ def api_adicionar_melhoria():
     dados = request.get_json() or {}
     dados['criado_por'] = session.get('nome', '')
     if not _pode_mover():
-        dados['estagio'] = 'em_analise'
+        dados['estagio'] = 'analisa'
     novo_id = banco.adicionar_melhoria(dados)
     _log('INSERIU', f'Criou melhoria #{novo_id} — {dados.get("titulo", dados.get("descricao","?"))[:80]}')
     return jsonify({'sucesso': True, 'id': novo_id})
@@ -102,7 +102,7 @@ def api_mover_melhoria(id_melhoria):
         return err
     dados = request.get_json() or {}
     estagio = dados.get('estagio', '')
-    if estagio not in ('em_analise', 'em_programacao', 'concluida', 'rejeitada'):
+    if estagio not in ('analisa', 'em_analise', 'em_programacao', 'concluida', 'rejeitada'):
         return jsonify({'erro': 'Estágio inválido'}), 400
     banco.mover_estagio_melhoria(id_melhoria, estagio, dados.get('motivo', ''))
     _log('MOVEU', f'Moveu melhoria #{id_melhoria} → {estagio}')

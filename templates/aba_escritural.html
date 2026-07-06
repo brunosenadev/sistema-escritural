@@ -397,6 +397,15 @@
   </div>
 
   <div class="coluna-resumo">
+    <div class="card-resumo" style="margin-bottom:12px;">
+      <div class="card-resumo-header">E-mail</div>
+      <div style="padding:10px 14px;">
+        <button onclick="abrirEmailConfig()" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#374151;font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px;justify-content:center;">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Configurar e-mail
+        </button>
+      </div>
+    </div>
     <div class="card-resumo">
       <div class="card-resumo-header">Resumo por Banco</div>
       <div class="lista-resumo">
@@ -539,12 +548,6 @@
       <div class="grupo-form campo-completo"><label>Senha</label><input class="input-form" id="ec-senha" type="password" placeholder="Senha da conta de e-mail"></div>
     </div>
     <div class="secao-form-titulo">Assinatura</div>
-    <div class="grade-form">
-      <div class="grupo-form campo-completo">
-        <label>Assinatura (adicionada automaticamente aos e-mails enviados)</label>
-        <textarea class="input-form" id="ec-assinatura" rows="5" style="resize:vertical;" placeholder="Ex:&#10;Atenciosamente,&#10;Bruno Silva&#10;Sisplan Sistemas — (47) 99999-9999"></textarea>
-      </div>
-    </div>
     <div class="rodape-modal">
       <button type="button" class="botao-cancelar" onclick="testarEmailConfig()">Testar conexão</button>
       <button type="button" class="botao-cancelar" onclick="fecharEmailConfig()">Cancelar</button>
@@ -636,6 +639,38 @@
       resultado.push(linha);
     }
     return resultado.join('\n').trim();
+  }
+
+  function _tratarTextoEmail(texto) {
+    if (!texto) return '';
+
+    // Remove assinatura após separador padrão "-- " em linha própria
+    const sepIdx = texto.search(/\n--[ \t]*\r?\n/);
+    if (sepIdx !== -1) texto = texto.slice(0, sepIdx).trim();
+
+    // Escapa HTML para evitar XSS
+    let out = texto
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+    // Converte &lt;https://...&gt; (formato RFC de plain text) para link clicável
+    out = out.replace(
+      /&lt;(https?:\/\/[^\s&>"]+)&gt;/g,
+      (_, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#2563eb;word-break:break-all;">${url}</a>`
+    );
+
+    // Converte URLs soltas (não dentro de link já criado)
+    out = out.replace(
+      /(?<!href=")(https?:\/\/[^\s<>"&]+)/g,
+      (_, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#2563eb;word-break:break-all;">${url}</a>`
+    );
+
+    // Preserva quebras de linha
+    out = out.replace(/\n/g, '<br>');
+
+    return out;
   }
 
   // ── Cores do select de status ────────────────────────────
@@ -847,7 +882,6 @@
       document.getElementById('ec-imap-port').value = cfg.imap_port || 993;
       document.getElementById('ec-imap-ssl').checked = cfg.imap_ssl !== 0;
       document.getElementById('ec-senha').value = '';
-      document.getElementById('ec-assinatura').value = cfg.assinatura || '';
     });
     document.getElementById('overlay-email-config').classList.add('aberto');
   }
@@ -862,9 +896,7 @@
       imap_port:  parseInt(document.getElementById('ec-imap-port').value) || 993,
       imap_ssl:   document.getElementById('ec-imap-ssl').checked,
       senha:      document.getElementById('ec-senha').value,
-      assinatura: document.getElementById('ec-assinatura').value,
     };
-    _emailAssinatura = dados.assinatura;
     fetch('/email/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) })
     .then(r => r.json())
     .then(resp => {
@@ -1009,7 +1041,11 @@
         } else {
           const balao = document.createElement('div');
           balao.className = `chat-balao ${m.direcao}`;
-          balao.textContent = texto || '(sem conteúdo)';
+          if (m.direcao === 'recebido') {
+            balao.innerHTML = _tratarTextoEmail(texto) || '(sem conteúdo)';
+          } else {
+            balao.textContent = texto || '(sem conteúdo)';
+          }
           item.appendChild(balao);
         }
 

@@ -1245,6 +1245,12 @@
         <p class="dica-campo">Deixe em branco para manter a senha atual.</p>
       </div>
 
+      <div class="secao-email-titulo">Assinatura</div>
+      <div class="grupo-modal">
+        <label>Assinatura de e-mail <span style="color:#94a3b8;font-weight:400;text-transform:none;">(adicionada ao final de cada e-mail enviado)</span></label>
+        <textarea class="input-modal" id="eu-assinatura" rows="5" style="resize:vertical;font-family:inherit;" placeholder="Ex:&#10;Atenciosamente,&#10;João Silva&#10;Sisplan Sistemas — (47) 99999-9999"></textarea>
+      </div>
+
       <div class="rodape-modal">
         <button class="btn-cancelar-modal" onclick="testarEmailUsuario()">Testar conexão</button>
         <button class="btn-cancelar-modal" onclick="fecharModal('overlay-usuario')">Cancelar</button>
@@ -1818,6 +1824,7 @@
       document.getElementById('eu-imap-port').value = cfg.imap_port || 993;
       document.getElementById('eu-imap-ssl').checked = cfg.imap_ssl !== 0 && cfg.imap_ssl !== false;
       document.getElementById('eu-senha').value = '';
+      document.getElementById('eu-assinatura').value = cfg.assinatura || '';
     })
     .catch(() => {});
   }
@@ -1834,6 +1841,7 @@
       imap_port: parseInt(document.getElementById('eu-imap-port').value) || 993,
       imap_ssl:  document.getElementById('eu-imap-ssl').checked,
       senha:     document.getElementById('eu-senha').value,
+      assinatura: document.getElementById('eu-assinatura').value,
     };
     fetch(`/api/email-config/${id}`, {
       method: 'POST',
