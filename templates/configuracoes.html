@@ -2072,7 +2072,8 @@
   }
 
   // carrega a tab de bancos ao clicar
-  document.querySelector('[onclick="trocarTab(\'bancos\', this)"]').addEventListener('click', function() {
+  const _tabBancosBtn = document.querySelector('[onclick="trocarTab(\'bancos\', this)"]');
+  if (_tabBancosBtn) _tabBancosBtn.addEventListener('click', function() {
     if (!_bancosData.length) carregarBancos();
   });
 </script>
