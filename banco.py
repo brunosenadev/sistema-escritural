@@ -163,7 +163,7 @@ TELAS_SISTEMA = [tela for _, telas in TELAS_AGRUPADAS for tela in telas]
 def _abrir_conn():
     conn = sqlite3.connect(CAMINHO_BANCO, timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
-    conn.execute('PRAGMA journal_mode=WAL')
+    conn.execute('PRAGMA journal_mode=DELETE')
     conn.execute('PRAGMA busy_timeout=30000')
     return conn
 
