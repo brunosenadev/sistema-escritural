@@ -1266,9 +1266,10 @@
       <div class="grupo-modal">
         <label>Assinatura de e-mail <span style="color:#94a3b8;font-weight:400;text-transform:none;">(cole o HTML ou use os botões — suporta links e imagens)</span></label>
         <div class="assin-toolbar">
-          <button type="button" onclick="_assinaturaUploadImagem()" title="Subir imagem do computador">📁 Subir imagem</button>
-          <button type="button" onclick="_assinaturaInserirLink()"  title="Inserir link">🔗 Link</button>
-          <button type="button" onclick="_assinaturaTogglePreview()" id="btn-assin-preview" title="Ver preview">👁 Preview</button>
+          <button type="button" onclick="_assinaturaUploadImagem()"    title="Subir uma imagem e inserir no cursor">📁 Subir imagem</button>
+          <button type="button" onclick="_assinaturaCorrigirLocais()"  title="Selecione os arquivos locais para substituir os caminhos file:///">🔄 Corrigir imagens</button>
+          <button type="button" onclick="_assinaturaInserirLink()"     title="Inserir link">🔗 Link</button>
+          <button type="button" onclick="_assinaturaTogglePreview()"   id="btn-assin-preview" title="Ver preview renderizado">👁 Preview</button>
         </div>
         <textarea id="eu-assinatura"
                   style="width:100%;min-height:140px;padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:0 0 6px 6px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box;outline:none;color:#1e293b;background:#fff;"
@@ -1941,6 +1942,38 @@
 
   function _assinaturaUploadImagem() {
     document.getElementById('eu-assinatura-file').click();
+  }
+
+  function _assinaturaCorrigirLocais() {
+    const ta = document.getElementById('eu-assinatura');
+    if (!ta.value.includes('file:///')) {
+      mostrarToast('info', 'Nenhum caminho local (file:///) encontrado no HTML.');
+      return;
+    }
+    const input = document.createElement('input');
+    input.type = 'file'; input.multiple = true; input.accept = 'image/*';
+    input.onchange = async () => {
+      const uid = document.getElementById('campo-usuario-id').value;
+      let substituicoes = 0;
+      for (const file of Array.from(input.files)) {
+        const fd = new FormData();
+        fd.append('imagem', file);
+        if (uid) fd.append('usuario_id', uid);
+        try {
+          const r = await fetch('/api/upload-assinatura', { method: 'POST', body: fd });
+          const d = await r.json();
+          if (!d.url) continue;
+          // Substitui qualquer src=".../<nome_do_arquivo>" pelo URL do servidor
+          const nomeSeg = file.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const re = new RegExp(`src="file:///[^"]*${nomeSeg}"`, 'gi');
+          const antes = ta.value;
+          ta.value = ta.value.replace(re, `src="${d.url}"`);
+          if (ta.value !== antes) substituicoes++;
+        } catch(e) { console.error('[corrigir-locais]', file.name, e); }
+      }
+      mostrarToast('sucesso', `${substituicoes} imagem(ns) substituída(s)!`);
+    };
+    input.click();
   }
 
   function _assinaturaOnFileSelect(input) {
