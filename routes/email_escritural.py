@@ -134,9 +134,10 @@ def _conectar_imap(cfg):
 
 # ── Envio via SMTP ────────────────────────────────────────
 
-def enviar_email_smtp(cfg, destinatario, assunto, corpo_texto, in_reply_to=None, references=None):
+def enviar_email_smtp(cfg, destinatario, assunto, corpo_texto, in_reply_to=None, references=None, assinatura_html=''):
     """
     Envia um e-mail usando as credenciais do cfg.
+    Se assinatura_html for fornecida, inclui parte HTML (corpo plain + assinatura).
     Retorna o Message-ID gerado.
     """
     msg = MIMEMultipart('alternative')
@@ -149,6 +150,21 @@ def enviar_email_smtp(cfg, destinatario, assunto, corpo_texto, in_reply_to=None,
         msg['In-Reply-To'] = in_reply_to
         msg['References'] = (references or in_reply_to)
     msg.attach(MIMEText(corpo_texto, 'plain', 'utf-8'))
+
+    if assinatura_html:
+        corpo_escaped = (corpo_texto
+            .replace('&', '&amp;')
+            .replace('<', '&lt;')
+            .replace('>', '&gt;')
+            .replace('\n', '<br>'))
+        html_completo = (
+            f'<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;">'
+            f'{corpo_escaped}'
+            f'</div>'
+            f'<br><hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0;">'
+            f'{assinatura_html}'
+        )
+        msg.attach(MIMEText(html_completo, 'html', 'utf-8'))
 
     srv = _conectar_smtp(cfg)
     srv.sendmail(cfg['email'], [destinatario], msg.as_string())
@@ -354,8 +370,9 @@ def email_enviar():
             corpo_envio = corpo + '\n\n' + '\n'.join(linhas_hist)
 
     cfg['nome_exibicao'] = session.get('nome', '')
+    assinatura_html = (cfg.get('assinatura') or '').strip()
     try:
-        msg_id = enviar_email_smtp(cfg, destinatario, assunto, corpo_envio, in_reply_to, references)
+        msg_id = enviar_email_smtp(cfg, destinatario, assunto, corpo_envio, in_reply_to, references, assinatura_html)
     except Exception as e:
         return jsonify({'erro': f'Falha ao enviar: {e}'}), 502
 

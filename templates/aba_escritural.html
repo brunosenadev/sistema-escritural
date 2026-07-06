@@ -917,24 +917,12 @@
   // ── Orçamento ────────────────────────────────────────────
   let _chatLastMessageId = null;
   let _chatLastReferences = null;
-  let _emailAssinatura = '';
-
-  // Carrega a assinatura salva ao abrir a página (para estar disponível nos modais)
-  fetch('/email/config').then(r => r.json()).then(cfg => {
-    _emailAssinatura = cfg.assinatura || '';
-  }).catch(() => {});
-
-  function _corpoComAssinatura(corpo) {
-    if (!_emailAssinatura.trim()) return corpo;
-    return corpo + '\n\n-- \n' + _emailAssinatura;
-  }
-
   function abrirOrcamento(reg) {
     document.getElementById('orc-escritural-id').value = reg.id;
     document.getElementById('orc-in-reply-to').value   = '';
     document.getElementById('orc-destinatario').value  = reg.email_responsavel || '';
     document.getElementById('orc-assunto').value       = `Orçamento — Homologação ${reg.servico || ''} ${reg.banco || ''}`.trim();
-    document.getElementById('orc-corpo').value         = _corpoComAssinatura('');
+    document.getElementById('orc-corpo').value         = '';
     document.getElementById('orc-modelo-tag').textContent = '';
     const btn = document.getElementById('btn-enviar-orc');
     btn.disabled = false; btn.textContent = 'Enviar';
@@ -945,7 +933,7 @@
       .then(m => {
         if (m && m.corpo) {
           document.getElementById('orc-assunto').value = m.assunto || document.getElementById('orc-assunto').value;
-          document.getElementById('orc-corpo').value   = _corpoComAssinatura(m.corpo);
+          document.getElementById('orc-corpo').value   = m.corpo;
           document.getElementById('orc-modelo-tag').textContent = `Modelo: ${m.nome}`;
         }
       })
@@ -976,8 +964,7 @@
     document.getElementById('chat-escritural-id').value = escrituralId;
     document.getElementById('chat-titulo-empresa').textContent = `Conversa — ${empresa || '#' + escrituralId}`;
     const respEl = document.getElementById('chat-corpo-resposta');
-    respEl.value = _corpoComAssinatura('');
-    // posiciona o cursor no início para o usuário digitar acima da assinatura
+    respEl.value = '';
     respEl.setSelectionRange(0, 0);
     _chatLastMessageId = null; _chatLastReferences = null;
     document.getElementById('overlay-chat-email').classList.add('aberto');

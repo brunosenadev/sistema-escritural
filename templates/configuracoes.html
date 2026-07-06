@@ -487,6 +487,32 @@
   [data-tema="dark"] .modal-tab-btn      { color: var(--z-text-3); }
   [data-tema="dark"] .modal-tab-btn:hover { color: var(--z-text-1); }
   [data-tema="dark"] .modal-tab-btn.ativo { color: #3b82f6; border-bottom-color: #3b82f6; }
+
+  /* ── Editor de assinatura ─── */
+  .assin-toolbar {
+    display: flex; gap: 2px; padding: 4px 6px;
+    border: 1.5px solid #cbd5e1; border-bottom: none;
+    border-radius: 6px 6px 0 0; background: #f8fafc;
+  }
+  .assin-toolbar button {
+    border: 1px solid #e2e8f0; background: #fff; border-radius: 4px;
+    padding: 2px 8px; cursor: pointer; font-size: 12px; line-height: 1.6;
+    color: #374151; transition: background 0.1s;
+  }
+  .assin-toolbar button:hover { background: #e2e8f0; }
+  .assin-editor {
+    min-height: 120px; padding: 8px 10px;
+    border: 1.5px solid #cbd5e1; border-radius: 0 0 6px 6px;
+    font-size: 13px; line-height: 1.5; outline: none;
+    font-family: Arial, sans-serif; word-break: break-word;
+    background: #fff; color: #1e293b;
+  }
+  .assin-editor:focus { border-color: #3b82f6; }
+  .assin-editor:empty:before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; display: block; }
+  [data-tema="dark"] .assin-toolbar { background: var(--z-elevated); border-color: var(--z-border); }
+  [data-tema="dark"] .assin-toolbar button { background: var(--z-surface); border-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] .assin-toolbar button:hover { background: var(--z-border-s); }
+  [data-tema="dark"] .assin-editor { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
   [data-tema="dark"] .secao-email-titulo { color: #60a5fa; border-color: var(--z-border-s); }
   [data-tema="dark"] .hint-login         { color: var(--z-text-3); }
 
@@ -1247,8 +1273,18 @@
 
       <div class="secao-email-titulo">Assinatura</div>
       <div class="grupo-modal">
-        <label>Assinatura de e-mail <span style="color:#94a3b8;font-weight:400;text-transform:none;">(adicionada ao final de cada e-mail enviado)</span></label>
-        <textarea class="input-modal" id="eu-assinatura" rows="5" style="resize:vertical;font-family:inherit;" placeholder="Ex:&#10;Atenciosamente,&#10;João Silva&#10;Sisplan Sistemas — (47) 99999-9999"></textarea>
+        <label>Assinatura de e-mail <span style="color:#94a3b8;font-weight:400;text-transform:none;">(adicionada ao final de cada e-mail — suporta links e imagens)</span></label>
+        <div class="assin-toolbar">
+          <button type="button" onmousedown="event.preventDefault(); document.execCommand('bold')"            title="Negrito"><b>B</b></button>
+          <button type="button" onmousedown="event.preventDefault(); document.execCommand('italic')"          title="Itálico"><i>I</i></button>
+          <button type="button" onmousedown="event.preventDefault(); document.execCommand('underline')"       title="Sublinhado"><u>U</u></button>
+          <button type="button" onmousedown="event.preventDefault(); _assinaturaInserirLink()"                title="Inserir link">🔗 Link</button>
+          <button type="button" onmousedown="event.preventDefault(); _assinaturaInserirImagem()"              title="Inserir imagem">🖼 Imagem</button>
+        </div>
+        <div id="eu-assinatura"
+             class="assin-editor"
+             contenteditable="true"
+             data-placeholder="Ex: Atenciosamente, João Silva — Sisplan Sistemas"></div>
       </div>
 
       <div class="rodape-modal">
@@ -1824,7 +1860,7 @@
       document.getElementById('eu-imap-port').value = cfg.imap_port || 993;
       document.getElementById('eu-imap-ssl').checked = cfg.imap_ssl !== 0 && cfg.imap_ssl !== false;
       document.getElementById('eu-senha').value = '';
-      document.getElementById('eu-assinatura').value = cfg.assinatura || '';
+      document.getElementById('eu-assinatura').innerHTML = cfg.assinatura || '';
     })
     .catch(() => {});
   }
@@ -1841,7 +1877,7 @@
       imap_port: parseInt(document.getElementById('eu-imap-port').value) || 993,
       imap_ssl:  document.getElementById('eu-imap-ssl').checked,
       senha:     document.getElementById('eu-senha').value,
-      assinatura: document.getElementById('eu-assinatura').value,
+      assinatura: document.getElementById('eu-assinatura').innerHTML,
     };
     fetch(`/api/email-config/${id}`, {
       method: 'POST',
@@ -1877,6 +1913,23 @@
   document.getElementById('campo-tecnico-nome').addEventListener('input', function() {
     document.getElementById('preview-cor').textContent = this.value || 'Prévia do nome';
   });
+
+  // ─── Editor de assinatura ────────────────────────────────
+  function _assinaturaInserirLink() {
+    const url = prompt('URL do link (ex: https://sisplansistemas.com.br):');
+    if (!url) return;
+    const texto = prompt('Texto do link (deixe vazio para usar a URL):') || url;
+    document.getElementById('eu-assinatura').focus();
+    document.execCommand('insertHTML', false, `<a href="${url}" target="_blank">${texto}</a>`);
+  }
+
+  function _assinaturaInserirImagem() {
+    const url = prompt('URL da imagem (ex: https://exemplo.com/logo.png):');
+    if (!url) return;
+    const alt = prompt('Texto alternativo da imagem (opcional):') || '';
+    document.getElementById('eu-assinatura').focus();
+    document.execCommand('insertHTML', false, `<img src="${url}" alt="${alt}" style="max-width:200px;height:auto;">`);
+  }
 
   // ─── Bancos Cadastro ─────────────────────────────────────
   let _bancosData = [];
