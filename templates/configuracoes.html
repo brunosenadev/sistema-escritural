@@ -1945,24 +1945,28 @@
   function _inserirNoCursor(html) {
     const editor = document.getElementById('eu-assinatura');
     editor.focus();
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount) {
-      const range = sel.getRangeAt(0);
-      range.deleteContents();
-      const tmp = document.createElement('div');
-      tmp.innerHTML = html;
-      const frag = document.createDocumentFragment();
-      let lastNode = null;
-      while (tmp.firstChild) lastNode = frag.appendChild(tmp.firstChild);
-      range.insertNode(frag);
-      if (lastNode) {
-        const r = range.cloneRange();
-        r.setStartAfter(lastNode); r.collapse(true);
-        sel.removeAllRanges(); sel.addRange(r);
+    try {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount) {
+        const range = sel.getRangeAt(0);
+        if (editor.contains(range.commonAncestorContainer)) {
+          range.deleteContents();
+          const tmp = document.createElement('div');
+          tmp.innerHTML = html;
+          const frag = document.createDocumentFragment();
+          let lastNode = null;
+          while (tmp.firstChild) lastNode = frag.appendChild(tmp.firstChild);
+          range.insertNode(frag);
+          if (lastNode) {
+            const r = range.cloneRange();
+            r.setStartAfter(lastNode); r.collapse(true);
+            sel.removeAllRanges(); sel.addRange(r);
+          }
+          return;
+        }
       }
-    } else {
-      editor.innerHTML += html;
-    }
+    } catch(e) { /* range inválido — cai no fallback */ }
+    editor.innerHTML += html;
   }
 
   function _assinaturaFmt(cmd) {
