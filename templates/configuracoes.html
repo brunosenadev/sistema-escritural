@@ -1275,9 +1275,9 @@
       <div class="grupo-modal">
         <label>Assinatura de e-mail <span style="color:#94a3b8;font-weight:400;text-transform:none;">(adicionada ao final de cada e-mail — suporta links e imagens)</span></label>
         <div class="assin-toolbar">
-          <button type="button" onmousedown="event.preventDefault(); document.execCommand('bold')"            title="Negrito"><b>B</b></button>
-          <button type="button" onmousedown="event.preventDefault(); document.execCommand('italic')"          title="Itálico"><i>I</i></button>
-          <button type="button" onmousedown="event.preventDefault(); document.execCommand('underline')"       title="Sublinhado"><u>U</u></button>
+          <button type="button" onmousedown="event.preventDefault(); _assinaturaFmt('bold')"       title="Negrito"><b>B</b></button>
+          <button type="button" onmousedown="event.preventDefault(); _assinaturaFmt('italic')"     title="Itálico"><i>I</i></button>
+          <button type="button" onmousedown="event.preventDefault(); _assinaturaFmt('underline')"  title="Sublinhado"><u>U</u></button>
           <button type="button" onmousedown="event.preventDefault(); _assinaturaInserirLink()"                title="Inserir link">🔗 Link</button>
           <button type="button" onmousedown="event.preventDefault(); _assinaturaUploadImagem()"               title="Subir imagem do computador">📁 Imagem</button>
           <button type="button" id="btn-assin-html" onmousedown="event.preventDefault(); _assinaturaToggleHtml()" title="Editar HTML fonte" style="margin-left:auto;">&lt;/&gt; HTML</button>
@@ -1942,12 +1942,40 @@
     }
   }
 
+  function _inserirNoCursor(html) {
+    const editor = document.getElementById('eu-assinatura');
+    editor.focus();
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      const frag = document.createDocumentFragment();
+      let lastNode = null;
+      while (tmp.firstChild) lastNode = frag.appendChild(tmp.firstChild);
+      range.insertNode(frag);
+      if (lastNode) {
+        const r = range.cloneRange();
+        r.setStartAfter(lastNode); r.collapse(true);
+        sel.removeAllRanges(); sel.addRange(r);
+      }
+    } else {
+      editor.innerHTML += html;
+    }
+  }
+
+  function _assinaturaFmt(cmd) {
+    const editor = document.getElementById('eu-assinatura');
+    editor.focus();
+    try { document.execCommand(cmd); } catch(e) { /* deprecated mas ainda funciona na maioria dos browsers */ }
+  }
+
   function _assinaturaInserirLink() {
     const url = prompt('URL do link (ex: https://sisplansistemas.com.br):');
     if (!url) return;
     const texto = prompt('Texto do link (deixe vazio para usar a URL):') || url;
-    document.getElementById('eu-assinatura').focus();
-    document.execCommand('insertHTML', false, `<a href="${url}" target="_blank">${texto}</a>`);
+    _inserirNoCursor(`<a href="${url}" target="_blank">${texto}</a>`);
   }
 
   function _assinaturaUploadImagem() {
@@ -1971,8 +1999,7 @@
           const tag = `<img src="${d.url}" style="max-width:200px;height:auto;">`;
           ta.value = ta.value.slice(0, pos) + tag + ta.value.slice(pos);
         } else {
-          document.getElementById('eu-assinatura').focus();
-          document.execCommand('insertHTML', false, `<img src="${d.url}" style="max-width:200px;height:auto;">`);
+          _inserirNoCursor(`<img src="${d.url}" style="max-width:200px;height:auto;">`);
         }
         mostrarToast('sucesso', 'Imagem enviada!');
         input.value = '';
