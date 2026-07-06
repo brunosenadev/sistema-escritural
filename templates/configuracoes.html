@@ -490,29 +490,20 @@
 
   /* ── Editor de assinatura ─── */
   .assin-toolbar {
-    display: flex; gap: 2px; padding: 4px 6px;
+    display: flex; gap: 4px; padding: 5px 8px;
     border: 1.5px solid #cbd5e1; border-bottom: none;
     border-radius: 6px 6px 0 0; background: #f8fafc;
   }
   .assin-toolbar button {
-    border: 1px solid #e2e8f0; background: #fff; border-radius: 4px;
-    padding: 2px 8px; cursor: pointer; font-size: 12px; line-height: 1.6;
-    color: #374151; transition: background 0.1s;
+    border: 1px solid #e2e8f0; background: #fff; border-radius: 5px;
+    padding: 3px 10px; cursor: pointer; font-size: 12px; line-height: 1.6;
+    color: #374151; transition: background 0.1s; font-family: inherit;
   }
   .assin-toolbar button:hover { background: #e2e8f0; }
-  .assin-editor {
-    min-height: 120px; padding: 8px 10px;
-    border: 1.5px solid #cbd5e1; border-radius: 0 0 6px 6px;
-    font-size: 13px; line-height: 1.5; outline: none;
-    font-family: Arial, sans-serif; word-break: break-word;
-    background: #fff; color: #1e293b;
-  }
-  .assin-editor:focus { border-color: #3b82f6; }
-  .assin-editor:empty:before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; display: block; }
   [data-tema="dark"] .assin-toolbar { background: var(--z-elevated); border-color: var(--z-border); }
   [data-tema="dark"] .assin-toolbar button { background: var(--z-surface); border-color: var(--z-border); color: var(--z-text-2); }
   [data-tema="dark"] .assin-toolbar button:hover { background: var(--z-border-s); }
-  [data-tema="dark"] .assin-editor { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] #eu-assinatura { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-1) !important; }
   [data-tema="dark"] .secao-email-titulo { color: #60a5fa; border-color: var(--z-border-s); }
   [data-tema="dark"] .hint-login         { color: var(--z-text-3); }
 
@@ -1273,22 +1264,17 @@
 
       <div class="secao-email-titulo">Assinatura</div>
       <div class="grupo-modal">
-        <label>Assinatura de e-mail <span style="color:#94a3b8;font-weight:400;text-transform:none;">(adicionada ao final de cada e-mail — suporta links e imagens)</span></label>
+        <label>Assinatura de e-mail <span style="color:#94a3b8;font-weight:400;text-transform:none;">(cole o HTML ou use os botões — suporta links e imagens)</span></label>
         <div class="assin-toolbar">
-          <button type="button" onmousedown="event.preventDefault(); _assinaturaFmt('bold')"       title="Negrito"><b>B</b></button>
-          <button type="button" onmousedown="event.preventDefault(); _assinaturaFmt('italic')"     title="Itálico"><i>I</i></button>
-          <button type="button" onmousedown="event.preventDefault(); _assinaturaFmt('underline')"  title="Sublinhado"><u>U</u></button>
-          <button type="button" onmousedown="event.preventDefault(); _assinaturaInserirLink()"                title="Inserir link">🔗 Link</button>
-          <button type="button" onmousedown="event.preventDefault(); _assinaturaUploadImagem()"               title="Subir imagem do computador">📁 Imagem</button>
-          <button type="button" id="btn-assin-html" onmousedown="event.preventDefault(); _assinaturaToggleHtml()" title="Editar HTML fonte" style="margin-left:auto;">&lt;/&gt; HTML</button>
+          <button type="button" onclick="_assinaturaUploadImagem()" title="Subir imagem do computador">📁 Subir imagem</button>
+          <button type="button" onclick="_assinaturaInserirLink()"  title="Inserir link">🔗 Link</button>
+          <button type="button" onclick="_assinaturaTogglePreview()" id="btn-assin-preview" title="Ver preview">👁 Preview</button>
         </div>
-        <div id="eu-assinatura"
-             class="assin-editor"
-             contenteditable="true"
-             data-placeholder="Ex: Atenciosamente, João Silva — Sisplan Sistemas"></div>
-        <textarea id="eu-assinatura-html"
-                  style="display:none;width:100%;min-height:160px;padding:8px 10px;border:1.5px solid #3b82f6;border-radius:0 0 6px 6px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box;outline:none;"
-                  placeholder="Cole aqui o HTML da assinatura e clique em &lt;/&gt; HTML para aplicar"></textarea>
+        <textarea id="eu-assinatura"
+                  style="width:100%;min-height:140px;padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:0 0 6px 6px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box;outline:none;color:#1e293b;background:#fff;"
+                  placeholder="Cole aqui o HTML da assinatura (ex: do Thunderbird) ou escreva..."></textarea>
+        <div id="eu-assinatura-preview"
+             style="display:none;border:1.5px solid #3b82f6;border-radius:0 0 6px 6px;padding:12px 14px;background:#fff;font-size:13px;min-height:80px;"></div>
         <input type="file" id="eu-assinatura-file" accept="image/*" style="display:none" onchange="_assinaturaOnFileSelect(this)">
       </div>
 
@@ -1865,7 +1851,7 @@
       document.getElementById('eu-imap-port').value = cfg.imap_port || 993;
       document.getElementById('eu-imap-ssl').checked = cfg.imap_ssl !== 0 && cfg.imap_ssl !== false;
       document.getElementById('eu-senha').value = '';
-      document.getElementById('eu-assinatura').innerHTML = cfg.assinatura || '';
+      document.getElementById('eu-assinatura').value = cfg.assinatura || '';
     })
     .catch(() => {});
   }
@@ -1882,9 +1868,7 @@
       imap_port: parseInt(document.getElementById('eu-imap-port').value) || 993,
       imap_ssl:  document.getElementById('eu-imap-ssl').checked,
       senha:     document.getElementById('eu-senha').value,
-      assinatura: _assinaturaHtmlMode
-        ? document.getElementById('eu-assinatura-html').value
-        : document.getElementById('eu-assinatura').innerHTML,
+      assinatura: document.getElementById('eu-assinatura').value,
     };
     fetch(`/api/email-config/${id}`, {
       method: 'POST',
@@ -1921,65 +1905,38 @@
     document.getElementById('preview-cor').textContent = this.value || 'Prévia do nome';
   });
 
-  // ─── Editor de assinatura ────────────────────────────────
-  let _assinaturaHtmlMode = false;
-
-  function _assinaturaToggleHtml() {
-    const editor = document.getElementById('eu-assinatura');
-    const textarea = document.getElementById('eu-assinatura-html');
-    const btn = document.getElementById('btn-assin-html');
-    _assinaturaHtmlMode = !_assinaturaHtmlMode;
-    if (_assinaturaHtmlMode) {
-      textarea.value = editor.innerHTML;
-      editor.style.display = 'none';
-      textarea.style.display = 'block';
-      btn.style.background = '#dbeafe'; btn.style.color = '#1d4ed8';
-    } else {
-      editor.innerHTML = textarea.value;
-      textarea.style.display = 'none';
-      editor.style.display = 'block';
+  // ─── Editor de assinatura (textarea HTML + preview) ─────
+  function _assinaturaTogglePreview() {
+    const ta  = document.getElementById('eu-assinatura');
+    const pre = document.getElementById('eu-assinatura-preview');
+    const btn = document.getElementById('btn-assin-preview');
+    const mostrando = pre.style.display !== 'none';
+    if (mostrando) {
+      pre.style.display = 'none';
+      ta.style.display  = '';
       btn.style.background = ''; btn.style.color = '';
+    } else {
+      pre.innerHTML     = ta.value;
+      pre.style.display = 'block';
+      ta.style.display  = 'none';
+      btn.style.background = '#dbeafe'; btn.style.color = '#1d4ed8';
     }
   }
 
-  function _inserirNoCursor(html) {
-    const editor = document.getElementById('eu-assinatura');
-    editor.focus();
-    try {
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount) {
-        const range = sel.getRangeAt(0);
-        if (editor.contains(range.commonAncestorContainer)) {
-          range.deleteContents();
-          const tmp = document.createElement('div');
-          tmp.innerHTML = html;
-          const frag = document.createDocumentFragment();
-          let lastNode = null;
-          while (tmp.firstChild) lastNode = frag.appendChild(tmp.firstChild);
-          range.insertNode(frag);
-          if (lastNode) {
-            const r = range.cloneRange();
-            r.setStartAfter(lastNode); r.collapse(true);
-            sel.removeAllRanges(); sel.addRange(r);
-          }
-          return;
-        }
-      }
-    } catch(e) { /* range inválido — cai no fallback */ }
-    editor.innerHTML += html;
-  }
-
-  function _assinaturaFmt(cmd) {
-    const editor = document.getElementById('eu-assinatura');
-    editor.focus();
-    try { document.execCommand(cmd); } catch(e) { /* deprecated mas ainda funciona na maioria dos browsers */ }
+  function _assinaturaInserirTexto(tag) {
+    const ta  = document.getElementById('eu-assinatura');
+    const ini = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+    const fim = ta.selectionEnd   != null ? ta.selectionEnd   : ini;
+    ta.value  = ta.value.slice(0, ini) + tag + ta.value.slice(fim);
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = ini + tag.length;
   }
 
   function _assinaturaInserirLink() {
-    const url = prompt('URL do link (ex: https://sisplansistemas.com.br):');
+    const url   = prompt('URL do link (ex: https://sisplansistemas.com.br):');
     if (!url) return;
     const texto = prompt('Texto do link (deixe vazio para usar a URL):') || url;
-    _inserirNoCursor(`<a href="${url}" target="_blank">${texto}</a>`);
+    _assinaturaInserirTexto(`<a href="${url}" target="_blank">${texto}</a>`);
   }
 
   function _assinaturaUploadImagem() {
@@ -1997,21 +1954,13 @@
       .then(r => r.json())
       .then(d => {
         if (d.erro) { mostrarToast('erro', d.erro); return; }
-        const imgTag = `<img src="${d.url}" style="max-width:200px;height:auto;">`;
-        if (_assinaturaHtmlMode) {
-          const ta = document.getElementById('eu-assinatura-html');
-          const pos = ta.selectionStart || ta.value.length;
-          ta.value = ta.value.slice(0, pos) + imgTag + ta.value.slice(pos);
-        } else {
-          // Inserção direta no innerHTML — sem depender de Selection/Range
-          document.getElementById('eu-assinatura').innerHTML += imgTag;
-        }
-        mostrarToast('sucesso', 'Imagem enviada!');
+        _assinaturaInserirTexto(`<img src="${d.url}" style="max-width:200px;height:auto;">`);
+        mostrarToast('sucesso', 'Imagem inserida!');
         input.value = '';
       })
       .catch(err => {
         console.error('[upload-assinatura]', err);
-        mostrarToast('erro', 'Erro ao enviar imagem.');
+        mostrarToast('erro', 'Erro ao enviar: ' + (err.message || err));
       });
   }
 
