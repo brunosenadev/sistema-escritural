@@ -1,5 +1,8 @@
-from flask import Blueprint, render_template, request, jsonify, session, make_response
+from flask import Blueprint, render_template, request, jsonify, session, make_response, current_app
 import banco
+import os
+import uuid
+from werkzeug.utils import secure_filename
 from utils import checar_admin, checar_login, usuario_logado, criar_tokens, _preencher_sessao, tem_acesso_tela
 
 config_bp = Blueprint('config', __name__)
@@ -298,3 +301,33 @@ def api_remover_banco_cadastro(id_banco):
     banco.remover_banco_cadastro(id_banco)
     _log('Configurações', 'DELETOU', f'Removeu banco #{id_banco}')
     return jsonify({'sucesso': True})
+
+
+_EXTENSOES_IMAGEM = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'}
+_RE_LOGIN_SEGURO = __import__('re').compile(r'[^A-Za-z0-9_\-]')
+
+@config_bp.route('/api/upload-assinatura', methods=['POST'])
+def api_upload_assinatura():
+    if checar_admin():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    arquivo = request.files.get('imagem')
+    usuario_id = request.form.get('usuario_id', '').strip()
+    if not arquivo or not arquivo.filename:
+        return jsonify({'erro': 'Nenhum arquivo enviado'}), 400
+    ext = arquivo.filename.rsplit('.', 1)[-1].lower() if '.' in arquivo.filename else ''
+    if ext not in _EXTENSOES_IMAGEM:
+        return jsonify({'erro': 'Tipo de arquivo não permitido'}), 400
+
+    # Determina nome da pasta: login do usuário ou fallback "geral"
+    pasta_usuario = 'geral'
+    if usuario_id:
+        u = banco.buscar_usuario_por_id(int(usuario_id))
+        if u:
+            login_raw = u.get('usuario') or u.get('nome') or str(usuario_id)
+            pasta_usuario = _RE_LOGIN_SEGURO.sub('_', login_raw).lower()
+
+    nome_arquivo = f'{uuid.uuid4().hex}.{ext}'
+    pasta = os.path.join(current_app.root_path, 'static', 'assinaturas', pasta_usuario)
+    os.makedirs(pasta, exist_ok=True)
+    arquivo.save(os.path.join(pasta, nome_arquivo))
+    return jsonify({'url': f'/static/assinaturas/{pasta_usuario}/{nome_arquivo}'})

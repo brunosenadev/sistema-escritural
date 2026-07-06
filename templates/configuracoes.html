@@ -1279,12 +1279,17 @@
           <button type="button" onmousedown="event.preventDefault(); document.execCommand('italic')"          title="Itálico"><i>I</i></button>
           <button type="button" onmousedown="event.preventDefault(); document.execCommand('underline')"       title="Sublinhado"><u>U</u></button>
           <button type="button" onmousedown="event.preventDefault(); _assinaturaInserirLink()"                title="Inserir link">🔗 Link</button>
-          <button type="button" onmousedown="event.preventDefault(); _assinaturaInserirImagem()"              title="Inserir imagem">🖼 Imagem</button>
+          <button type="button" onmousedown="event.preventDefault(); _assinaturaUploadImagem()"               title="Subir imagem do computador">📁 Imagem</button>
+          <button type="button" id="btn-assin-html" onmousedown="event.preventDefault(); _assinaturaToggleHtml()" title="Editar HTML fonte" style="margin-left:auto;">&lt;/&gt; HTML</button>
         </div>
         <div id="eu-assinatura"
              class="assin-editor"
              contenteditable="true"
              data-placeholder="Ex: Atenciosamente, João Silva — Sisplan Sistemas"></div>
+        <textarea id="eu-assinatura-html"
+                  style="display:none;width:100%;min-height:160px;padding:8px 10px;border:1.5px solid #3b82f6;border-radius:0 0 6px 6px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box;outline:none;"
+                  placeholder="Cole aqui o HTML da assinatura e clique em &lt;/&gt; HTML para aplicar"></textarea>
+        <input type="file" id="eu-assinatura-file" accept="image/*" style="display:none" onchange="_assinaturaOnFileSelect(this)">
       </div>
 
       <div class="rodape-modal">
@@ -1877,7 +1882,9 @@
       imap_port: parseInt(document.getElementById('eu-imap-port').value) || 993,
       imap_ssl:  document.getElementById('eu-imap-ssl').checked,
       senha:     document.getElementById('eu-senha').value,
-      assinatura: document.getElementById('eu-assinatura').innerHTML,
+      assinatura: _assinaturaHtmlMode
+        ? document.getElementById('eu-assinatura-html').value
+        : document.getElementById('eu-assinatura').innerHTML,
     };
     fetch(`/api/email-config/${id}`, {
       method: 'POST',
@@ -1915,6 +1922,26 @@
   });
 
   // ─── Editor de assinatura ────────────────────────────────
+  let _assinaturaHtmlMode = false;
+
+  function _assinaturaToggleHtml() {
+    const editor = document.getElementById('eu-assinatura');
+    const textarea = document.getElementById('eu-assinatura-html');
+    const btn = document.getElementById('btn-assin-html');
+    _assinaturaHtmlMode = !_assinaturaHtmlMode;
+    if (_assinaturaHtmlMode) {
+      textarea.value = editor.innerHTML;
+      editor.style.display = 'none';
+      textarea.style.display = 'block';
+      btn.style.background = '#dbeafe'; btn.style.color = '#1d4ed8';
+    } else {
+      editor.innerHTML = textarea.value;
+      textarea.style.display = 'none';
+      editor.style.display = 'block';
+      btn.style.background = ''; btn.style.color = '';
+    }
+  }
+
   function _assinaturaInserirLink() {
     const url = prompt('URL do link (ex: https://sisplansistemas.com.br):');
     if (!url) return;
@@ -1923,12 +1950,34 @@
     document.execCommand('insertHTML', false, `<a href="${url}" target="_blank">${texto}</a>`);
   }
 
-  function _assinaturaInserirImagem() {
-    const url = prompt('URL da imagem (ex: https://exemplo.com/logo.png):');
-    if (!url) return;
-    const alt = prompt('Texto alternativo da imagem (opcional):') || '';
-    document.getElementById('eu-assinatura').focus();
-    document.execCommand('insertHTML', false, `<img src="${url}" alt="${alt}" style="max-width:200px;height:auto;">`);
+  function _assinaturaUploadImagem() {
+    document.getElementById('eu-assinatura-file').click();
+  }
+
+  function _assinaturaOnFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('imagem', file);
+    const uid = document.getElementById('campo-usuario-id').value;
+    if (uid) fd.append('usuario_id', uid);
+    fetch('/api/upload-assinatura', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(d => {
+        if (d.erro) { mostrarToast('erro', d.erro); return; }
+        if (_assinaturaHtmlMode) {
+          const ta = document.getElementById('eu-assinatura-html');
+          const pos = ta.selectionStart;
+          const tag = `<img src="${d.url}" style="max-width:200px;height:auto;">`;
+          ta.value = ta.value.slice(0, pos) + tag + ta.value.slice(pos);
+        } else {
+          document.getElementById('eu-assinatura').focus();
+          document.execCommand('insertHTML', false, `<img src="${d.url}" style="max-width:200px;height:auto;">`);
+        }
+        mostrarToast('sucesso', 'Imagem enviada!');
+        input.value = '';
+      })
+      .catch(() => mostrarToast('erro', 'Erro ao enviar imagem.'));
   }
 
   // ─── Bancos Cadastro ─────────────────────────────────────
