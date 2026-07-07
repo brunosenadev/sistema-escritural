@@ -223,8 +223,8 @@
 {% block conteudo %}
 <div class="notif-page-wrap">
 
-  {% if nivel_acesso in ('admin', 'master') %}
-  <!-- Painel de envio (admin) -->
+  {% if pode_enviar %}
+  <!-- Painel de envio -->
   <div class="notif-enviar-card">
     <div class="notif-enviar-titulo">
       <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>

@@ -1216,6 +1216,14 @@
               <input type="checkbox" id="campo-aviso-melhorias" style="accent-color:#2563eb;">
               Receber aviso de nova melhoria
             </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
+              <input type="checkbox" id="campo-aviso-credenciais" style="accent-color:#2563eb;">
+              Receber aviso de validade de credenciais
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
+              <input type="checkbox" id="campo-pode-enviar-notif" style="accent-color:#7c3aed;">
+              Pode enviar notificações pelo sistema
+            </label>
           </div>
         </div>
       </div>
@@ -1535,8 +1543,10 @@
     document.getElementById('campo-usuario-nivel').disabled = usuario.nivel === 'master';
     document.getElementById('campo-usuario-tecnico').value = usuario.tecnico_vinculado || '';
     document.getElementById('campo-usuario-setor').value   = usuario.setor || '';
-    document.getElementById('campo-aviso-escritural').checked = !!(usuario.recebe_aviso_escritural);
-    document.getElementById('campo-aviso-melhorias').checked  = !!(usuario.recebe_aviso_melhorias);
+    document.getElementById('campo-aviso-escritural').checked   = !!(usuario.recebe_aviso_escritural);
+    document.getElementById('campo-aviso-melhorias').checked    = !!(usuario.recebe_aviso_melhorias);
+    document.getElementById('campo-aviso-credenciais').checked  = !!(usuario.recebe_aviso_credenciais);
+    document.getElementById('campo-pode-enviar-notif').checked  = !!(usuario.pode_enviar_notificacao);
     document.getElementById('hint-login').style.display = 'inline';
     document.getElementById('dica-senha').textContent = 'Deixe em branco para manter a senha atual.';
     _setCorUsuario(usuario.cor || '');
@@ -1564,8 +1574,10 @@
 
     const dados  = {
       nome, nivel, tecnico_vinculado: tecnico || null, setor: setor || '', cor,
-      recebe_aviso_escritural: document.getElementById('campo-aviso-escritural').checked ? 1 : 0,
-      recebe_aviso_melhorias:  document.getElementById('campo-aviso-melhorias').checked  ? 1 : 0,
+      recebe_aviso_escritural:  document.getElementById('campo-aviso-escritural').checked   ? 1 : 0,
+      recebe_aviso_melhorias:   document.getElementById('campo-aviso-melhorias').checked    ? 1 : 0,
+      recebe_aviso_credenciais: document.getElementById('campo-aviso-credenciais').checked  ? 1 : 0,
+      pode_enviar_notificacao:  document.getElementById('campo-pode-enviar-notif').checked  ? 1 : 0,
     };
     if (senha) dados.senha = senha;
 

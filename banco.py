@@ -510,6 +510,30 @@ def inicializar_banco():
             criado_em  TEXT    DEFAULT (datetime('now','localtime'))
         );
         CREATE INDEX IF NOT EXISTS idx_notif_usuario ON notificacoes(usuario_id);
+
+        CREATE TABLE IF NOT EXISTS credenciais (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            cnpj           TEXT    NOT NULL DEFAULT '',
+            nome           TEXT    NOT NULL DEFAULT '',
+            tipo           TEXT    NOT NULL DEFAULT '',
+            banco          TEXT    DEFAULT '',
+            conta          TEXT    DEFAULT '',
+            data_validade  TEXT    NOT NULL DEFAULT '',
+            silenciado     INTEGER DEFAULT 0,
+            obs            TEXT    DEFAULT '',
+            criado_por     TEXT    DEFAULT '',
+            criado_em      TEXT    DEFAULT (datetime('now','localtime')),
+            atualizado_em  TEXT    DEFAULT (datetime('now','localtime'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_cred_validade ON credenciais(data_validade);
+
+        CREATE TABLE IF NOT EXISTS credenciais_avisos (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            credencial_id INTEGER NOT NULL,
+            tipo_aviso    TEXT    NOT NULL,
+            enviado_em    TEXT    DEFAULT (datetime('now','localtime')),
+            UNIQUE(credencial_id, tipo_aviso)
+        );
     """)
 
     if conn.execute("SELECT COUNT(*) FROM usuarios").fetchone()[0] == 0:
@@ -716,19 +740,26 @@ def adicionar_usuario(dados):
 def atualizar_usuario(id_usuario, campos):
     conn = conectar()
     cor = campos.get('cor') or ''
-    av_esc = 1 if campos.get('recebe_aviso_escritural') else 0
-    av_mel = 1 if campos.get('recebe_aviso_melhorias') else 0
+    av_esc  = 1 if campos.get('recebe_aviso_escritural')  else 0
+    av_mel  = 1 if campos.get('recebe_aviso_melhorias')   else 0
+    av_cred = 1 if campos.get('recebe_aviso_credenciais') else 0
+    pode_env = 1 if campos.get('pode_enviar_notificacao') else 0
     if campos.get('senha'):
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=?,cor=?,recebe_aviso_escritural=?,recebe_aviso_melhorias=? WHERE id=?",
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=?,cor=?,"
+            "recebe_aviso_escritural=?,recebe_aviso_melhorias=?,recebe_aviso_credenciais=?,"
+            "pode_enviar_notificacao=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             _hash_senha(campos['senha']), campos.get('setor') or '', cor, av_esc, av_mel, id_usuario)
+             _hash_senha(campos['senha']), campos.get('setor') or '', cor,
+             av_esc, av_mel, av_cred, pode_env, id_usuario)
         )
     else:
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,setor=?,cor=?,recebe_aviso_escritural=?,recebe_aviso_melhorias=? WHERE id=?",
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,setor=?,cor=?,"
+            "recebe_aviso_escritural=?,recebe_aviso_melhorias=?,recebe_aviso_credenciais=?,"
+            "pode_enviar_notificacao=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             campos.get('setor') or '', cor, av_esc, av_mel, id_usuario)
+             campos.get('setor') or '', cor, av_esc, av_mel, av_cred, pode_env, id_usuario)
         )
     conn.commit()
     conn.close()
@@ -755,16 +786,6 @@ def buscar_tecnico_escritural(escritural_id):
     return row['tecnico'] if row else None
 
 
-def listar_usuarios_com_flag(flag_col):
-    """Retorna lista de {id, nome} de usuários com o flag ativo (1)."""
-    if flag_col not in ('recebe_aviso_escritural', 'recebe_aviso_melhorias'):
-        return []
-    conn = conectar()
-    rows = conn.execute(
-        f"SELECT id, nome FROM usuarios WHERE {flag_col}=1"
-    ).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
 
 
 def cores_por_tecnico() -> dict:
@@ -808,7 +829,8 @@ def migrar_flags_avisos():
     conn = conectar()
     try:
         existentes = {r[1] for r in conn.execute("PRAGMA table_info(usuarios)").fetchall()}
-        for col in ('recebe_aviso_escritural', 'recebe_aviso_melhorias'):
+        for col in ('recebe_aviso_escritural', 'recebe_aviso_melhorias',
+                    'pode_enviar_notificacao', 'recebe_aviso_credenciais'):
             if col not in existentes:
                 conn.execute(f"ALTER TABLE usuarios ADD COLUMN {col} INTEGER DEFAULT 0")
         conn.commit()
@@ -2536,3 +2558,103 @@ def deletar_notificacoes_lidas(usuario_id):
     conn.execute("DELETE FROM notificacoes WHERE usuario_id=? AND lida=1", (usuario_id,))
     conn.commit()
     conn.close()
+
+
+# ── Credenciais ───────────────────────────────────────────
+
+def listar_credenciais():
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT * FROM credenciais ORDER BY data_validade ASC"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def buscar_credencial(credencial_id):
+    conn = conectar()
+    row = conn.execute("SELECT * FROM credenciais WHERE id=?", (credencial_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def adicionar_credencial(dados):
+    conn = conectar()
+    cur = conn.execute(
+        """INSERT INTO credenciais (cnpj, nome, tipo, banco, conta, data_validade, obs, criado_por)
+           VALUES (?,?,?,?,?,?,?,?)""",
+        (dados.get('cnpj',''), dados.get('nome',''), dados.get('tipo',''),
+         dados.get('banco',''), dados.get('conta',''), dados.get('data_validade',''),
+         dados.get('obs',''), dados.get('criado_por',''))
+    )
+    cid = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return cid
+
+
+def atualizar_credencial(credencial_id, dados):
+    conn = conectar()
+    # Se a data de validade mudou, reseta os avisos para esse ciclo
+    old = conn.execute("SELECT data_validade FROM credenciais WHERE id=?", (credencial_id,)).fetchone()
+    if old and old['data_validade'] != dados.get('data_validade', old['data_validade']):
+        conn.execute("DELETE FROM credenciais_avisos WHERE credencial_id=?", (credencial_id,))
+    conn.execute(
+        """UPDATE credenciais SET cnpj=?,nome=?,tipo=?,banco=?,conta=?,data_validade=?,
+           obs=?,atualizado_em=datetime('now','localtime') WHERE id=?""",
+        (dados.get('cnpj',''), dados.get('nome',''), dados.get('tipo',''),
+         dados.get('banco',''), dados.get('conta',''), dados.get('data_validade',''),
+         dados.get('obs',''), credencial_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def deletar_credencial(credencial_id):
+    conn = conectar()
+    conn.execute("DELETE FROM credenciais_avisos WHERE credencial_id=?", (credencial_id,))
+    conn.execute("DELETE FROM credenciais WHERE id=?", (credencial_id,))
+    conn.commit()
+    conn.close()
+
+
+def toggle_silenciar_credencial(credencial_id):
+    conn = conectar()
+    conn.execute(
+        "UPDATE credenciais SET silenciado = CASE WHEN silenciado=1 THEN 0 ELSE 1 END WHERE id=?",
+        (credencial_id,)
+    )
+    conn.commit()
+    silenciado = conn.execute("SELECT silenciado FROM credenciais WHERE id=?", (credencial_id,)).fetchone()
+    conn.close()
+    return bool(silenciado['silenciado']) if silenciado else False
+
+
+def registrar_aviso_credencial(credencial_id, tipo_aviso):
+    """Registra que um aviso foi enviado. Retorna True se inseriu (novo), False se já existia."""
+    conn = conectar()
+    try:
+        conn.execute(
+            "INSERT INTO credenciais_avisos (credencial_id, tipo_aviso) VALUES (?,?)",
+            (credencial_id, tipo_aviso)
+        )
+        conn.commit()
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
+
+def listar_usuarios_com_flag(flag_col):
+    """Retorna lista de {id, nome} de usuários com o flag ativo (1)."""
+    _cols_validas = {
+        'recebe_aviso_escritural', 'recebe_aviso_melhorias',
+        'recebe_aviso_credenciais', 'pode_enviar_notificacao',
+    }
+    if flag_col not in _cols_validas:
+        return []
+    conn = conectar()
+    rows = conn.execute(f"SELECT id, nome FROM usuarios WHERE {flag_col}=1").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

@@ -663,6 +663,10 @@
       from { opacity:0; transform:translateX(-18px); }
       to   { opacity:1; transform:translateX(0); }
     }
+    @keyframes nf-sair {
+      from { opacity:1; transform:translateX(0); }
+      to   { opacity:0; transform:translateX(-18px); }
+    }
     /* Dark overrides */
     [data-tema="dark"] .badge-sino { border-color: var(--z-surface); }
     [data-tema="dark"] #dropdown-notif { background:var(--z-surface);border-color:var(--z-border); }
@@ -859,6 +863,15 @@
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
         </svg>
         Novos Escriturais
+      </a>
+      {% endif %}
+
+      {% if _eh_master or 'credenciais' in _ta %}
+      <a href="/credenciais" class="nav-item {% if aba_ativa == 'credenciais' %}ativo{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Credenciais
       </a>
       {% endif %}
 
@@ -1298,6 +1311,15 @@
   (function() {
     var _ultimoId = null;
     var _naoLidas = 0;
+    var _ac = null; // AudioContext compartilhado
+
+    // Desbloqueia AudioContext no primeiro clique do usuário
+    document.addEventListener('click', function _unlock() {
+      try {
+        if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+        if (_ac.state === 'suspended') _ac.resume();
+      } catch(e) {}
+    }, true);
 
     function _setBadge(n) {
       _naoLidas = n;
@@ -1313,17 +1335,25 @@
 
     function _tocarSom() {
       try {
-        var ctx = new (window.AudioContext || window.webkitAudioContext)();
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(550, ctx.currentTime + 0.18);
-        gain.gain.setValueAtTime(0.22, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.38);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.38);
+        if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+        var ctx = _ac;
+        if (ctx.state === 'suspended') { ctx.resume(); }
+        // Dois tons suaves em sequência: ding-dong
+        function _ding(freq, start, dur) {
+          var osc  = ctx.createOscillator();
+          var gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.6, ctx.currentTime + start + dur);
+          gain.gain.setValueAtTime(0, ctx.currentTime + start);
+          gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + start + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+          osc.start(ctx.currentTime + start);
+          osc.stop(ctx.currentTime + start + dur);
+        }
+        _ding(880, 0,    0.35);
+        _ding(660, 0.20, 0.45);
       } catch(e) {}
     }
 
@@ -1340,52 +1370,41 @@
         '</div>';
       area.appendChild(t);
       setTimeout(function() {
-        t.style.animation = 'toast-sair 0.3s ease forwards';
-        setTimeout(function() { t.remove(); }, 300);
+        t.style.animation = 'nf-sair 0.3s ease forwards';
+        setTimeout(function() { if (t.parentNode) t.remove(); }, 300);
       }, 5000);
     }
 
     function _poll() {
-      var url = _ultimoId !== null
-        ? '/api/notificacoes/contagem?desde_id=' + _ultimoId
-        : '/api/notificacoes/contagem';
-      fetch(url)
+      if (_ultimoId === null) return; // aguarda init
+      fetch('/api/notificacoes/contagem?desde_id=' + _ultimoId)
         .then(function(r) { return r.ok ? r.json() : null; })
         .then(function(d) {
           if (!d) return;
           _setBadge(d.nao_lidas);
-          if (_ultimoId !== null && d.novas && d.novas.length > 0) {
+          if (d.novas && d.novas.length > 0) {
             d.novas.forEach(function(n) { _mostrarToastNotif(n.titulo, n.mensagem); });
             _tocarSom();
-          }
-          if (d.novas && d.novas.length > 0) {
             var maxId = Math.max.apply(null, d.novas.map(function(n) { return n.id; }));
-            if (_ultimoId === null || maxId > _ultimoId) _ultimoId = maxId;
+            if (maxId > _ultimoId) _ultimoId = maxId;
           }
         })
         .catch(function() {});
     }
 
-    // Inicializa: carrega contagem e max ID sem disparar som/toast
+    // Init encadeada: badge + _ultimoId antes de ligar o poll
     fetch('/api/notificacoes/contagem')
       .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(d) {
-        if (!d) return;
-        _setBadge(d.nao_lidas);
-      })
+      .then(function(d) { if (d) _setBadge(d.nao_lidas); })
       .catch(function() {});
+
     fetch('/api/notificacoes')
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(lista) {
-        if (lista && lista.length > 0) {
-          _ultimoId = lista[0].id;
-        } else {
-          _ultimoId = 0;
-        }
+        _ultimoId = (lista && lista.length > 0) ? lista[0].id : 0;
+        setInterval(_poll, 10000); // poll a cada 10s após init
       })
-      .catch(function() { _ultimoId = 0; });
-
-    setInterval(_poll, 30000);
+      .catch(function() { _ultimoId = 0; setInterval(_poll, 10000); });
 
     // ── Dropdown ──────────────────────────────────────────
     function _renderDropdown(notifs) {

@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+{% set aba_ativa = 'credenciais' %}
+
+{% block titulo %}Credenciais — Sisplan{% endblock %}
+{% block titulo_pagina %}Controle de Credenciais{% endblock %}
+{% block breadcrumb %}Processos / Credenciais{% endblock %}
+
+{% block acoes_header %}
+<button class="btn-header-pill" onclick="abrirModalCred()">
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  Nova Credencial
+</button>
+{% endblock %}
+
+{% block estilos_extras %}
+<style>
+  .cred-wrap { padding: 0 24px 40px; }
+
+  /* ── Resumo ── */
+  .cred-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .cred-stat {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cred-stat-val { font-size: 26px; font-weight: 700; color: #0f172a; line-height: 1; }
+  .cred-stat-label { font-size: 12px; color: #64748b; }
+  .cred-stat.ok    { border-left: 4px solid #16a34a; }
+  .cred-stat.alerta { border-left: 4px solid #d97706; }
+  .cred-stat.critico { border-left: 4px solid #dc2626; }
+  .cred-stat.silenc { border-left: 4px solid #94a3b8; }
+
+  /* ── Filtros ── */
+  .cred-filtros {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .btn-filtro {
+    padding: 5px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 99px;
+    font-size: 12px;
+    cursor: pointer;
+    background: #f8fafc;
+    color: #475569;
+    font-family: inherit;
+    transition: all 0.12s;
+  }
+  .btn-filtro.ativo, .btn-filtro:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+  /* ── Tabela ── */
+  .cred-tabela-wrap {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .cred-tabela {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .cred-tabela th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .cred-tabela td {
+    padding: 11px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    vertical-align: middle;
+  }
+  .cred-tabela tr:last-child td { border-bottom: none; }
+  .cred-tabela tr:hover td { background: #fafbfc; }
+  .cred-tabela tr.silenciado td { opacity: 0.55; }
+
+  /* badges de tipo */
+  .tipo-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tipo-badge {
+    padding: 2px 7px; border-radius: 99px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .tipo-badge.pix       { background: #f5f3ff; color: #7c3aed; }
+  .tipo-badge.cobranca  { background: #eff6ff; color: #2563eb; }
+  .tipo-badge.pagamento { background: #f0fdf4; color: #15803d; }
+  .tipo-badge.extrato   { background: #fff7ed; color: #c2410c; }
+
+  /* status de validade */
+  .status-cred {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; white-space: nowrap;
+  }
+  .status-cred .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .status-ok      { background: #f0fdf4; color: #15803d; }
+  .status-ok .dot { background: #16a34a; }
+  .status-alerta      { background: #fefce8; color: #a16207; }
+  .status-alerta .dot { background: #d97706; }
+  .status-urgente      { background: #fff7ed; color: #c2410c; }
+  .status-urgente .dot { background: #ea580c; }
+  .status-vencida      { background: #fef2f2; color: #dc2626; }
+  .status-vencida .dot { background: #dc2626; }
+  .status-silenciado      { background: #f1f5f9; color: #64748b; }
+  .status-silenciado .dot { background: #94a3b8; }
+
+  /* botões de ação na linha */
+  .cred-acoes { display: flex; gap: 5px; align-items: center; }
+  .btn-cred-acao {
+    width: 28px; height: 28px; border: none; border-radius: 7px;
+    background: #f1f5f9; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: #64748b;
+    flex-shrink: 0;
+  }
+  .btn-cred-acao:hover { background: #e2e8f0; color: #0f172a; }
+  .btn-cred-acao.silenciar:hover { background: #fef9c3; color: #a16207; }
+  .btn-cred-acao.reativar:hover { background: #dcfce7; color: #15803d; }
+  .btn-cred-acao.perigo:hover { background: #fef2f2; color: #dc2626; }
+  .btn-cred-acao svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  /* modal */
+  .modal-cred-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .modal-cred-grid .full { grid-column: 1 / -1; }
+  .cred-tipos-wrap {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;
+  }
+  .cred-tipo-check {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border: 1px solid #e2e8f0; border-radius: 99px;
+    cursor: pointer; font-size: 12px; font-weight: 500;
+    transition: all 0.12s; user-select: none;
+  }
+  .cred-tipo-check input { display: none; }
+  .cred-tipo-check.checked { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+  .cred-tipo-check:hover { border-color: #93c5fd; }
+  .cred-vazio {
+    padding: 48px 24px; text-align: center; color: #94a3b8; font-size: 14px;
+  }
+  .cred-vazio svg { width: 36px; height: 36px; stroke: #cbd5e1; fill: none; stroke-width: 1.5; display: block; margin: 0 auto 10px; }
+
+  /* Dark mode */
+  [data-tema="dark"] .cred-stat { background: var(--z-surface); border-color: var(--z-border); }
+  [data-tema="dark"] .cred-stat-val { color: var(--z-text-1); }
+  [data-tema="dark"] .cred-stat-label { color: var(--z-text-2); }
+  [data-tema="dark"] .btn-filtro { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] .btn-filtro.ativo, [data-tema="dark"] .btn-filtro:hover { background: var(--z-accent); color: #fff; border-color: var(--z-accent); }
+  [data-tema="dark"] .cred-tabela-wrap { background: var(--z-surface); border-color: var(--z-border); }
+  [data-tema="dark"] .cred-tabela th { background: var(--z-elevated); border-bottom-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] .cred-tabela td { border-bottom-color: var(--z-border-s); color: var(--z-text-1); }
+  [data-tema="dark"] .cred-tabela tr:hover td { background: var(--z-elevated); }
+  [data-tema="dark"] .btn-cred-acao { background: var(--z-elevated); color: var(--z-text-2); }
+  [data-tema="dark"] .btn-cred-acao:hover { background: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .cred-vazio { color: var(--z-text-3); }
+  [data-tema="dark"] .cred-vazio svg { stroke: var(--z-text-3); }
+  [data-tema="dark"] .cred-tipo-check { border-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] .cred-tipo-check.checked { border-color: var(--z-accent); background: rgba(99,102,241,0.15); color: var(--z-accent-t); }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="cred-wrap">
+
+  {# ── Stats ── #}
+  {% set total = credenciais | length %}
+  {% set n_ok      = credenciais | selectattr('dias', '>=', 30) | list | length %}
+  {% set n_alerta  = credenciais | selectattr('dias', 'ge', 0) | selectattr('dias', 'lt', 30) | list | length %}
+  {% set n_vencido = credenciais | selectattr('dias', 'lt', 0) | list | length %}
+  {% set n_silenc  = credenciais | selectattr('silenciado', 'equalto', 1) | list | length %}
+  <div class="cred-stats">
+    <div class="cred-stat ok">
+      <span class="cred-stat-val">{{ n_ok }}</span>
+      <span class="cred-stat-label">Em dia (≥ 30 dias)</span>
+    </div>
+    <div class="cred-stat alerta">
+      <span class="cred-stat-val">{{ n_alerta }}</span>
+      <span class="cred-stat-label">Atenção (< 30 dias)</span>
+    </div>
+    <div class="cred-stat critico">
+      <span class="cred-stat-val">{{ n_vencido }}</span>
+      <span class="cred-stat-label">Vencidas</span>
+    </div>
+    <div class="cred-stat silenc">
+      <span class="cred-stat-val">{{ n_silenc }}</span>
+      <span class="cred-stat-label">Silenciadas</span>
+    </div>
+  </div>
+
+  {# ── Filtros ── #}
+  <div class="cred-filtros">
+    <button class="btn-filtro ativo" onclick="filtrar('todos', this)">Todas ({{ total }})</button>
+    <button class="btn-filtro" onclick="filtrar('ok', this)">Em dia</button>
+    <button class="btn-filtro" onclick="filtrar('alerta', this)">Atenção</button>
+    <button class="btn-filtro" onclick="filtrar('vencida', this)">Vencidas</button>
+    <button class="btn-filtro" onclick="filtrar('silenciada', this)">Silenciadas</button>
+  </div>
+
+  {# ── Tabela ── #}
+  <div class="cred-tabela-wrap">
+    {% if not credenciais %}
+    <div class="cred-vazio">
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Nenhuma credencial cadastrada ainda.
+    </div>
+    {% else %}
+    <table class="cred-tabela">
+      <thead>
+        <tr>
+          <th>Nome / CNPJ</th>
+          <th>Banco / Conta</th>
+          <th>Tipo</th>
+          <th>Validade</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="cred-tbody">
+      {% for c in credenciais %}
+      {% set dias = c.dias %}
+      {% if c.silenciado %}
+        {% set status_cls = 'status-silenciado' %}
+        {% set status_txt = 'Silenciada' %}
+        {% set filtro_cat = 'silenciada' %}
+      {% elif dias is none %}
+        {% set status_cls = 'status-silenciado' %}
+        {% set status_txt = 'Sem data' %}
+        {% set filtro_cat = 'todos' %}
+      {% elif dias < 0 %}
+        {% set status_cls = 'status-vencida' %}
+        {% set status_txt = (dias | abs) ~ 'd em atraso' %}
+        {% set filtro_cat = 'vencida' %}
+      {% elif dias < 7 %}
+        {% set status_cls = 'status-urgente' %}
+        {% set status_txt = dias ~ 'd restantes' %}
+        {% set filtro_cat = 'alerta' %}
+      {% elif dias < 30 %}
+        {% set status_cls = 'status-alerta' %}
+        {% set status_txt = dias ~ 'd restantes' %}
+        {% set filtro_cat = 'alerta' %}
+      {% else %}
+        {% set status_cls = 'status-ok' %}
+        {% set status_txt = dias ~ 'd restantes' %}
+        {% set filtro_cat = 'ok' %}
+      {% endif %}
+      <tr class="{{ 'silenciado' if c.silenciado else '' }}" data-cat="{{ filtro_cat }}">
+        <td>
+          <div style="font-weight:600;color:#0f172a;">{{ c.nome }}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px;">{{ c.cnpj or '—' }}</div>
+        </td>
+        <td>
+          <div>{{ c.banco or '—' }}</div>
+          {% if c.conta %}<div style="font-size:11px;color:#64748b;">Conta: {{ c.conta }}</div>{% endif %}
+        </td>
+        <td>
+          <div class="tipo-badges">
+            {% for t in c.tipo.split(',') if t.strip() %}
+            <span class="tipo-badge {{ t.strip() | lower | replace(' ','') }}">{{ t.strip() }}</span>
+            {% endfor %}
+          </div>
+        </td>
+        <td style="white-space:nowrap;">{{ c.data_br or '—' }}</td>
+        <td>
+          <span class="status-cred {{ status_cls }}">
+            <span class="dot"></span>{{ status_txt }}
+          </span>
+        </td>
+        <td>
+          <div class="cred-acoes">
+            <button class="btn-cred-acao" title="Editar" onclick="editarCred({{ c.id }})">
+              <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn-cred-acao {{ 'reativar' if c.silenciado else 'silenciar' }}"
+                    title="{{ 'Reativar avisos' if c.silenciado else 'Silenciar avisos' }}"
+                    onclick="silenciarCred({{ c.id }}, this)">
+              {% if c.silenciado %}
+              <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              {% else %}
+              <svg viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M17.73 17.73A10.16 10.16 0 0 1 12 20c-5 0-9-2.5-9-2.5"/><path d="M9.09 4.24A9.12 9.12 0 0 1 12 4c5 0 9 2.5 9 2.5s-.46.94-1.35 1.97"/></svg>
+              {% endif %}
+            </button>
+            <button class="btn-cred-acao perigo" title="Excluir" onclick="deletarCred({{ c.id }}, '{{ c.nome | e }}')">
+              <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Modal Cadastro / Edição ── #}
+<div id="overlay-cred" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:8000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:28px 28px 20px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <span style="font-size:16px;font-weight:700;color:#0f172a;" id="cred-modal-titulo">Nova Credencial</span>
+      <button onclick="fecharModalCred()" style="background:none;border:none;cursor:pointer;color:#64748b;font-size:20px;line-height:1;">✕</button>
+    </div>
+    <div class="modal-cred-grid">
+      <div class="grupo-modal full">
+        <label>Nome da empresa</label>
+        <input class="input-modal" type="text" id="cred-nome" placeholder="Nome do cliente">
+      </div>
+      <div class="grupo-modal">
+        <label>CNPJ</label>
+        <input class="input-modal" type="text" id="cred-cnpj" placeholder="00.000.000/0000-00" maxlength="18" oninput="mascaraCNPJ(this)">
+      </div>
+      <div class="grupo-modal">
+        <label>Data de validade</label>
+        <input class="input-modal" type="date" id="cred-validade">
+      </div>
+      <div class="grupo-modal">
+        <label>Banco</label>
+        <input class="input-modal" type="text" id="cred-banco" placeholder="Nome do banco">
+      </div>
+      <div class="grupo-modal">
+        <label>Conta</label>
+        <input class="input-modal" type="text" id="cred-conta" placeholder="Número da conta">
+      </div>
+      <div class="grupo-modal full">
+        <label>Tipo de credencial</label>
+        <div class="cred-tipos-wrap">
+          <label class="cred-tipo-check" onclick="toggleTipo(this)">
+            <input type="checkbox" value="pix"> 🟣 Pix
+          </label>
+          <label class="cred-tipo-check" onclick="toggleTipo(this)">
+            <input type="checkbox" value="cobrança"> 🔵 Cobrança
+          </label>
+          <label class="cred-tipo-check" onclick="toggleTipo(this)">
+            <input type="checkbox" value="pagamento"> 🟢 Pagamento
+          </label>
+          <label class="cred-tipo-check" onclick="toggleTipo(this)">
+            <input type="checkbox" value="extrato"> 🟠 Extrato
+          </label>
+        </div>
+      </div>
+      <div class="grupo-modal full">
+        <label>Observação (opcional)</label>
+        <input class="input-modal" type="text" id="cred-obs" placeholder="Informações adicionais">
+      </div>
+    </div>
+    <input type="hidden" id="cred-id">
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+      <button class="btn-cancelar-modal" onclick="fecharModalCred()">Cancelar</button>
+      <button class="btn-salvar-modal" onclick="salvarCred()">Salvar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+  // ── Filtro ──
+  function filtrar(cat, btn) {
+    document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+    document.querySelectorAll('#cred-tbody tr').forEach(tr => {
+      tr.style.display = (cat === 'todos' || tr.dataset.cat === cat) ? '' : 'none';
+    });
+  }
+
+  // ── Máscara CNPJ ──
+  function mascaraCNPJ(el) {
+    var v = el.value.replace(/\D/g, '').slice(0, 14);
+    if (v.length > 12) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    else if (v.length > 8) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})/, '$1.$2.$3/$4');
+    else if (v.length > 5) v = v.replace(/^(\d{2})(\d{3})(\d{3})/, '$1.$2.$3');
+    else if (v.length > 2) v = v.replace(/^(\d{2})(\d{3})/, '$1.$2');
+    el.value = v;
+  }
+
+  // ── Tipo chips ──
+  function toggleTipo(label) {
+    label.classList.toggle('checked');
+    label.querySelector('input').checked = label.classList.contains('checked');
+  }
+
+  function _getTipos() {
+    return Array.from(document.querySelectorAll('.cred-tipo-check'))
+      .filter(l => l.classList.contains('checked'))
+      .map(l => l.querySelector('input').value)
+      .join(',');
+  }
+
+  function _setTipos(tipoStr) {
+    var tipos = (tipoStr || '').split(',').map(t => t.trim().toLowerCase());
+    document.querySelectorAll('.cred-tipo-check').forEach(l => {
+      var val = l.querySelector('input').value.toLowerCase();
+      var ativo = tipos.includes(val);
+      l.classList.toggle('checked', ativo);
+      l.querySelector('input').checked = ativo;
+    });
+  }
+
+  // ── Modal abrir/fechar ──
+  function abrirModalCred() {
+    document.getElementById('cred-modal-titulo').textContent = 'Nova Credencial';
+    document.getElementById('cred-id').value = '';
+    document.getElementById('cred-nome').value = '';
+    document.getElementById('cred-cnpj').value = '';
+    document.getElementById('cred-validade').value = '';
+    document.getElementById('cred-banco').value = '';
+    document.getElementById('cred-conta').value = '';
+    document.getElementById('cred-obs').value = '';
+    _setTipos('');
+    var ov = document.getElementById('overlay-cred');
+    ov.style.display = 'flex';
+    setTimeout(() => document.getElementById('cred-nome').focus(), 50);
+  }
+
+  function fecharModalCred() {
+    document.getElementById('overlay-cred').style.display = 'none';
+  }
+
+  document.getElementById('overlay-cred').addEventListener('click', function(e) {
+    if (e.target === this) fecharModalCred();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('overlay-cred').style.display === 'flex')
+      fecharModalCred();
+  });
+
+  function editarCred(id) {
+    fetch('/api/credenciais')
+      .then(r => r.json())
+      .then(lista => {
+        var c = lista.find(x => x.id === id);
+        if (!c) return;
+        document.getElementById('cred-modal-titulo').textContent = 'Editar Credencial';
+        document.getElementById('cred-id').value = c.id;
+        document.getElementById('cred-nome').value = c.nome || '';
+        document.getElementById('cred-cnpj').value = c.cnpj || '';
+        document.getElementById('cred-validade').value = c.data_validade || '';
+        document.getElementById('cred-banco').value = c.banco || '';
+        document.getElementById('cred-conta').value = c.conta || '';
+        document.getElementById('cred-obs').value = c.obs || '';
+        _setTipos(c.tipo || '');
+        var ov = document.getElementById('overlay-cred');
+        ov.style.display = 'flex';
+      });
+  }
+
+  function salvarCred() {
+    var nome  = document.getElementById('cred-nome').value.trim();
+    var val   = document.getElementById('cred-validade').value;
+    if (!nome) { mostrarToast('erro', 'Informe o nome.'); return; }
+    if (!val)  { mostrarToast('erro', 'Informe a data de validade.'); return; }
+
+    var id    = document.getElementById('cred-id').value;
+    var dados = {
+      nome,
+      cnpj:          document.getElementById('cred-cnpj').value.trim(),
+      data_validade: val,
+      banco:         document.getElementById('cred-banco').value.trim(),
+      conta:         document.getElementById('cred-conta').value.trim(),
+      tipo:          _getTipos(),
+      obs:           document.getElementById('cred-obs').value.trim(),
+    };
+    var url    = id ? `/api/credenciais/${id}` : '/api/credenciais';
+    var metodo = id ? 'PUT' : 'POST';
+    fetch(url, { method: metodo, headers: {'Content-Type':'application/json'}, body: JSON.stringify(dados) })
+      .then(r => r.json())
+      .then(d => {
+        if (d.sucesso) {
+          mostrarToast('sucesso', id ? 'Credencial atualizada!' : 'Credencial cadastrada!');
+          fecharModalCred();
+          setTimeout(() => location.reload(), 600);
+        } else {
+          mostrarToast('erro', d.erro || 'Erro ao salvar.');
+        }
+      });
+  }
+
+  function silenciarCred(id, btn) {
+    fetch(`/api/credenciais/${id}/silenciar`, { method: 'POST' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.sucesso) {
+          mostrarToast('sucesso', d.silenciado ? 'Avisos silenciados.' : 'Avisos reativados.');
+          setTimeout(() => location.reload(), 600);
+        }
+      });
+  }
+
+  function deletarCred(id, nome) {
+    abrirDialogo({
+      tema: 'perigo',
+      titulo: 'Excluir credencial',
+      mensagem: `Tem certeza que deseja excluir a credencial de <strong>${nome}</strong>? Esta ação não pode ser desfeita.`,
+      textoBotao: 'Excluir',
+      callback: function() {
+        fetch(`/api/credenciais/${id}`, { method: 'DELETE' })
+          .then(r => r.json())
+          .then(d => {
+            if (d.sucesso) {
+              mostrarToast('sucesso', 'Credencial excluída.');
+              setTimeout(() => location.reload(), 600);
+            }
+          });
+      }
+    });
+  }
+</script>
+{% endblock %}

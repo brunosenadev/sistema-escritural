@@ -16,13 +16,15 @@ def pagina_notificacoes():
         return bloqueio
     uid = _uid()
     notifs = banco.listar_notificacoes(uid, limite=100)
-    nivel = session.get('nivel_acesso', '')
-    usuarios = banco.listar_usuarios() if nivel in ('admin', 'master') else []
+    u = banco.buscar_usuario_por_id(uid) or {}
+    pode_enviar = bool(u.get('pode_enviar_notificacao'))
+    usuarios = banco.listar_usuarios() if pode_enviar else []
     return render_template(
         'aba_notificacoes.html',
         notificacoes=notifs,
         aba_ativa='notificacoes',
         usuarios_lista=usuarios,
+        pode_enviar=pode_enviar,
     )
 
 
@@ -79,8 +81,10 @@ def api_deletar_lidas():
 
 @notificacoes_bp.route('/api/notificacoes/enviar', methods=['POST'])
 def api_enviar():
-    nivel = session.get('nivel_acesso', '')
-    if nivel not in ('admin', 'master'):
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    u = banco.buscar_usuario_por_id(_uid()) or {}
+    if not u.get('pode_enviar_notificacao'):
         return jsonify({'erro': 'Sem permissão'}), 403
     d = request.get_json(silent=True) or {}
     titulo = (d.get('titulo') or '').strip()
