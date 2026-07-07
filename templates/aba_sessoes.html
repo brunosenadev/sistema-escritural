@@ -163,18 +163,25 @@ function carregar() {
 }
 
 function derrubar(id, btn) {
-  if (!confirm('Deseja encerrar esta sessão? O usuário será deslogado na próxima renovação de token (até 15 min).')) return;
-  btn.disabled = true;
-  fetch(`/api/sessoes/${id}`, { method: 'DELETE' })
-    .then(r => r.json())
-    .then(d => {
-      if (d.sucesso) {
-        carregar();
-      } else {
-        alert(d.erro || 'Erro ao encerrar sessão.');
-        btn.disabled = false;
-      }
-    });
+  abrirDialogo({
+    tema: 'perigo',
+    titulo: 'Encerrar sessão',
+    mensagem: 'O usuário será deslogado na próxima renovação de token (até 15 min). Confirma?',
+    textoBotao: 'Encerrar',
+    callback: function() {
+      btn.disabled = true;
+      fetch(`/api/sessoes/${id}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(d => {
+          if (d.sucesso) {
+            carregar();
+          } else {
+            mostrarToast('erro', d.erro || 'Erro ao encerrar sessão.');
+            btn.disabled = false;
+          }
+        });
+    }
+  });
 }
 
 function esc(s) {

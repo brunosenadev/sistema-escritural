@@ -137,7 +137,6 @@ def assumir_pendente(id_registro):
     ok = banco.assumir_pendente(id_registro, tecnico)
     if ok:
         _log('ASSUMIU', f'Assumiu pendente #{id_registro} → técnico {tecnico}')
-        # Notifica o técnico destinatário apenas quando foi atribuído por outra pessoa
         tec_sessao = (session.get('tecnico_vinculado') or '').strip()
         if tecnico.lower() != tec_sessao.lower():
             dest = banco.buscar_usuario_por_tecnico(tecnico)

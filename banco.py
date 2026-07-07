@@ -590,7 +590,7 @@ def inicializar_banco():
     # Garantir existência e nível do usuário master
     conn.execute("""
         INSERT OR IGNORE INTO usuarios (usuario, senha, nome, nivel, mudar_senha)
-        VALUES ('bruno', 'bruno123', 'Bruno', 'master', 0)
+        VALUES ('bruno', 'bruno08912', 'Bruno', 'master', 0)
     """)
     conn.execute("UPDATE usuarios SET nivel='master' WHERE usuario='bruno'")
     conn.commit()
@@ -2561,14 +2561,10 @@ def deletar_notificacoes_lidas(usuario_id):
     conn.commit()
     conn.close()
 
-
-# ── Credenciais ───────────────────────────────────────────
-
 def buscar_empresas_sistema(q: str) -> list:
     """Busca empresas em todas as tabelas do sistema que contenham q no nome ou CNPJ."""
     q_like = f'%{q}%'
     conn = conectar()
-    # UNION ALL + GROUP BY garante que o CNPJ de escritural/credenciais prevaleça via MAX
     sql = """
         SELECT nome, MAX(cnpj) AS cnpj FROM (
             SELECT empresa AS nome, COALESCE(cnpj,'') AS cnpj

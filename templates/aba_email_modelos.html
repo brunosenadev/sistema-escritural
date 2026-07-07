@@ -117,7 +117,7 @@
         <td class="td-assunto" title="{{ m.assunto }}">{{ m.assunto }}</td>
         <td><span class="{{ 'badge-ativo' if m.ativo else 'badge-inativo' }}">{{ 'Ativo' if m.ativo else 'Inativo' }}</span></td>
         <td class="td-acoes">
-          <button class="btn-editar-em" onclick="editarModelo({{ m.id }}, {{ m | tojson | e }})">Editar</button>
+          <button class="btn-editar-em" data-modelo='{{ m | tojson }}' onclick="editarModelo({{ m.id }}, JSON.parse(this.dataset.modelo))">Editar</button>
           <button class="btn-deletar-em" onclick="confirmarDeletar({{ m.id }}, '{{ m.nome | e }}')">Excluir</button>
         </td>
       </tr>

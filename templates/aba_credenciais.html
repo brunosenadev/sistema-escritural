@@ -640,7 +640,9 @@
         document.getElementById('cred-modal-titulo').textContent = 'Editar Credencial';
         document.getElementById('cred-id').value = c.id;
         document.getElementById('cred-nome').value = c.nome || '';
-        document.getElementById('cred-cnpj').value = c.cnpj || '';
+        var cnpjInputEd = document.getElementById('cred-cnpj');
+        cnpjInputEd.value = c.cnpj || '';
+        mascaraCNPJ(cnpjInputEd);
         document.getElementById('cred-validade').value = c.data_validade || '';
         document.getElementById('cred-banco').value = c.banco || '';
         document.getElementById('cred-conta').value = c.conta || '';

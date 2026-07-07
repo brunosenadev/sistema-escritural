@@ -504,6 +504,8 @@
   [data-tema="dark"] .assin-toolbar button { background: var(--z-surface); border-color: var(--z-border); color: var(--z-text-2); }
   [data-tema="dark"] .assin-toolbar button:hover { background: var(--z-border-s); }
   [data-tema="dark"] #eu-assinatura { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-1) !important; }
+  [data-tema="dark"] #eu-assinatura-preview { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-1) !important; }
+  [data-tema="dark"] .aviso-label { color: var(--z-text-2) !important; }
   [data-tema="dark"] .secao-email-titulo { color: #60a5fa; border-color: var(--z-border-s); }
   [data-tema="dark"] .hint-login         { color: var(--z-text-3); }
 
@@ -1208,19 +1210,19 @@
         <div class="grupo-modal" style="grid-column:span 2;">
           <label>Avisos automáticos</label>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
+            <label class="aviso-label" style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
               <input type="checkbox" id="campo-aviso-escritural" style="accent-color:#2563eb;">
               Receber aviso de e-mail em Novos Escriturais
             </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
+            <label class="aviso-label" style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
               <input type="checkbox" id="campo-aviso-melhorias" style="accent-color:#2563eb;">
               Receber aviso de nova melhoria
             </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
+            <label class="aviso-label" style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
               <input type="checkbox" id="campo-aviso-credenciais" style="accent-color:#2563eb;">
               Receber aviso de validade de credenciais
             </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
+            <label class="aviso-label" style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
               <input type="checkbox" id="campo-pode-enviar-notif" style="accent-color:#7c3aed;">
               Pode enviar notificações pelo sistema
             </label>

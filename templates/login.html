@@ -260,6 +260,35 @@
       background: #f1f5f9;
       margin: 20px 0;
     }
+
+    /* ── Dark mode ─────────────────────────────── */
+    body.dark {
+      background: #09090b;
+    }
+    body.dark .card-login {
+      background: #18181b;
+      border-color: rgba(255,255,255,0.08);
+      box-shadow: 0 4px 32px rgba(0,0,0,0.6);
+    }
+    body.dark .card-login:hover {
+      box-shadow: 0 12px 48px rgba(0,0,0,0.8);
+    }
+    body.dark .texto-logo   { color: #f1f5f9; }
+    body.dark .titulo-login { color: #f8fafc; }
+    body.dark .subtitulo-login { color: #71717a; }
+    body.dark .grupo-campo label { color: #94a3b8; }
+    body.dark .campo-input {
+      background: #27272a;
+      border-color: #3f3f46;
+      color: #f1f5f9;
+    }
+    body.dark .campo-input::placeholder { color: #52525b; }
+    body.dark .campo-input:focus {
+      background: #18181b;
+      border-color: #3b82f6;
+    }
+    body.dark .linha-separadora { background: #27272a; }
+    body.dark .rodape-card { color: #52525b; }
   </style>
 </head>
 <body>
@@ -355,11 +384,21 @@
   </div>
 
   <script>
+    // ─── Dark mode via localStorage ─────────────────────────
+    (function() {
+      try {
+        var t = localStorage.getItem('sisplan_tema');
+        if (t === 'dark') document.body.classList.add('dark');
+      } catch(e) {}
+    })();
+
     // ─── Animação de partículas no fundo ────────────────────
     const canvas  = document.getElementById('canvas-fundo');
     const ctx     = canvas.getContext('2d');
     let largura, altura, particulas;
     let posicaoMouse = { x: -999, y: -999 };
+
+    const isDark = () => document.body.classList.contains('dark');
 
     function redimensionarCanvas() {
       largura = canvas.width  = window.innerWidth;
@@ -367,63 +406,77 @@
     }
 
     function criarParticulas() {
-      const quantidade = Math.floor((largura * altura) / 14000);
+      const quantidade = Math.floor((largura * altura) / 7000);
       particulas = Array.from({ length: quantidade }, () => ({
         x:  Math.random() * largura,
         y:  Math.random() * altura,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        raio: Math.random() * 2 + 1,
-        opacidade: Math.random() * 0.4 + 0.1,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        raio: Math.random() * 2.2 + 0.8,
+        opacidade: Math.random() * 0.5 + 0.15,
       }));
     }
 
     function animarParticulas() {
       ctx.clearRect(0, 0, largura, altura);
+      const cor = isDark() ? '148, 163, 184' : '59, 130, 246';
 
       particulas.forEach(p => {
-        // Movimento suave em direção ao mouse (repulsão leve)
         const dx = p.x - posicaoMouse.x;
         const dy = p.y - posicaoMouse.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120) {
-          p.vx += (dx / dist) * 0.04;
-          p.vy += (dy / dist) * 0.04;
+        if (dist < 160 && dist > 0) {
+          const forca = (1 - dist / 160) * 0.12;
+          p.vx += (dx / dist) * forca;
+          p.vy += (dy / dist) * forca;
         }
 
-        p.vx *= 0.98;  // atrito
-        p.vy *= 0.98;
+        p.vx *= 0.97;
+        p.vy *= 0.97;
         p.x  += p.vx;
         p.y  += p.vy;
 
-        // Rebater nas bordas
         if (p.x < 0)       { p.x = 0;      p.vx *= -1; }
         if (p.x > largura) { p.x = largura; p.vx *= -1; }
         if (p.y < 0)       { p.y = 0;      p.vy *= -1; }
         if (p.y > altura)  { p.y = altura;  p.vy *= -1; }
 
-        // Desenhar ponto
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.raio, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(59, 130, 246, ${p.opacidade})`;
+        ctx.fillStyle = `rgba(${cor}, ${p.opacidade})`;
         ctx.fill();
       });
 
-      // Desenhar linhas entre partículas próximas
+      // Linhas de conexão entre partículas próximas (incluindo mouse)
+      const DIST_LINHA = 140;
       for (let i = 0; i < particulas.length; i++) {
+        // partícula ↔ partícula
         for (let j = i + 1; j < particulas.length; j++) {
           const dx   = particulas[i].x - particulas[j].x;
           const dy   = particulas[i].y - particulas[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 100) {
-            const alfa = (1 - dist / 100) * 0.15;
+          if (dist < DIST_LINHA) {
+            const alfa = (1 - dist / DIST_LINHA) * 0.22;
             ctx.beginPath();
             ctx.moveTo(particulas[i].x, particulas[i].y);
             ctx.lineTo(particulas[j].x, particulas[j].y);
-            ctx.strokeStyle = `rgba(59, 130, 246, ${alfa})`;
-            ctx.lineWidth = 0.8;
+            ctx.strokeStyle = `rgba(${cor}, ${alfa})`;
+            ctx.lineWidth = 0.9;
             ctx.stroke();
           }
+        }
+        // partícula ↔ mouse
+        const mdx  = particulas[i].x - posicaoMouse.x;
+        const mdy  = particulas[i].y - posicaoMouse.y;
+        const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+        if (mdist < 200) {
+          const alfa = (1 - mdist / 200) * 0.35;
+          ctx.beginPath();
+          ctx.moveTo(particulas[i].x, particulas[i].y);
+          ctx.lineTo(posicaoMouse.x, posicaoMouse.y);
+          ctx.strokeStyle = `rgba(${cor}, ${alfa})`;
+          ctx.lineWidth = 0.7;
+          ctx.stroke();
         }
       }
 
