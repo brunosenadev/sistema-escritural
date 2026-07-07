@@ -2568,40 +2568,39 @@ def buscar_empresas_sistema(q: str) -> list:
     """Busca empresas em todas as tabelas do sistema que contenham q no nome ou CNPJ."""
     q_like = f'%{q}%'
     conn = conectar()
-    # Coleta empresa+cnpj de escritural (tem cnpj), e só empresa das outras tabelas
+    # UNION ALL + GROUP BY garante que o CNPJ de escritural/credenciais prevaleça via MAX
     sql = """
-        SELECT DISTINCT empresa AS nome, cnpj FROM escritural
-        WHERE (empresa LIKE ? OR cnpj LIKE ?) AND empresa IS NOT NULL AND empresa != ''
-        UNION
-        SELECT DISTINCT empresa AS nome, '' AS cnpj FROM pendentes
-        WHERE empresa LIKE ? AND empresa IS NOT NULL AND empresa != ''
-        UNION
-        SELECT DISTINCT empresa AS nome, '' AS cnpj FROM homologados_cobranca
-        WHERE empresa LIKE ? AND empresa IS NOT NULL AND empresa != ''
-        UNION
-        SELECT DISTINCT empresa AS nome, '' AS cnpj FROM homologados_pagamentos
-        WHERE empresa LIKE ? AND empresa IS NOT NULL AND empresa != ''
-        UNION
-        SELECT DISTINCT empresa AS nome, '' AS cnpj FROM homologados_extrato
-        WHERE empresa LIKE ? AND empresa IS NOT NULL AND empresa != ''
-        UNION
-        SELECT DISTINCT empresa AS nome, '' AS cnpj FROM homologados_ext_bancario
-        WHERE empresa LIKE ? AND empresa IS NOT NULL AND empresa != ''
-        UNION
-        SELECT DISTINCT nome, cnpj FROM credenciais
-        WHERE (nome LIKE ? OR cnpj LIKE ?) AND nome IS NOT NULL AND nome != ''
-        ORDER BY nome LIMIT 10
+        SELECT nome, MAX(cnpj) AS cnpj FROM (
+            SELECT empresa AS nome, COALESCE(cnpj,'') AS cnpj
+              FROM escritural
+             WHERE (empresa LIKE ? OR cnpj LIKE ?) AND empresa IS NOT NULL AND empresa != ''
+            UNION ALL
+            SELECT nome, COALESCE(cnpj,'') AS cnpj
+              FROM credenciais
+             WHERE (nome LIKE ? OR cnpj LIKE ?) AND nome IS NOT NULL AND nome != ''
+            UNION ALL
+            SELECT empresa AS nome, '' AS cnpj FROM pendentes
+             WHERE empresa LIKE ? AND empresa IS NOT NULL AND empresa != ''
+            UNION ALL
+            SELECT empresa AS nome, '' AS cnpj FROM homologados_cobranca
+             WHERE empresa LIKE ? AND empresa IS NOT NULL AND empresa != ''
+            UNION ALL
+            SELECT empresa AS nome, '' AS cnpj FROM homologados_pagamentos
+             WHERE empresa LIKE ? AND empresa IS NOT NULL AND empresa != ''
+            UNION ALL
+            SELECT empresa AS nome, '' AS cnpj FROM homologados_extrato
+             WHERE empresa LIKE ? AND empresa IS NOT NULL AND empresa != ''
+            UNION ALL
+            SELECT empresa AS nome, '' AS cnpj FROM homologados_ext_bancario
+             WHERE empresa LIKE ? AND empresa IS NOT NULL AND empresa != ''
+        )
+        GROUP BY nome
+        ORDER BY nome
+        LIMIT 10
     """
     rows = conn.execute(sql, (q_like, q_like, q_like, q_like, q_like, q_like, q_like, q_like, q_like)).fetchall()
     conn.close()
-    # Agrupa: para cada nome único mantém o cnpj mais completo
-    visto = {}
-    for r in rows:
-        nome = (r['nome'] or '').strip()
-        cnpj = (r['cnpj'] or '').strip()
-        if nome not in visto or (cnpj and not visto[nome]):
-            visto[nome] = cnpj
-    return [{'nome': n, 'cnpj': c} for n, c in visto.items()]
+    return [{'nome': (r['nome'] or '').strip(), 'cnpj': (r['cnpj'] or '').strip()} for r in rows]
 
 
 def listar_credenciais():

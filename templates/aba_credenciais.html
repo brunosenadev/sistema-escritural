@@ -576,11 +576,33 @@
       });
   }
 
+  // ── Atalho "T" → data de hoje em inputs date ──
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 't' && e.key !== 'T') return;
+    var el = document.activeElement;
+    if (el && el.type === 'date') {
+      e.preventDefault();
+      var hoje = new Date();
+      var y = hoje.getFullYear();
+      var m = String(hoje.getMonth() + 1).padStart(2, '0');
+      var d = String(hoje.getDate()).padStart(2, '0');
+      el.value = y + '-' + m + '-' + d;
+    }
+  });
+
   function salvarCred() {
     var nome  = document.getElementById('cred-nome').value.trim();
+    var cnpj  = document.getElementById('cred-cnpj').value.trim();
     var val   = document.getElementById('cred-validade').value;
-    if (!nome) { mostrarToast('erro', 'Informe o nome.'); return; }
-    if (!val)  { mostrarToast('erro', 'Informe a data de validade.'); return; }
+    var banco = document.getElementById('cred-banco').value.trim();
+    var conta = document.getElementById('cred-conta').value.trim();
+    var tipo  = _getTipos();
+    if (!nome)  { mostrarToast('erro', 'Informe o nome da empresa.'); return; }
+    if (!cnpj)  { mostrarToast('erro', 'Informe o CNPJ.'); return; }
+    if (!val)   { mostrarToast('erro', 'Informe a data de validade.'); return; }
+    if (!banco) { mostrarToast('erro', 'Informe o banco.'); return; }
+    if (!conta) { mostrarToast('erro', 'Informe a conta.'); return; }
+    if (!tipo)  { mostrarToast('erro', 'Selecione pelo menos um tipo de credencial.'); return; }
 
     var id    = document.getElementById('cred-id').value;
     var dados = {
