@@ -154,6 +154,10 @@
   .btn-formatar:hover { background: #f1f5f9; border-color: #94a3b8; }
   .btn-limpar   { background: #fff; color: #ef4444; border-color: #fca5a5; }
   .btn-limpar:hover { background: #fef2f2; }
+  .btn-exportar { background: #fff; color: #16a34a; border-color: #86efac; }
+  .btn-exportar:hover { background: #f0fdf4; border-color: #4ade80; }
+  [data-tema="dark"] .btn-exportar { background: var(--z-elevated) !important; border-color: #166534 !important; color: #86efac !important; }
+  [data-tema="dark"] .btn-exportar:hover { background: rgba(22,163,74,0.12) !important; }
 
   .kbd-hint {
     font-size: 10px;
@@ -383,6 +387,7 @@
 {% block scripts_extras %}
 <script>
 const input = document.getElementById('sql-input');
+const _cache = {}; // guarda { colunas, linhas } por índice de resultado
 
 // Ctrl+Enter executa
 input.addEventListener('keydown', e => {
@@ -410,6 +415,7 @@ function executarSQL() {
   .then(r => r.json())
   .then(data => {
     area.innerHTML = '';
+    Object.keys(_cache).forEach(k => delete _cache[k]);
     if (data.erro) {
       area.innerHTML = `<div class="resultado-bloco">
         <div class="resultado-header">
@@ -423,14 +429,19 @@ function executarSQL() {
       area.innerHTML = '<div class="placeholder-sql">Nenhum resultado.</div>';
       return;
     }
-    data.resultados.forEach(r => {
+    data.resultados.forEach((r, idx) => {
       const bloco = document.createElement('div');
       bloco.className = 'resultado-bloco';
       if (r.tipo === 'select') {
+        _cache[idx] = { colunas: r.colunas, linhas: r.linhas, sql: r.sql };
         const header = `<div class="resultado-header">
           <span class="resultado-badge badge-select">SELECT</span>
           <span class="resultado-sql-preview">${escHtml(r.sql)}</span>
           <span class="resultado-info">${r.total} linha${r.total !== 1 ? 's' : ''}</span>
+          <button class="btn-sql btn-exportar" style="padding:4px 10px;font-size:11px;" onclick="exportarExcel(${idx})">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Excel
+          </button>
         </div>`;
         const thead = '<thead><tr>' + r.colunas.map(c => `<th>${escHtml(c)}</th>`).join('') + '</tr></thead>';
         const tbody = '<tbody>' + r.linhas.map(row =>
@@ -539,6 +550,28 @@ carregarTabelas();
 
 function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function exportarExcel(idx) {
+  const d = _cache[idx];
+  if (!d) return;
+  const csvEscape = v => {
+    const s = v === null ? '' : String(v);
+    return (s.includes(';') || s.includes('"') || s.includes('\n'))
+      ? '"' + s.replace(/"/g, '""') + '"'
+      : s;
+  };
+  const linhas = [
+    d.colunas.map(csvEscape).join(';'),
+    ...d.linhas.map(row => row.map(csvEscape).join(';')),
+  ];
+  const csv = '﻿' + linhas.join('\r\n'); // BOM UTF-8 para Excel reconhecer acentos
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const nome = 'sql_resultado_' + new Date().toISOString().slice(0,19).replace(/[T:]/g,'-') + '.csv';
+  a.href = url; a.download = nome; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 </script>
 {% endblock %}

@@ -98,7 +98,7 @@ def _jwt_guard():
     payload_r = _payload_refresh()
     if payload_r:
         jti = payload_r.get('jti')
-        if jti and not banco.sessao_valida(jti):
+        if jti and banco.sessao_valida(jti) is None:
             session.clear()
             return redirect(url_for('auth.pagina_login'))
         u = banco.buscar_usuario_por_id(payload_r['sub'])
@@ -133,8 +133,8 @@ def _mudar_senha_guard():
 def _set_token_cookies(response):
     if hasattr(g, '_novo_access'):
         opts = dict(httponly=True, samesite='Lax', path='/')
-        response.set_cookie('access_token',  g._novo_access,  max_age=15*60,    **opts)
-        response.set_cookie('refresh_token', g._novo_refresh, max_age=7*86400,  **opts)
+        response.set_cookie('access_token',  g._novo_access,  max_age=60*60,    **opts)
+        response.set_cookie('refresh_token', g._novo_refresh, max_age=30*86400, **opts)
     return response
 
 

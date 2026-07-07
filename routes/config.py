@@ -121,7 +121,7 @@ def api_atualizar_usuario(id_usuario):
         })
         access, *_ = criar_tokens(u)
         resp = make_response(jsonify({'sucesso': True}))
-        resp.set_cookie('access_token', access, max_age=15*60, httponly=True, samesite='Lax', path='/')
+        resp.set_cookie('access_token', access, max_age=60*60, httponly=True, samesite='Lax', path='/')
         return resp
     return jsonify({'sucesso': True})
 

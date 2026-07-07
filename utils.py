@@ -5,8 +5,8 @@ import jwt as pyjwt
 from flask import request, g, session, redirect, url_for
 
 SECRET      = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
-ACCESS_TTL  = 15  
-REFRESH_TTL = 7   
+ACCESS_TTL  = 60   # minutos
+REFRESH_TTL = 30   # dias
 
 def _encode(payload: dict) -> str:
     return pyjwt.encode(payload, SECRET, algorithm='HS256')

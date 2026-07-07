@@ -11,8 +11,8 @@ def _set_tokens(response, usuario_row: dict, ip: str = '', registrar: bool = Fal
     access, refresh, jti = criar_tokens(usuario_row)
     if registrar:
         banco.registrar_sessao(jti, usuario_row['id'], usuario_row.get('nome', ''), usuario_row.get('nivel', ''), ip)
-    response.set_cookie('access_token',  access,  max_age=15*60,   **_COOKIE_OPTS)
-    response.set_cookie('refresh_token', refresh, max_age=7*86400, **_COOKIE_OPTS)
+    response.set_cookie('access_token',  access,  max_age=60*60,    **_COOKIE_OPTS)
+    response.set_cookie('refresh_token', refresh, max_age=30*86400, **_COOKIE_OPTS)
     return response
 
 
@@ -132,7 +132,7 @@ def api_meu_tema():
     u = banco.buscar_usuario_por_id(id_usuario)
     resp = make_response(jsonify({'sucesso': True}))
     access, *_ = criar_tokens(u)
-    resp.set_cookie('access_token', access, max_age=15*60, **_COOKIE_OPTS)
+    resp.set_cookie('access_token', access, max_age=60*60, **_COOKIE_OPTS)
     return resp
 
 
