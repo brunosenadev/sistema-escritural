@@ -502,24 +502,49 @@
   }
 
   function acFiltrar(campo) {
-    var inputId = campo === 'cnpj' ? 'cred-cnpj' : 'cred-nome';
-    var dropId  = campo === 'cnpj' ? 'ac-dropdown-cnpj' : 'ac-dropdown-nome';
-    var q = document.getElementById(inputId).value.trim().toLowerCase();
-    var drop = document.getElementById(dropId);
-    if (!q || q.length < 1) { drop.style.display = 'none'; return; }
+    var inputId    = campo === 'cnpj' ? 'cred-cnpj' : 'cred-nome';
+    var outroId    = campo === 'cnpj' ? 'cred-nome' : 'cred-cnpj';
+    var dropId     = campo === 'cnpj' ? 'ac-dropdown-cnpj' : 'ac-dropdown-nome';
+    var outroDrop  = campo === 'cnpj' ? 'ac-dropdown-nome' : 'ac-dropdown-cnpj';
+    var raw        = document.getElementById(inputId).value.trim();
+    var q          = raw.toLowerCase();
+    var drop       = document.getElementById(dropId);
+
+    if (!q) { drop.style.display = 'none'; return; }
+
     var matches = _acLista.filter(function(c) {
-      return (campo === 'cnpj')
-        ? (c.cnpj || '').replace(/\D/g,'').includes(q.replace(/\D/g,'')) && q.replace(/\D/g,'').length > 0
-        : (c.nome || '').toLowerCase().includes(q);
+      if (campo === 'cnpj') {
+        var digits = q.replace(/\D/g, '');
+        return digits.length > 0 && (c.cnpj || '').replace(/\D/g, '').includes(digits);
+      }
+      return (c.nome || '').toLowerCase().includes(q);
     }).slice(0, 8);
+
+    // Preenchimento automático ao bater exato
+    var exato = _acLista.find(function(c) {
+      return campo === 'cnpj'
+        ? (c.cnpj || '').replace(/\D/g,'') === raw.replace(/\D/g,'') && raw.replace(/\D/g,'').length >= 14
+        : (c.nome || '').toLowerCase() === q;
+    });
+    if (exato) {
+      document.getElementById(outroId).value = campo === 'cnpj' ? (exato.nome || '') : (exato.cnpj || '');
+      document.getElementById(outroDrop).style.display = 'none';
+      drop.style.display = 'none';
+      return;
+    }
+
     if (!matches.length) { drop.style.display = 'none'; return; }
     drop.innerHTML = matches.map(function(c) {
       return '<div class="ac-item" onclick="acSelecionar(' + c.id + ')">'
-        + '<span class="ac-item-nome">' + (c.nome || '') + '</span>'
-        + '<span class="ac-item-cnpj">' + (c.cnpj || '') + '</span>'
+        + '<span class="ac-item-nome">' + _esc(c.nome) + '</span>'
+        + (c.cnpj ? '<span class="ac-item-cnpj">' + _esc(c.cnpj) + '</span>' : '')
         + '</div>';
     }).join('');
     drop.style.display = 'block';
+  }
+
+  function _esc(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   function acSelecionar(id) {
