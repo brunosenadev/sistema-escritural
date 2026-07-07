@@ -500,6 +500,16 @@ def inicializar_banco():
             criado_em     TEXT DEFAULT (datetime('now','localtime')),
             atualizado_em TEXT DEFAULT (datetime('now','localtime'))
         );
+        CREATE TABLE IF NOT EXISTS notificacoes (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER NOT NULL,
+            tipo       TEXT    DEFAULT 'info',
+            titulo     TEXT    NOT NULL DEFAULT '',
+            mensagem   TEXT    DEFAULT '',
+            lida       INTEGER DEFAULT 0,
+            criado_em  TEXT    DEFAULT (datetime('now','localtime'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_notif_usuario ON notificacoes(usuario_id);
     """)
 
     if conn.execute("SELECT COUNT(*) FROM usuarios").fetchone()[0] == 0:
@@ -706,20 +716,55 @@ def adicionar_usuario(dados):
 def atualizar_usuario(id_usuario, campos):
     conn = conectar()
     cor = campos.get('cor') or ''
+    av_esc = 1 if campos.get('recebe_aviso_escritural') else 0
+    av_mel = 1 if campos.get('recebe_aviso_melhorias') else 0
     if campos.get('senha'):
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=?,cor=? WHERE id=?",
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=?,cor=?,recebe_aviso_escritural=?,recebe_aviso_melhorias=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             _hash_senha(campos['senha']), campos.get('setor') or '', cor, id_usuario)
+             _hash_senha(campos['senha']), campos.get('setor') or '', cor, av_esc, av_mel, id_usuario)
         )
     else:
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,setor=?,cor=? WHERE id=?",
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,setor=?,cor=?,recebe_aviso_escritural=?,recebe_aviso_melhorias=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             campos.get('setor') or '', cor, id_usuario)
+             campos.get('setor') or '', cor, av_esc, av_mel, id_usuario)
         )
     conn.commit()
     conn.close()
+
+
+def buscar_usuario_por_tecnico(nome_tecnico):
+    """Retorna o dict do usuário cujo tecnico_vinculado == nome_tecnico, ou None."""
+    if not nome_tecnico:
+        return None
+    conn = conectar()
+    row = conn.execute(
+        "SELECT * FROM usuarios WHERE LOWER(TRIM(tecnico_vinculado))=LOWER(TRIM(?))",
+        (nome_tecnico,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def buscar_tecnico_escritural(escritural_id):
+    """Retorna o nome do técnico responsável pelo registro escritural, ou None."""
+    conn = conectar()
+    row = conn.execute("SELECT tecnico FROM escritural WHERE id=?", (escritural_id,)).fetchone()
+    conn.close()
+    return row['tecnico'] if row else None
+
+
+def listar_usuarios_com_flag(flag_col):
+    """Retorna lista de {id, nome} de usuários com o flag ativo (1)."""
+    if flag_col not in ('recebe_aviso_escritural', 'recebe_aviso_melhorias'):
+        return []
+    conn = conectar()
+    rows = conn.execute(
+        f"SELECT id, nome FROM usuarios WHERE {flag_col}=1"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def cores_por_tecnico() -> dict:
@@ -751,6 +796,21 @@ def migrar_senhas_plaintext():
             s = r['senha'] or ''
             if s and not s.startswith('pbkdf2:') and not s.startswith('scrypt:'):
                 conn.execute("UPDATE usuarios SET senha=? WHERE id=?", (_hash_senha(s), r['id']))
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
+def migrar_flags_avisos():
+    """Adiciona colunas de flags de aviso a usuários se ainda não existirem."""
+    conn = conectar()
+    try:
+        existentes = {r[1] for r in conn.execute("PRAGMA table_info(usuarios)").fetchall()}
+        for col in ('recebe_aviso_escritural', 'recebe_aviso_melhorias'):
+            if col not in existentes:
+                conn.execute(f"ALTER TABLE usuarios ADD COLUMN {col} INTEGER DEFAULT 0")
         conn.commit()
     except Exception:
         pass
@@ -2385,3 +2445,94 @@ def buscar_empresa_log(tabela, id_registro):
         return ''
     finally:
         conn.close()
+
+
+# ── Notificações ──────────────────────────────────────────
+
+def criar_notificacao(usuario_id, titulo, mensagem='', tipo='info'):
+    conn = conectar()
+    cur = conn.execute(
+        "INSERT INTO notificacoes (usuario_id, titulo, mensagem, tipo) VALUES (?,?,?,?)",
+        (usuario_id, titulo, mensagem, tipo)
+    )
+    notif_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return notif_id
+
+
+def criar_notificacao_todos(titulo, mensagem='', tipo='info'):
+    """Cria a mesma notificação para todos os usuários ativos."""
+    conn = conectar()
+    ids = [r[0] for r in conn.execute("SELECT id FROM usuarios").fetchall()]
+    for uid in ids:
+        conn.execute(
+            "INSERT INTO notificacoes (usuario_id, titulo, mensagem, tipo) VALUES (?,?,?,?)",
+            (uid, titulo, mensagem, tipo)
+        )
+    conn.commit()
+    conn.close()
+
+
+def listar_notificacoes(usuario_id, limite=50):
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT * FROM notificacoes WHERE usuario_id=? ORDER BY id DESC LIMIT ?",
+        (usuario_id, limite)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def contar_nao_lidas_notif(usuario_id):
+    conn = conectar()
+    r = conn.execute(
+        "SELECT COUNT(*) FROM notificacoes WHERE usuario_id=? AND lida=0",
+        (usuario_id,)
+    ).fetchone()
+    conn.close()
+    return r[0] if r else 0
+
+
+def buscar_notificacoes_novas(usuario_id, desde_id):
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT * FROM notificacoes WHERE usuario_id=? AND id>? ORDER BY id ASC",
+        (usuario_id, desde_id)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def marcar_notificacao_lida(notif_id, usuario_id):
+    conn = conectar()
+    conn.execute(
+        "UPDATE notificacoes SET lida=1 WHERE id=? AND usuario_id=?",
+        (notif_id, usuario_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def marcar_todas_notificacoes_lidas(usuario_id):
+    conn = conectar()
+    conn.execute("UPDATE notificacoes SET lida=1 WHERE usuario_id=?", (usuario_id,))
+    conn.commit()
+    conn.close()
+
+
+def deletar_notificacao(notif_id, usuario_id):
+    conn = conectar()
+    conn.execute(
+        "DELETE FROM notificacoes WHERE id=? AND usuario_id=?",
+        (notif_id, usuario_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def deletar_notificacoes_lidas(usuario_id):
+    conn = conectar()
+    conn.execute("DELETE FROM notificacoes WHERE usuario_id=? AND lida=1", (usuario_id,))
+    conn.commit()
+    conn.close()

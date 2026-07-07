@@ -137,6 +137,18 @@ def assumir_pendente(id_registro):
     ok = banco.assumir_pendente(id_registro, tecnico)
     if ok:
         _log('ASSUMIU', f'Assumiu pendente #{id_registro} → técnico {tecnico}')
+        # Notifica o técnico destinatário apenas quando foi atribuído por outra pessoa
+        tec_sessao = (session.get('tecnico_vinculado') or '').strip()
+        if tecnico.lower() != tec_sessao.lower():
+            dest = banco.buscar_usuario_por_tecnico(tecnico)
+            if dest:
+                quem = session.get('nome', 'Alguém')
+                banco.criar_notificacao(
+                    dest['id'],
+                    f'Pendente #{id_registro} atribuído a você',
+                    f'{quem} te atribuiu uma nova pendente.',
+                    'info',
+                )
         return jsonify({'sucesso': True, 'tecnico': tecnico})
     return jsonify({'erro': 'Registro não encontrado ou já possui técnico.'}), 404
 

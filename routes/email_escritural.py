@@ -228,6 +228,22 @@ def _processar_mensagem_imap(cfg, uid, msg_bytes, direcao=None):
         'enviado_por': enviado_por,
     })
 
+    if direcao == 'recebido':
+        try:
+            nome_tec = banco.buscar_tecnico_escritural(escritural_id)
+            if nome_tec:
+                dest = banco.buscar_usuario_por_tecnico(nome_tec)
+                if dest and dest.get('recebe_aviso_escritural'):
+                    _, from_addr = parseaddr(remetente)
+                    banco.criar_notificacao(
+                        dest['id'],
+                        f'Novo e-mail — Escritural #{escritural_id}',
+                        f'De: {from_addr or remetente}',
+                        'info',
+                    )
+        except Exception:
+            pass
+
 
 def _poll_pasta(M, cfg, direcao):
     try:
@@ -371,6 +387,9 @@ def email_enviar():
 
     cfg['nome_exibicao'] = session.get('nome', '')
     assinatura_html = (cfg.get('assinatura') or '').strip()
+    if assinatura_html:
+        base = request.host_url.rstrip('/')
+        assinatura_html = re.sub(r'src="(/[^"]*)"', lambda m: f'src="{base}{m.group(1)}"', assinatura_html)
     try:
         msg_id = enviar_email_smtp(cfg, destinatario, assunto, corpo_envio, in_reply_to, references, assinatura_html)
     except Exception as e:

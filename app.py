@@ -25,6 +25,7 @@ from routes.logs                import logs_bp
 from routes.email_modelos       import email_modelos_bp
 from routes.sql_editor          import sql_editor_bp
 from routes.sessoes             import sessoes_bp
+from routes.notificacoes        import notificacoes_bp
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
@@ -32,6 +33,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-
 banco.inicializar_banco()
 banco.migrar_pendentes_legados()
 banco.migrar_senhas_plaintext()
+banco.migrar_flags_avisos()
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(pendente_bp)
@@ -50,6 +52,7 @@ app.register_blueprint(logs_bp)
 app.register_blueprint(email_modelos_bp)
 app.register_blueprint(sql_editor_bp)
 app.register_blueprint(sessoes_bp)
+app.register_blueprint(notificacoes_bp)
 
 iniciar_polling()
 

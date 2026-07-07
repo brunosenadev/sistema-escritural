@@ -1205,6 +1205,19 @@
             </label>
           </div>
         </div>
+        <div class="grupo-modal" style="grid-column:span 2;">
+          <label>Avisos automáticos</label>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
+              <input type="checkbox" id="campo-aviso-escritural" style="accent-color:#2563eb;">
+              Receber aviso de e-mail em Novos Escriturais
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
+              <input type="checkbox" id="campo-aviso-melhorias" style="accent-color:#2563eb;">
+              Receber aviso de nova melhoria
+            </label>
+          </div>
+        </div>
       </div>
       <input type="hidden" id="campo-usuario-id">
       <div class="rodape-modal">
@@ -1522,6 +1535,8 @@
     document.getElementById('campo-usuario-nivel').disabled = usuario.nivel === 'master';
     document.getElementById('campo-usuario-tecnico').value = usuario.tecnico_vinculado || '';
     document.getElementById('campo-usuario-setor').value   = usuario.setor || '';
+    document.getElementById('campo-aviso-escritural').checked = !!(usuario.recebe_aviso_escritural);
+    document.getElementById('campo-aviso-melhorias').checked  = !!(usuario.recebe_aviso_melhorias);
     document.getElementById('hint-login').style.display = 'inline';
     document.getElementById('dica-senha').textContent = 'Deixe em branco para manter a senha atual.';
     _setCorUsuario(usuario.cor || '');
@@ -1547,7 +1562,11 @@
     if (!modoEdicaoUsuario && !login) { mostrarToast('erro', 'Informe o login.'); return; }
     if (!modoEdicaoUsuario && senha.length < 6) { mostrarToast('erro', 'Senha deve ter pelo menos 6 caracteres.'); return; }
 
-    const dados  = { nome, nivel, tecnico_vinculado: tecnico || null, setor: setor || '', cor };
+    const dados  = {
+      nome, nivel, tecnico_vinculado: tecnico || null, setor: setor || '', cor,
+      recebe_aviso_escritural: document.getElementById('campo-aviso-escritural').checked ? 1 : 0,
+      recebe_aviso_melhorias:  document.getElementById('campo-aviso-melhorias').checked  ? 1 : 0,
+    };
     if (senha) dados.senha = senha;
 
     const url    = modoEdicaoUsuario ? `/api/usuarios/${id}` : '/api/usuarios';

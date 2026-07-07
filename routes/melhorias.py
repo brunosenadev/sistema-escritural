@@ -81,6 +81,15 @@ def api_adicionar_melhoria():
         dados['estagio'] = 'analisa'
     novo_id = banco.adicionar_melhoria(dados)
     _log('INSERIU', f'Criou melhoria #{novo_id} — {dados.get("titulo", dados.get("descricao","?"))[:80]}')
+    titulo_mel = (dados.get('titulo') or dados.get('descricao') or '')[:60]
+    quem = session.get('nome', 'Alguém')
+    for u in banco.listar_usuarios_com_flag('recebe_aviso_melhorias'):
+        banco.criar_notificacao(
+            u['id'],
+            f'Nova melhoria #{novo_id}',
+            f'{quem}: {titulo_mel}',
+            'info',
+        )
     return jsonify({'sucesso': True, 'id': novo_id})
 
 

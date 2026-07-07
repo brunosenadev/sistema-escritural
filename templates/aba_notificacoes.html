@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+{% set aba_ativa = 'notificacoes' %}
+
+{% block titulo %}Notificações — Sisplan{% endblock %}
+{% block titulo_pagina %}Notificações{% endblock %}
+{% block breadcrumb %}Sistema / Notificações{% endblock %}
+
+{% block estilos_extras %}
+<style>
+  .notif-page-wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ── Painel de envio (admin) ── */
+  .notif-enviar-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+  .notif-enviar-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .notif-enviar-titulo svg { width:15px;height:15px;stroke:#2563eb;fill:none;stroke-width:2; }
+  .notif-enviar-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .notif-enviar-grid .campo-full { grid-column: 1 / -1; }
+  .notif-campo label { display:block;font-size:12px;font-weight:500;color:#475569;margin-bottom:4px; }
+  .notif-campo input,
+  .notif-campo select,
+  .notif-campo textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #0f172a;
+    background: #f8fafc;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+  .notif-campo textarea { resize: vertical; min-height: 60px; }
+  .notif-campo input:focus,
+  .notif-campo select:focus,
+  .notif-campo textarea:focus { outline: none; border-color: #2563eb; background:#fff; }
+  .notif-enviar-footer { display:flex;justify-content:flex-end;margin-top:14px; }
+  .btn-enviar-notif {
+    padding: 8px 20px;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-enviar-notif:hover { background: #1d4ed8; }
+  .btn-enviar-notif svg { width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2; }
+
+  /* ── Lista de notificações ── */
+  .notif-lista-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .notif-lista-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .notif-lista-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+  }
+  .notif-lista-acoes {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-notif-acao {
+    padding: 5px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    font-size: 12px;
+    cursor: pointer;
+    background: #f8fafc;
+    color: #475569;
+    font-family: inherit;
+  }
+  .btn-notif-acao:hover { background:#f1f5f9;color:#0f172a; }
+  .btn-notif-acao.perigo { color:#dc2626;border-color:#fecaca; }
+  .btn-notif-acao.perigo:hover { background:#fef2f2; }
+
+  .notif-lista-empty {
+    padding: 48px 24px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 14px;
+  }
+  .notif-lista-empty svg { width:36px;height:36px;stroke:#cbd5e1;fill:none;stroke-width:1.5;display:block;margin:0 auto 10px; }
+
+  .notif-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f8fafc;
+    transition: background 0.15s;
+  }
+  .notif-row:last-child { border-bottom: none; }
+  .notif-row.nao-lida { background: #f0f7ff; }
+  .notif-row:hover { background: #f8fafc; }
+  .notif-row.nao-lida:hover { background: #e0effe; }
+
+  .notif-row-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+  .notif-row-dot.nao-lida { background: #2563eb; }
+  .notif-row-dot.lida { background: #e2e8f0; }
+
+  .notif-row-corpo { flex: 1; min-width: 0; }
+  .notif-row-titulo {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 2px;
+  }
+  .notif-row.lida .notif-row-titulo { color: #64748b; font-weight: 500; }
+  .notif-row-msg { font-size: 12px; color: #64748b; margin-bottom: 4px; }
+  .notif-row-meta { font-size: 11px; color: #94a3b8; display:flex;gap:8px;align-items:center; }
+  .notif-tipo-badge {
+    padding: 1px 7px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .notif-tipo-badge.info    { background:#eff6ff;color:#2563eb; }
+  .notif-tipo-badge.sucesso { background:#f0fdf4;color:#15803d; }
+  .notif-tipo-badge.aviso   { background:#fefce8;color:#a16207; }
+  .notif-tipo-badge.erro    { background:#fef2f2;color:#dc2626; }
+
+  .notif-row-btns {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .notif-row:hover .notif-row-btns { opacity: 1; }
+  .notif-row-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 7px;
+    background: #f1f5f9;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+  }
+  .notif-row-btn:hover { background:#e2e8f0;color:#0f172a; }
+  .notif-row-btn.perigo:hover { background:#fef2f2;color:#dc2626; }
+  .notif-row-btn svg { width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2; }
+
+  /* Dark mode */
+  [data-tema="dark"] .notif-enviar-card,
+  [data-tema="dark"] .notif-lista-card { background: var(--z-surface); border-color: var(--z-border); }
+  [data-tema="dark"] .notif-enviar-titulo,
+  [data-tema="dark"] .notif-lista-titulo { color: var(--z-text-1); }
+  [data-tema="dark"] .notif-campo label { color: var(--z-text-2); }
+  [data-tema="dark"] .notif-campo input,
+  [data-tema="dark"] .notif-campo select,
+  [data-tema="dark"] .notif-campo textarea { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .notif-campo input:focus,
+  [data-tema="dark"] .notif-campo select:focus,
+  [data-tema="dark"] .notif-campo textarea:focus { border-color: var(--z-accent); background: var(--z-elevated); }
+  [data-tema="dark"] .notif-lista-header { border-bottom-color: var(--z-border-s); }
+  [data-tema="dark"] .btn-notif-acao { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
+  [data-tema="dark"] .btn-notif-acao:hover { background: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .notif-row { border-bottom-color: var(--z-border-s); }
+  [data-tema="dark"] .notif-row:hover { background: var(--z-elevated); }
+  [data-tema="dark"] .notif-row.nao-lida { background: rgba(37,99,235,0.12); }
+  [data-tema="dark"] .notif-row.nao-lida:hover { background: rgba(37,99,235,0.22); }
+  [data-tema="dark"] .notif-row-titulo { color: var(--z-text-1); }
+  [data-tema="dark"] .notif-row.lida .notif-row-titulo { color: var(--z-text-2); }
+  [data-tema="dark"] .notif-row-msg { color: var(--z-text-2); }
+  [data-tema="dark"] .notif-row-meta { color: var(--z-text-3); }
+  [data-tema="dark"] .notif-row-dot.lida { background: var(--z-border); }
+  [data-tema="dark"] .notif-row-btn { background: var(--z-elevated); color: var(--z-text-2); }
+  [data-tema="dark"] .notif-row-btn:hover { background: var(--z-border); color: var(--z-text-1); }
+  [data-tema="dark"] .notif-lista-empty { color: var(--z-text-3); }
+  [data-tema="dark"] .notif-lista-empty svg { stroke: var(--z-text-3); }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="notif-page-wrap">
+
+  {% if nivel_acesso in ('admin', 'master') %}
+  <!-- Painel de envio (admin) -->
+  <div class="notif-enviar-card">
+    <div class="notif-enviar-titulo">
+      <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+      Enviar Notificação
+    </div>
+    <div class="notif-enviar-grid">
+      <div class="notif-campo campo-full">
+        <label>Título</label>
+        <input type="text" id="nenv-titulo" placeholder="Título da notificação">
+      </div>
+      <div class="notif-campo campo-full">
+        <label>Mensagem (opcional)</label>
+        <textarea id="nenv-mensagem" placeholder="Detalhe da notificação..."></textarea>
+      </div>
+      <div class="notif-campo">
+        <label>Tipo</label>
+        <select id="nenv-tipo">
+          <option value="info">ℹ️ Informação</option>
+          <option value="sucesso">✅ Sucesso</option>
+          <option value="aviso">⚠️ Aviso</option>
+          <option value="erro">❌ Erro/Urgente</option>
+        </select>
+      </div>
+      <div class="notif-campo">
+        <label>Destino</label>
+        <select id="nenv-destino" onchange="_notifToggleUsuario()">
+          <option value="todos">Todos os usuários</option>
+          <option value="usuario">Usuário específico</option>
+        </select>
+      </div>
+      <div class="notif-campo campo-full" id="nenv-usuario-wrap" style="display:none">
+        <label>Usuário</label>
+        <select id="nenv-usuario">
+          {% for u in usuarios_lista %}
+          <option value="{{ u.id }}">{{ u.nome }} ({{ u.usuario }})</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="notif-enviar-footer">
+      <button class="btn-enviar-notif" onclick="_enviarNotificacao()">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+        Enviar
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Lista de notificações -->
+  <div class="notif-lista-card">
+    <div class="notif-lista-header">
+      <span class="notif-lista-titulo">Minhas Notificações</span>
+      <div class="notif-lista-acoes">
+        <button class="btn-notif-acao" onclick="_marcarTodasLidas()">Marcar todas como lidas</button>
+        <button class="btn-notif-acao perigo" onclick="_limparLidas()">Excluir lidas</button>
+      </div>
+    </div>
+    <div id="notif-lista-conteudo">
+      {% if not notificacoes %}
+      <div class="notif-lista-empty">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        Nenhuma notificação ainda.
+      </div>
+      {% else %}
+      {% for n in notificacoes %}
+      <div class="notif-row {{ 'nao-lida' if not n.lida else 'lida' }}" id="nrow-{{ n.id }}">
+        <div class="notif-row-dot {{ 'nao-lida' if not n.lida else 'lida' }}"></div>
+        <div class="notif-row-corpo">
+          <div class="notif-row-titulo">{{ n.titulo }}</div>
+          {% if n.mensagem %}
+          <div class="notif-row-msg">{{ n.mensagem }}</div>
+          {% endif %}
+          <div class="notif-row-meta">
+            <span class="notif-tipo-badge {{ n.tipo }}">{{ n.tipo }}</span>
+            <span>{{ n.criado_em }}</span>
+          </div>
+        </div>
+        <div class="notif-row-btns">
+          {% if not n.lida %}
+          <button class="notif-row-btn" title="Marcar como lida" onclick="_lerNotif({{ n.id }})">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </button>
+          {% endif %}
+          <button class="notif-row-btn perigo" title="Excluir" onclick="_deletarNotif({{ n.id }})">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+  function _notifToggleUsuario() {
+    const dest = document.getElementById('nenv-destino').value;
+    document.getElementById('nenv-usuario-wrap').style.display = dest === 'usuario' ? '' : 'none';
+  }
+
+  function _enviarNotificacao() {
+    const titulo = document.getElementById('nenv-titulo').value.trim();
+    if (!titulo) { mostrarToast('erro', 'Informe o título.'); return; }
+    const body = {
+      titulo,
+      mensagem: document.getElementById('nenv-mensagem').value.trim(),
+      tipo: document.getElementById('nenv-tipo').value,
+      destino: document.getElementById('nenv-destino').value,
+      usuario_id: document.getElementById('nenv-usuario')?.value || null,
+    };
+    fetch('/api/notificacoes/enviar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) {
+        mostrarToast('sucesso', 'Notificação enviada!');
+        document.getElementById('nenv-titulo').value = '';
+        document.getElementById('nenv-mensagem').value = '';
+      } else {
+        mostrarToast('erro', d.erro || 'Erro ao enviar.');
+      }
+    });
+  }
+
+  function _lerNotif(id) {
+    fetch(`/api/notificacoes/${id}/lida`, { method: 'POST' })
+      .then(() => {
+        const row = document.getElementById(`nrow-${id}`);
+        if (row) {
+          row.classList.remove('nao-lida');
+          row.classList.add('lida');
+          const dot = row.querySelector('.notif-row-dot');
+          if (dot) { dot.classList.remove('nao-lida'); dot.classList.add('lida'); }
+          const btnLer = row.querySelector('.notif-row-btn:not(.perigo)');
+          if (btnLer) btnLer.remove();
+          const titulo = row.querySelector('.notif-row-titulo');
+          if (titulo) titulo.style.fontWeight = '500';
+        }
+      });
+  }
+
+  function _deletarNotif(id) {
+    fetch(`/api/notificacoes/${id}`, { method: 'DELETE' })
+      .then(() => {
+        const row = document.getElementById(`nrow-${id}`);
+        if (row) row.remove();
+        if (!document.querySelector('.notif-row')) {
+          document.getElementById('notif-lista-conteudo').innerHTML =
+            '<div class="notif-lista-empty"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="1" y1="1" x2="23" y2="23"/></svg>Nenhuma notificação ainda.</div>';
+        }
+      });
+  }
+
+  function _marcarTodasLidas() {
+    fetch('/api/notificacoes/marcar-todas-lidas', { method: 'POST' })
+      .then(() => {
+        document.querySelectorAll('.notif-row').forEach(row => {
+          row.classList.remove('nao-lida');
+          row.classList.add('lida');
+          const dot = row.querySelector('.notif-row-dot');
+          if (dot) { dot.classList.remove('nao-lida'); dot.classList.add('lida'); }
+          const btnLer = row.querySelector('.notif-row-btn:not(.perigo)');
+          if (btnLer) btnLer.remove();
+        });
+        mostrarToast('sucesso', 'Todas marcadas como lidas.');
+      });
+  }
+
+  function _limparLidas() {
+    fetch('/api/notificacoes/lidas', { method: 'DELETE' })
+      .then(() => {
+        document.querySelectorAll('.notif-row.lida').forEach(r => r.remove());
+        if (!document.querySelector('.notif-row')) {
+          document.getElementById('notif-lista-conteudo').innerHTML =
+            '<div class="notif-lista-empty"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="1" y1="1" x2="23" y2="23"/></svg>Nenhuma notificação ainda.</div>';
+        }
+        mostrarToast('sucesso', 'Notificações lidas excluídas.');
+      });
+  }
+</script>
+{% endblock %}
