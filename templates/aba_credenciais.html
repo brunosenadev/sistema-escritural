@@ -464,81 +464,67 @@
   }
 
   // ── Autocomplete ──
-  var _acLista = [];
+  var _acTimer = null;
 
-  // Dropdown criado direto no body — fora de qualquer stacking context
   var _acDrop = document.createElement('div');
-  _acDrop.style.cssText = [
-    'position:fixed',
-    'z-index:99999',
-    'display:none',
-    'background:#1e293b',
-    'border:1.5px solid #334155',
-    'border-radius:10px',
-    'box-shadow:0 8px 28px rgba(0,0,0,0.5)',
-    'max-height:220px',
-    'overflow-y:auto',
-    'min-width:200px',
-    'font-family:Inter,sans-serif',
-  ].join(';');
+  _acDrop.style.cssText = 'position:fixed;z-index:99999;display:none;background:#1e293b;border:1.5px solid #334155;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.55);max-height:220px;overflow-y:auto;min-width:200px;font-family:Inter,sans-serif;';
   document.body.appendChild(_acDrop);
 
-  function _esc(s) {
-    return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
+  function _esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-  function _acMostrar(input) {
-    var isCnpj = (input.id === 'cred-cnpj');
-    var q      = input.value.trim();
-    var chave  = isCnpj ? q.replace(/\D/g,'') : q.toLowerCase();
-    if (chave.length < 3) { _acDrop.style.display = 'none'; return; }
-
-    var matches = _acLista.filter(function(c) {
-      return isCnpj
-        ? (c.cnpj||'').replace(/\D/g,'').indexOf(chave) !== -1
-        : (c.nome||'').toLowerCase().indexOf(chave) !== -1;
-    }).slice(0, 8);
-
-    if (!matches.length) { _acDrop.style.display = 'none'; return; }
-
-    _acDrop.innerHTML = matches.map(function(c) {
-      return '<div onmousedown="event.preventDefault();acSelecionar('+c.id+')" style="padding:9px 14px;cursor:pointer;border-bottom:1px solid #334155;transition:background .1s;" '
-           + 'onmouseover="this.style.background=\'#334155\'" onmouseout="this.style.background=\'\'">'
-           + '<div style="font-weight:500;font-size:13px;color:#f1f5f9;">' + _esc(c.nome) + '</div>'
-           + (c.cnpj ? '<div style="font-size:11px;color:#94a3b8;margin-top:1px;">' + _esc(c.cnpj) + '</div>' : '')
-           + '</div>';
-    }).join('');
-
+  function _acPosicionar(input) {
     var rect = input.getBoundingClientRect();
     _acDrop.style.top   = (rect.bottom + 4) + 'px';
     _acDrop.style.left  = rect.left + 'px';
     _acDrop.style.width = rect.width + 'px';
+  }
+
+  function _acRenderizar(lista, input) {
+    if (!lista.length) { _acDrop.style.display = 'none'; return; }
+    _acDrop.innerHTML = lista.map(function(c) {
+      var nome = _esc(c.nome || '');
+      var cnpj = _esc(c.cnpj || '');
+      return '<div onmousedown="event.preventDefault();_acEscolher(' + JSON.stringify(c.nome) + ',' + JSON.stringify(c.cnpj) + ')" '
+           + 'style="padding:9px 14px;cursor:pointer;border-bottom:1px solid #334155;" '
+           + 'onmouseover="this.style.background=\'#334155\'" onmouseout="this.style.background=\'\'">'
+           + '<div style="font-weight:500;font-size:13px;color:#f1f5f9;">' + nome + '</div>'
+           + (cnpj ? '<div style="font-size:11px;color:#94a3b8;margin-top:2px;">' + cnpj + '</div>' : '')
+           + '</div>';
+    }).join('');
+    _acPosicionar(input);
     _acDrop.style.display = 'block';
   }
 
-  function acSelecionar(id) {
-    var c = _acLista.find(function(x) { return x.id === id; });
-    if (!c) return;
-    document.getElementById('cred-nome').value = c.nome || '';
-    document.getElementById('cred-cnpj').value = c.cnpj || '';
-    _acDrop.style.display = 'none';
+  function _acBuscar(input) {
+    var isCnpj = (input.id === 'cred-cnpj');
+    var q = input.value.trim();
+    var chave = isCnpj ? q.replace(/\D/g, '') : q;
+    if (chave.length < 3) { _acDrop.style.display = 'none'; return; }
+    fetch('/api/credenciais/empresas?q=' + encodeURIComponent(chave))
+      .then(function(r) { return r.ok ? r.json() : []; })
+      .then(function(lista) { _acRenderizar(lista, input); })
+      .catch(function() {});
   }
 
-  // Wires os inputs depois do DOM estar pronto
-  document.getElementById('cred-nome').addEventListener('input', function() { _acMostrar(this); });
-  document.getElementById('cred-cnpj').addEventListener('input', function() { _acMostrar(this); });
+  window._acEscolher = function(nome, cnpj) {
+    document.getElementById('cred-nome').value = nome || '';
+    document.getElementById('cred-cnpj').value = cnpj || '';
+    _acDrop.style.display = 'none';
+  };
+
+  function _acInput(input) {
+    clearTimeout(_acTimer);
+    _acTimer = setTimeout(function() { _acBuscar(input); }, 200);
+  }
+
+  document.getElementById('cred-nome').addEventListener('input', function() { _acInput(this); });
+  document.getElementById('cred-cnpj').addEventListener('input', function() { _acInput(this); });
 
   document.addEventListener('click', function(e) {
     if (e.target.id !== 'cred-nome' && e.target.id !== 'cred-cnpj') {
       _acDrop.style.display = 'none';
     }
   });
-
-  // Carrega a lista — tenta imediatamente
-  fetch('/api/credenciais')
-    .then(function(r) { return r.ok ? r.json() : []; })
-    .then(function(lista) { _acLista = lista || []; })
-    .catch(function() {});
 
   // ── Modal abrir/fechar ──
   function abrirModalCred() {

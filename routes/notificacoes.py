@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, session, render_template
 import banco
-from utils import checar_login, usuario_logado
+from utils import checar_login, usuario_logado, checar_tela
 
 notificacoes_bp = Blueprint('notificacoes', __name__)
 
@@ -9,9 +9,19 @@ def _uid():
     return session.get('id_usuario')
 
 
+def _log(acao, descricao):
+    banco.registrar_log(
+        usuario=session.get('nome') or session.get('usuario', 'sistema'),
+        tela='Notificações', acao=acao, descricao=descricao,
+        usuario_id=session.get('id_usuario'),
+        nivel=session.get('nivel_acesso', ''),
+        ip=request.remote_addr,
+    )
+
+
 @notificacoes_bp.route('/notificacoes')
 def pagina_notificacoes():
-    bloqueio = checar_login()
+    bloqueio = checar_tela('notificacoes')
     if bloqueio:
         return bloqueio
     uid = _uid()
@@ -100,9 +110,12 @@ def api_enviar():
 
     if destino == 'todos':
         banco.criar_notificacao_todos(titulo, mensagem, tipo)
+        _log('ENVIOU', f'Notificação para todos — "{titulo}"')
     else:
         if not usuario_id:
             return jsonify({'erro': 'Usuário não informado'}), 400
         banco.criar_notificacao(int(usuario_id), titulo, mensagem, tipo)
+        dest = banco.buscar_usuario_por_id(int(usuario_id))
+        _log('ENVIOU', f'Notificação para {dest.get("nome","?") if dest else usuario_id} — "{titulo}"')
 
     return jsonify({'sucesso': True})

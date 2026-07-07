@@ -7,11 +7,12 @@ logs_bp = Blueprint('logs', __name__)
 _TELAS = [
     'Login', 'Escritural', 'Pendentes', 'Hom. Cobrança', 'Hom. Pagamentos',
     'Hom. Extrato Cartão', 'Hom. Extrato Bancário', 'Cancelados', 'Ajuda',
-    'Melhorias', 'Configurações', 'Acesso',
+    'Melhorias', 'Configurações', 'Acesso', 'Notificações', 'Credenciais',
 ]
 _ACOES = [
     'LOGIN', 'LOGIN_FALHA', 'LOGOUT', 'INSERIU', 'EDITOU', 'DELETOU',
     'STATUS', 'MOVEU', 'ASSUMIU', 'EMAIL', 'IMPORTOU', 'SENHA', 'ACESSO',
+    'ENVIOU', 'SILENCIOU', 'REATIVOU',
 ]
 
 

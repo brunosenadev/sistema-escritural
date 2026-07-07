@@ -11,7 +11,7 @@ from datetime import date, datetime
 
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
-from utils import checar_login, usuario_logado, checar_admin
+from utils import checar_login, usuario_logado, checar_admin, checar_tela
 
 credenciais_bp = Blueprint('credenciais', __name__)
 
@@ -118,7 +118,7 @@ def _log(acao, descricao):
 
 @credenciais_bp.route('/credenciais')
 def pagina_credenciais():
-    bloqueio = checar_login()
+    bloqueio = checar_tela('credenciais')
     if bloqueio:
         return bloqueio
     creds = banco.listar_credenciais()
@@ -139,6 +139,16 @@ def api_listar():
     if not usuario_logado():
         return jsonify({'erro': 'Não autenticado'}), 401
     return jsonify(banco.listar_credenciais())
+
+
+@credenciais_bp.route('/api/credenciais/empresas')
+def api_empresas():
+    if not usuario_logado():
+        return jsonify([]), 401
+    q = (request.args.get('q') or '').strip()
+    if len(q) < 3:
+        return jsonify([])
+    return jsonify(banco.buscar_empresas_sistema(q))
 
 
 @credenciais_bp.route('/api/credenciais', methods=['POST'])
