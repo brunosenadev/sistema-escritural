@@ -484,7 +484,8 @@
     _acDrop.innerHTML = lista.map(function(c) {
       var nome = _esc(c.nome || '');
       var cnpj = _esc(c.cnpj || '');
-      return '<div onmousedown="event.preventDefault();_acEscolher(' + JSON.stringify(c.nome) + ',' + JSON.stringify(c.cnpj) + ')" '
+      return '<div data-nome="' + nome + '" data-cnpj="' + cnpj + '" '
+           + 'onmousedown="event.preventDefault();_acEscolher(this)" '
            + 'style="padding:9px 14px;cursor:pointer;border-bottom:1px solid #334155;" '
            + 'onmouseover="this.style.background=\'#334155\'" onmouseout="this.style.background=\'\'">'
            + '<div style="font-weight:500;font-size:13px;color:#f1f5f9;">' + nome + '</div>'
@@ -506,9 +507,9 @@
       .catch(function() {});
   }
 
-  window._acEscolher = function(nome, cnpj) {
-    document.getElementById('cred-nome').value = nome || '';
-    document.getElementById('cred-cnpj').value = cnpj || '';
+  window._acEscolher = function(el) {
+    document.getElementById('cred-nome').value = el.dataset.nome || '';
+    document.getElementById('cred-cnpj').value = el.dataset.cnpj || '';
     _acDrop.style.display = 'none';
   };
 
