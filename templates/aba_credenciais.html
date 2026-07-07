@@ -224,6 +224,12 @@
   [data-tema="dark"] .btn-cred-acao:hover { background: var(--z-border); color: var(--z-text-1); }
   [data-tema="dark"] .cred-vazio { color: var(--z-text-3); }
   [data-tema="dark"] .cred-vazio svg { stroke: var(--z-text-3); }
+
+  /* células da tabela */
+  .cred-cel-principal { font-weight: 600; color: #0f172a; }
+  .cred-cel-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+  [data-tema="dark"] .cred-cel-principal { color: var(--z-text-1); }
+  [data-tema="dark"] .cred-cel-sub { color: var(--z-text-3); }
   [data-tema="dark"] .cred-tipo-check { border-color: var(--z-border); color: var(--z-text-2); }
   [data-tema="dark"] .cred-tipo-check.checked { border-color: #3b82f6; background: rgba(59,130,246,0.15); color: #93c5fd; }
   /* modal dark */
@@ -310,6 +316,10 @@
         {% set status_cls = 'status-vencida' %}
         {% set status_txt = (dias | abs) ~ 'd em atraso' %}
         {% set filtro_cat = 'vencida' %}
+      {% elif dias == 0 %}
+        {% set status_cls = 'status-urgente' %}
+        {% set status_txt = 'Vence hoje' %}
+        {% set filtro_cat = 'alerta' %}
       {% elif dias < 7 %}
         {% set status_cls = 'status-urgente' %}
         {% set status_txt = dias ~ 'd restantes' %}
@@ -325,12 +335,12 @@
       {% endif %}
       <tr class="{{ 'silenciado' if c.silenciado else '' }}" data-cat="{{ filtro_cat }}">
         <td>
-          <div style="font-weight:600;color:#0f172a;">{{ c.nome }}</div>
-          <div style="font-size:11px;color:#64748b;margin-top:2px;">{{ c.cnpj or '—' }}</div>
+          <div class="cred-cel-principal">{{ c.nome }}</div>
+          <div class="cred-cel-sub">{{ c.cnpj_fmt or '—' }}</div>
         </td>
         <td>
-          <div>{{ c.banco or '—' }}</div>
-          {% if c.conta %}<div style="font-size:11px;color:#64748b;">Conta: {{ c.conta }}</div>{% endif %}
+          <div class="cred-cel-principal" style="font-weight:400;">{{ c.banco or '—' }}</div>
+          {% if c.conta %}<div class="cred-cel-sub">Conta: {{ c.conta }}</div>{% endif %}
         </td>
         <td>
           <div class="tipo-badges">
@@ -509,7 +519,9 @@
 
   window._acEscolher = function(el) {
     document.getElementById('cred-nome').value = el.dataset.nome || '';
-    document.getElementById('cred-cnpj').value = el.dataset.cnpj || '';
+    var cnpjEl = document.getElementById('cred-cnpj');
+    cnpjEl.value = el.dataset.cnpj || '';
+    mascaraCNPJ(cnpjEl);
     _acDrop.style.display = 'none';
   };
 

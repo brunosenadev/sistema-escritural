@@ -131,6 +131,12 @@ def pagina_credenciais():
         else:
             c['dias'] = None
             c['data_br'] = c.get('data_validade', '')
+        # Máscara CNPJ
+        raw = (c.get('cnpj') or '').replace('.','').replace('/','').replace('-','')
+        if len(raw) == 14:
+            c['cnpj_fmt'] = f'{raw[:2]}.{raw[2:5]}.{raw[5:8]}/{raw[8:12]}-{raw[12:]}'
+        else:
+            c['cnpj_fmt'] = c.get('cnpj') or ''
     return render_template('aba_credenciais.html', credenciais=creds, aba_ativa='credenciais')
 
 
