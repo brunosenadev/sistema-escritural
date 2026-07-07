@@ -147,6 +147,31 @@ def api_listar():
     return jsonify(banco.listar_credenciais())
 
 
+@credenciais_bp.route('/api/credenciais/simular', methods=['POST'])
+def api_simular():
+    if session.get('nivel_acesso') not in ('master', 'admin'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    d = request.get_json(silent=True) or {}
+    cid = d.get('id_credencial')
+    tipo_aviso = d.get('tipo_aviso')
+    if not cid or not tipo_aviso:
+        return jsonify({'erro': 'Parâmetros inválidos'}), 400
+    cred = banco.buscar_credencial(cid)
+    if not cred:
+        return jsonify({'erro': 'Credencial não encontrada'}), 404
+    label = _LABELS.get(tipo_aviso, tipo_aviso)
+    titulo = f'[SIMULAÇÃO] Credencial {label} — {cred["nome"]}'
+    msg = (
+        f'CNPJ {cred["cnpj"] or "—"} | Banco {cred["banco"] or "—"} | '
+        f'Conta {cred["conta"] or "—"} | Tipo: {cred["tipo"] or "—"}'
+    )
+    uid = session.get('id_usuario')
+    tipo_notif = 'erro' if tipo_aviso.startswith('atr_') else 'aviso'
+    banco.criar_notificacao(uid, titulo, msg, tipo_notif)
+    _log('SIMULOU', f'Simulou aviso "{tipo_aviso}" para credencial #{cid} — {cred["nome"]}')
+    return jsonify({'sucesso': True})
+
+
 @credenciais_bp.route('/api/credenciais/empresas')
 def api_empresas():
     if not usuario_logado():

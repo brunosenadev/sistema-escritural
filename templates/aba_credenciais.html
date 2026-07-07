@@ -6,6 +6,12 @@
 {% block breadcrumb %}Processos / Credenciais{% endblock %}
 
 {% block acoes_header %}
+{% if _eh_master %}
+<button class="btn-header-pill" style="background:#f59e0b;color:#fff;border-color:#f59e0b;" onclick="abrirModalSimular()">
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+  Simular Aviso
+</button>
+{% endif %}
 <button class="btn-header-pill" onclick="abrirModalCred()">
   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   Nova Credencial
@@ -242,6 +248,20 @@
   [data-tema="dark"] .input-modal:focus { border-color: #3b82f6; background: var(--z-surface); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
   [data-tema="dark"] .btn-cancelar-modal { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
   [data-tema="dark"] .btn-cancelar-modal:hover { background: var(--z-border-s); }
+
+  /* chips de fase do simulador */
+  .sim-fase {
+    padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 600;
+    cursor: pointer; border: 1.5px solid #d97706; color: #d97706;
+    background: #fffbeb; transition: all 0.12s; user-select: none;
+  }
+  .sim-fase-err { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
+  .sim-fase.selecionado { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+  .sim-fase-err.selecionado { background: #dc2626; color: #fff; border-color: #dc2626; }
+  [data-tema="dark"] .sim-fase { background: rgba(245,158,11,.12); border-color: #d97706; color: #fbbf24; }
+  [data-tema="dark"] .sim-fase-err { background: rgba(220,38,38,.12); border-color: #dc2626; color: #f87171; }
+  [data-tema="dark"] .sim-fase.selecionado { background: #f59e0b; color: #fff; }
+  [data-tema="dark"] .sim-fase-err.selecionado { background: #dc2626; color: #fff; }
 </style>
 {% endblock %}
 
@@ -381,6 +401,49 @@
     {% endif %}
   </div>
 </div>
+
+{# ── Modal Simulação (só master) ── #}
+{% if _eh_master %}
+<div id="overlay-simular" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;backdrop-filter:blur(3px);">
+  <div class="modal-cred-box" style="width:480px;">
+    <div class="modal-cred-titulo">
+      <span>Simular Aviso de Credencial</span>
+      <button onclick="fecharModalSimular()" title="Fechar">✕</button>
+    </div>
+    <p style="font-size:12px;color:#64748b;margin:-8px 0 18px;">A notificação será criada apenas para você e não afeta os envios reais.</p>
+    <div class="grupo-modal">
+      <label>Credencial</label>
+      <select class="input-modal" id="sim-cred-id">
+        <option value="">Selecione...</option>
+        {% for c in credenciais %}
+        <option value="{{ c.id }}">{{ c.nome }}{% if c.cnpj_fmt %} — {{ c.cnpj_fmt }}{% endif %}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="grupo-modal">
+      <label>Fase do aviso</label>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:6px;" id="sim-fases">
+        <div class="sim-fase" data-val="pre_30d" onclick="selecionarFase(this)">30d antes</div>
+        <div class="sim-fase" data-val="pre_15d" onclick="selecionarFase(this)">15d antes</div>
+        <div class="sim-fase" data-val="pre_7d"  onclick="selecionarFase(this)">7d antes</div>
+        <div class="sim-fase" data-val="pre_3d"  onclick="selecionarFase(this)">3d antes</div>
+        <div class="sim-fase" data-val="atr_0d"  onclick="selecionarFase(this)">Venceu hoje</div>
+        <div class="sim-fase sim-fase-err" data-val="atr_3d"  onclick="selecionarFase(this)">3d atraso</div>
+        <div class="sim-fase sim-fase-err" data-val="atr_7d"  onclick="selecionarFase(this)">7d atraso</div>
+        <div class="sim-fase sim-fase-err" data-val="atr_15d" onclick="selecionarFase(this)">15d atraso</div>
+        <div class="sim-fase sim-fase-err" data-val="atr_1m"  onclick="selecionarFase(this)">1 mês</div>
+        <div class="sim-fase sim-fase-err" data-val="atr_3m"  onclick="selecionarFase(this)">3 meses</div>
+        <div class="sim-fase sim-fase-err" data-val="atr_6m"  onclick="selecionarFase(this)">6 meses</div>
+        <div class="sim-fase sim-fase-err" data-val="atr_1a"  onclick="selecionarFase(this)">1 ano</div>
+      </div>
+    </div>
+    <div class="modal-cred-rodape">
+      <button class="btn-cancelar-modal" onclick="fecharModalSimular()">Cancelar</button>
+      <button class="btn-salvar-modal" style="background:#f59e0b;" onclick="enviarSimulacao()">Disparar notificação</button>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 {# ── Modal Cadastro / Edição ── #}
 <div id="overlay-cred" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;backdrop-filter:blur(3px);">
@@ -650,6 +713,43 @@
           setTimeout(() => location.reload(), 600);
         }
       });
+  }
+
+  // ── Simulador ──
+  function abrirModalSimular() {
+    document.getElementById('sim-cred-id').value = '';
+    document.querySelectorAll('.sim-fase').forEach(el => el.classList.remove('selecionado'));
+    document.getElementById('overlay-simular').style.display = 'flex';
+  }
+  function fecharModalSimular() {
+    document.getElementById('overlay-simular').style.display = 'none';
+  }
+  document.getElementById('overlay-simular') && document.getElementById('overlay-simular').addEventListener('click', function(e) {
+    if (e.target === this) fecharModalSimular();
+  });
+  function selecionarFase(el) {
+    document.querySelectorAll('.sim-fase').forEach(f => f.classList.remove('selecionado'));
+    el.classList.add('selecionado');
+  }
+  function enviarSimulacao() {
+    var credId   = document.getElementById('sim-cred-id').value;
+    var faseEl   = document.querySelector('.sim-fase.selecionado');
+    if (!credId) { mostrarToast('erro', 'Selecione uma credencial.'); return; }
+    if (!faseEl) { mostrarToast('erro', 'Selecione uma fase do aviso.'); return; }
+    fetch('/api/credenciais/simular', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id_credencial: parseInt(credId), tipo_aviso: faseEl.dataset.val })
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) {
+        mostrarToast('sucesso', 'Notificação simulada criada!');
+        fecharModalSimular();
+      } else {
+        mostrarToast('erro', d.erro || 'Erro ao simular.');
+      }
+    });
   }
 
   function deletarCred(id, nome) {
