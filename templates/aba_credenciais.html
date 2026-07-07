@@ -154,26 +154,25 @@
   .cred-tipo-check.checked { border-color: #2563eb; background: #eff6ff; color: #2563eb; font-weight: 600; }
   .cred-tipo-check:hover:not(.checked) { border-color: #93c5fd; color: #2563eb; }
 
-  /* ── Autocomplete ── */
-  .ac-wrap { position: relative; }
-  .ac-dropdown {
-    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  /* ── Autocomplete global ── */
+  #ac-global {
+    position: fixed; z-index: 9999; display: none;
     background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 9999;
-    max-height: 200px; overflow-y: auto; display: none;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    max-height: 220px; overflow-y: auto; min-width: 220px;
   }
   .ac-item {
     padding: 9px 14px; cursor: pointer; font-size: 13px;
-    display: flex; flex-direction: column; gap: 1px;
+    display: flex; flex-direction: column; gap: 2px;
     border-bottom: 1px solid #f1f5f9;
   }
   .ac-item:last-child { border-bottom: none; }
-  .ac-item:hover { background: #f0f7ff; }
+  .ac-item:hover, .ac-item.ac-ativo { background: #f0f7ff; }
   .ac-item-nome { font-weight: 500; color: #0f172a; }
   .ac-item-cnpj { font-size: 11px; color: #94a3b8; }
-  [data-tema="dark"] .ac-dropdown { background: var(--z-surface); border-color: var(--z-border); }
+  [data-tema="dark"] #ac-global { background: var(--z-surface); border-color: var(--z-border); box-shadow: 0 8px 28px rgba(0,0,0,0.5); }
   [data-tema="dark"] .ac-item { border-color: var(--z-border-s); }
-  [data-tema="dark"] .ac-item:hover { background: var(--z-elevated); }
+  [data-tema="dark"] .ac-item:hover, [data-tema="dark"] .ac-item.ac-ativo { background: var(--z-elevated); }
   [data-tema="dark"] .ac-item-nome { color: var(--z-text-1); }
   [data-tema="dark"] .ac-item-cnpj { color: var(--z-text-3); }
   .cred-vazio {
@@ -394,6 +393,9 @@
   </div>
 </div>
 
+{# ── Dropdown global de autocomplete ── #}
+<div id="ac-global"></div>
+
 {# ── Modal Cadastro / Edição ── #}
 <div id="overlay-cred" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;backdrop-filter:blur(3px);">
   <div class="modal-cred-box">
@@ -404,17 +406,11 @@
     <div class="modal-cred-grid">
       <div class="grupo-modal full">
         <label>Nome da empresa</label>
-        <div class="ac-wrap">
-          <input class="input-modal" type="text" id="cred-nome" placeholder="Nome do cliente" autocomplete="off" oninput="acFiltrar('nome')">
-          <div class="ac-dropdown" id="ac-dropdown-nome"></div>
-        </div>
+        <input class="input-modal" type="text" id="cred-nome" placeholder="Nome do cliente" autocomplete="off" oninput="acFiltrar(this,'nome')">
       </div>
       <div class="grupo-modal">
         <label>CNPJ</label>
-        <div class="ac-wrap">
-          <input class="input-modal" type="text" id="cred-cnpj" placeholder="00.000.000/0000-00" maxlength="18" autocomplete="off" oninput="mascaraCNPJ(this); acFiltrar('cnpj')">
-          <div class="ac-dropdown" id="ac-dropdown-cnpj"></div>
-        </div>
+        <input class="input-modal" type="text" id="cred-cnpj" placeholder="00.000.000/0000-00" maxlength="18" autocomplete="off" oninput="mascaraCNPJ(this);acFiltrar(this,'cnpj')">
       </div>
       <div class="grupo-modal">
         <label>Data de validade</label>
@@ -493,58 +489,50 @@
 
   // ── Autocomplete ──
   var _acLista = [];
+  var _acCampoAtivo = null;
 
-  function _acCarregar() {
-    fetch('/api/credenciais')
-      .then(function(r) { return r.json(); })
-      .then(function(lista) { _acLista = lista || []; })
-      .catch(function() {});
+  // Carrega na abertura da página
+  fetch('/api/credenciais')
+    .then(function(r) { return r.ok ? r.json() : []; })
+    .then(function(lista) { _acLista = lista || []; })
+    .catch(function() {});
+
+  function _esc(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  function acFiltrar(campo) {
-    var inputId    = campo === 'cnpj' ? 'cred-cnpj' : 'cred-nome';
-    var outroId    = campo === 'cnpj' ? 'cred-nome' : 'cred-cnpj';
-    var dropId     = campo === 'cnpj' ? 'ac-dropdown-cnpj' : 'ac-dropdown-nome';
-    var outroDrop  = campo === 'cnpj' ? 'ac-dropdown-nome' : 'ac-dropdown-cnpj';
-    var raw        = document.getElementById(inputId).value.trim();
-    var q          = raw.toLowerCase();
-    var drop       = document.getElementById(dropId);
+  function acFiltrar(input, campo) {
+    var raw  = input.value.trim();
+    var q    = raw.toLowerCase();
+    var drop = document.getElementById('ac-global');
 
-    if (!q) { drop.style.display = 'none'; return; }
+    // Mínimo 3 caracteres
+    var efetivo = campo === 'cnpj' ? q.replace(/\D/g,'') : q;
+    if (efetivo.length < 3) { drop.style.display = 'none'; return; }
 
     var matches = _acLista.filter(function(c) {
       if (campo === 'cnpj') {
-        var digits = q.replace(/\D/g, '');
-        return digits.length > 0 && (c.cnpj || '').replace(/\D/g, '').includes(digits);
+        return (c.cnpj || '').replace(/\D/g,'').includes(efetivo);
       }
       return (c.nome || '').toLowerCase().includes(q);
     }).slice(0, 8);
 
-    // Preenchimento automático ao bater exato
-    var exato = _acLista.find(function(c) {
-      return campo === 'cnpj'
-        ? (c.cnpj || '').replace(/\D/g,'') === raw.replace(/\D/g,'') && raw.replace(/\D/g,'').length >= 14
-        : (c.nome || '').toLowerCase() === q;
-    });
-    if (exato) {
-      document.getElementById(outroId).value = campo === 'cnpj' ? (exato.nome || '') : (exato.cnpj || '');
-      document.getElementById(outroDrop).style.display = 'none';
-      drop.style.display = 'none';
-      return;
-    }
-
     if (!matches.length) { drop.style.display = 'none'; return; }
+
+    _acCampoAtivo = campo;
     drop.innerHTML = matches.map(function(c) {
-      return '<div class="ac-item" onclick="acSelecionar(' + c.id + ')">'
+      return '<div class="ac-item" onmousedown="acSelecionar(' + c.id + ')">'
         + '<span class="ac-item-nome">' + _esc(c.nome) + '</span>'
         + (c.cnpj ? '<span class="ac-item-cnpj">' + _esc(c.cnpj) + '</span>' : '')
         + '</div>';
     }).join('');
-    drop.style.display = 'block';
-  }
 
-  function _esc(s) {
-    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    // Posiciona fixo abaixo do input
+    var rect = input.getBoundingClientRect();
+    drop.style.top    = (rect.bottom + 4) + 'px';
+    drop.style.left   = rect.left + 'px';
+    drop.style.width  = rect.width + 'px';
+    drop.style.display = 'block';
   }
 
   function acSelecionar(id) {
@@ -552,20 +540,17 @@
     if (!c) return;
     document.getElementById('cred-nome').value = c.nome || '';
     document.getElementById('cred-cnpj').value = c.cnpj || '';
-    document.getElementById('ac-dropdown-nome').style.display = 'none';
-    document.getElementById('ac-dropdown-cnpj').style.display = 'none';
+    document.getElementById('ac-global').style.display = 'none';
   }
 
-  function _acFechar(e) {
-    if (!e.target.closest('.ac-wrap')) {
-      document.querySelectorAll('.ac-dropdown').forEach(function(d) { d.style.display = 'none'; });
+  document.addEventListener('click', function(e) {
+    if (e.target.id !== 'cred-nome' && e.target.id !== 'cred-cnpj') {
+      document.getElementById('ac-global').style.display = 'none';
     }
-  }
-  document.addEventListener('click', _acFechar);
+  });
 
   // ── Modal abrir/fechar ──
   function abrirModalCred() {
-    _acCarregar();
     document.getElementById('cred-modal-titulo').textContent = 'Nova Credencial';
     document.getElementById('cred-id').value = '';
     document.getElementById('cred-nome').value = '';
@@ -594,7 +579,6 @@
   });
 
   function editarCred(id) {
-    _acCarregar();
     fetch('/api/credenciais')
       .then(function(r) { return r.json(); })
       .then(function(lista) {
