@@ -147,13 +147,35 @@
   }
   .cred-tipo-check {
     display: flex; align-items: center; gap: 6px;
-    padding: 5px 12px; border: 1px solid #e2e8f0; border-radius: 99px;
+    padding: 5px 14px; border: 1.5px solid #e2e8f0; border-radius: 99px;
     cursor: pointer; font-size: 12px; font-weight: 500;
-    transition: all 0.12s; user-select: none;
+    transition: all 0.12s; user-select: none; color: #475569;
   }
-  .cred-tipo-check input { display: none; }
-  .cred-tipo-check.checked { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
-  .cred-tipo-check:hover { border-color: #93c5fd; }
+  .cred-tipo-check.checked { border-color: #2563eb; background: #eff6ff; color: #2563eb; font-weight: 600; }
+  .cred-tipo-check:hover:not(.checked) { border-color: #93c5fd; color: #2563eb; }
+
+  /* ── Autocomplete ── */
+  .ac-wrap { position: relative; }
+  .ac-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 9999;
+    max-height: 200px; overflow-y: auto; display: none;
+  }
+  .ac-item {
+    padding: 9px 14px; cursor: pointer; font-size: 13px;
+    display: flex; flex-direction: column; gap: 1px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-item:hover { background: #f0f7ff; }
+  .ac-item-nome { font-weight: 500; color: #0f172a; }
+  .ac-item-cnpj { font-size: 11px; color: #94a3b8; }
+  [data-tema="dark"] .ac-dropdown { background: var(--z-surface); border-color: var(--z-border); }
+  [data-tema="dark"] .ac-item { border-color: var(--z-border-s); }
+  [data-tema="dark"] .ac-item:hover { background: var(--z-elevated); }
+  [data-tema="dark"] .ac-item-nome { color: var(--z-text-1); }
+  [data-tema="dark"] .ac-item-cnpj { color: var(--z-text-3); }
   .cred-vazio {
     padding: 48px 24px; text-align: center; color: #94a3b8; font-size: 14px;
   }
@@ -382,11 +404,17 @@
     <div class="modal-cred-grid">
       <div class="grupo-modal full">
         <label>Nome da empresa</label>
-        <input class="input-modal" type="text" id="cred-nome" placeholder="Nome do cliente">
+        <div class="ac-wrap">
+          <input class="input-modal" type="text" id="cred-nome" placeholder="Nome do cliente" autocomplete="off" oninput="acFiltrar('nome')">
+          <div class="ac-dropdown" id="ac-dropdown-nome"></div>
+        </div>
       </div>
       <div class="grupo-modal">
         <label>CNPJ</label>
-        <input class="input-modal" type="text" id="cred-cnpj" placeholder="00.000.000/0000-00" maxlength="18" oninput="mascaraCNPJ(this)">
+        <div class="ac-wrap">
+          <input class="input-modal" type="text" id="cred-cnpj" placeholder="00.000.000/0000-00" maxlength="18" autocomplete="off" oninput="mascaraCNPJ(this); acFiltrar('cnpj')">
+          <div class="ac-dropdown" id="ac-dropdown-cnpj"></div>
+        </div>
       </div>
       <div class="grupo-modal">
         <label>Data de validade</label>
@@ -403,18 +431,10 @@
       <div class="grupo-modal full">
         <label>Tipo de credencial</label>
         <div class="cred-tipos-wrap">
-          <label class="cred-tipo-check" onclick="toggleTipo(this)">
-            <input type="checkbox" value="pix"> Pix
-          </label>
-          <label class="cred-tipo-check" onclick="toggleTipo(this)">
-            <input type="checkbox" value="cobrança"> Cobrança
-          </label>
-          <label class="cred-tipo-check" onclick="toggleTipo(this)">
-            <input type="checkbox" value="pagamento"> Pagamento
-          </label>
-          <label class="cred-tipo-check" onclick="toggleTipo(this)">
-            <input type="checkbox" value="extrato"> Extrato
-          </label>
+          <div class="cred-tipo-check" data-valor="pix" onclick="toggleTipo(this)">Pix</div>
+          <div class="cred-tipo-check" data-valor="cobrança" onclick="toggleTipo(this)">Cobrança</div>
+          <div class="cred-tipo-check" data-valor="pagamento" onclick="toggleTipo(this)">Pagamento</div>
+          <div class="cred-tipo-check" data-valor="extrato" onclick="toggleTipo(this)">Extrato</div>
         </div>
       </div>
       <div class="grupo-modal full">
@@ -453,30 +473,74 @@
   }
 
   // ── Tipo chips ──
-  function toggleTipo(label) {
-    label.classList.toggle('checked');
-    label.querySelector('input').checked = label.classList.contains('checked');
+  function toggleTipo(el) {
+    el.classList.toggle('checked');
   }
 
   function _getTipos() {
     return Array.from(document.querySelectorAll('.cred-tipo-check'))
-      .filter(l => l.classList.contains('checked'))
-      .map(l => l.querySelector('input').value)
+      .filter(el => el.classList.contains('checked'))
+      .map(el => el.dataset.valor)
       .join(',');
   }
 
   function _setTipos(tipoStr) {
     var tipos = (tipoStr || '').split(',').map(t => t.trim().toLowerCase());
-    document.querySelectorAll('.cred-tipo-check').forEach(l => {
-      var val = l.querySelector('input').value.toLowerCase();
-      var ativo = tipos.includes(val);
-      l.classList.toggle('checked', ativo);
-      l.querySelector('input').checked = ativo;
+    document.querySelectorAll('.cred-tipo-check').forEach(el => {
+      el.classList.toggle('checked', tipos.includes(el.dataset.valor.toLowerCase()));
     });
   }
 
+  // ── Autocomplete ──
+  var _acLista = [];
+
+  function _acCarregar() {
+    fetch('/api/credenciais')
+      .then(function(r) { return r.json(); })
+      .then(function(lista) { _acLista = lista || []; })
+      .catch(function() {});
+  }
+
+  function acFiltrar(campo) {
+    var inputId = campo === 'cnpj' ? 'cred-cnpj' : 'cred-nome';
+    var dropId  = campo === 'cnpj' ? 'ac-dropdown-cnpj' : 'ac-dropdown-nome';
+    var q = document.getElementById(inputId).value.trim().toLowerCase();
+    var drop = document.getElementById(dropId);
+    if (!q || q.length < 1) { drop.style.display = 'none'; return; }
+    var matches = _acLista.filter(function(c) {
+      return (campo === 'cnpj')
+        ? (c.cnpj || '').replace(/\D/g,'').includes(q.replace(/\D/g,'')) && q.replace(/\D/g,'').length > 0
+        : (c.nome || '').toLowerCase().includes(q);
+    }).slice(0, 8);
+    if (!matches.length) { drop.style.display = 'none'; return; }
+    drop.innerHTML = matches.map(function(c) {
+      return '<div class="ac-item" onclick="acSelecionar(' + c.id + ')">'
+        + '<span class="ac-item-nome">' + (c.nome || '') + '</span>'
+        + '<span class="ac-item-cnpj">' + (c.cnpj || '') + '</span>'
+        + '</div>';
+    }).join('');
+    drop.style.display = 'block';
+  }
+
+  function acSelecionar(id) {
+    var c = _acLista.find(function(x) { return x.id === id; });
+    if (!c) return;
+    document.getElementById('cred-nome').value = c.nome || '';
+    document.getElementById('cred-cnpj').value = c.cnpj || '';
+    document.getElementById('ac-dropdown-nome').style.display = 'none';
+    document.getElementById('ac-dropdown-cnpj').style.display = 'none';
+  }
+
+  function _acFechar(e) {
+    if (!e.target.closest('.ac-wrap')) {
+      document.querySelectorAll('.ac-dropdown').forEach(function(d) { d.style.display = 'none'; });
+    }
+  }
+  document.addEventListener('click', _acFechar);
+
   // ── Modal abrir/fechar ──
   function abrirModalCred() {
+    _acCarregar();
     document.getElementById('cred-modal-titulo').textContent = 'Nova Credencial';
     document.getElementById('cred-id').value = '';
     document.getElementById('cred-nome').value = '';
@@ -488,7 +552,7 @@
     _setTipos('');
     var ov = document.getElementById('overlay-cred');
     ov.style.display = 'flex';
-    setTimeout(() => document.getElementById('cred-nome').focus(), 50);
+    setTimeout(function() { document.getElementById('cred-nome').focus(); }, 50);
   }
 
   function fecharModalCred() {
@@ -505,10 +569,11 @@
   });
 
   function editarCred(id) {
+    _acCarregar();
     fetch('/api/credenciais')
-      .then(r => r.json())
-      .then(lista => {
-        var c = lista.find(x => x.id === id);
+      .then(function(r) { return r.json(); })
+      .then(function(lista) {
+        var c = lista.find(function(x) { return x.id === id; });
         if (!c) return;
         document.getElementById('cred-modal-titulo').textContent = 'Editar Credencial';
         document.getElementById('cred-id').value = c.id;
