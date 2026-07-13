@@ -1125,10 +1125,7 @@
     // Se status HOMOLOGADO e for edição, move para aba correta
     if (modoEdicao && dados.status && dados.status.toUpperCase() === 'HOMOLOGADO') {
       fecharModal();
-      const s = (dados.servico || '').toUpperCase();
-      let nomeAba = 'Homologados Cobrança';
-      if (s.includes('EXTRAT')) nomeAba = 'Homologados Extrato Cartão';
-      else if (!s.includes('COBR')) nomeAba = 'Homologados Pagamentos';
+      let nomeAba = _nomeAbaPorServico(dados.servico);
       abrirDialogo({
         titulo: 'Mover para ' + nomeAba + '?',
         mensagem: `Esse registro será <strong>removido da aba Pendente</strong> e movido para <strong>${nomeAba}</strong>.`,
@@ -1196,6 +1193,23 @@
   }
 
   // ─── Atualizar status direto na tabela ───────────────────────
+  const _destinoNomes = {
+    cobranca:      'Homologados Cobrança',
+    pagamentos:    'Homologados Pagamentos',
+    extrato:       'Homologados Extrato Cartão',
+    ext_bancario:  'Homologados Extrato Bancário',
+    'ext-bancario': 'Homologados Extrato Bancário',
+  };
+  const _servicoDestinoMapa = {{ lista_servicos_mapa | tojson }};
+  function _nomeAbaPorServico(servico) {
+    const s = (servico || '').toUpperCase().trim();
+    const dest = _servicoDestinoMapa[s] || '';
+    if (dest && _destinoNomes[dest]) return _destinoNomes[dest];
+    if (s.includes('EXTRAT')) return 'Homologados Extrato Cartão';
+    if (!s.includes('COBR')) return 'Homologados Pagamentos';
+    return 'Homologados Cobrança';
+  }
+
   const _mapaClasseStatus = {
     'aguardando banco':        'status-aguardando-banco',
     'aguardando cliente':      'status-aguardando-cliente',
@@ -1251,9 +1265,7 @@
     if (novoStatus.toUpperCase() === 'HOMOLOGADO') {
       const tr2 = el.closest('tr');
       const servico = tr2 ? tr2.dataset.servico : '';
-      let nomeAba = 'Homologados Cobrança';
-      if (servico && servico.includes('EXTRAT')) nomeAba = 'Homologados Extrato Cartão';
-      else if (servico && !servico.includes('COBR')) nomeAba = 'Homologados Pagamentos';
+      let nomeAba = _nomeAbaPorServico(servico);
 
       const statusAnterior2 = [...el.options].find(o => o.defaultSelected)?.value || el.options[0].value;
       el.value = statusAnterior2;

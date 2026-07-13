@@ -67,6 +67,7 @@ def aba_pendente():
         lista_tecnicos=lista_tecnicos,
         lista_status=banco.listar_status(),
         lista_servicos=banco.listar_servicos(),
+        lista_servicos_mapa={s['texto']: s['destino_homologado'] for s in banco.listar_servicos_completo()},
         cores_tecnicos=cores_tecnicos,
     )
 

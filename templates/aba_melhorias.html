@@ -333,18 +333,6 @@
 
 <div class="kanban-wrap">
 
-  <div class="kanban-col col-aguarda" data-estagio="analisa">
-    <div class="kanban-col-header">
-      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><polyline points="12 6 12 12 16 14"/></svg>
-      Analisada
-      <span class="kcount">{{ por_estagio.analisa | length }}</span>
-    </div>
-    <div class="kanban-cards">
-      {% for m in por_estagio.analisa %}{{ kcard(m) }}{% endfor %}
-    </div>
-    <button class="kadd-btn" onclick="abrirModalNova('analisa')">+ Adicionar</button>
-  </div>
-
   <div class="kanban-col col-analise" data-estagio="em_analise">
     <div class="kanban-col-header">
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -355,6 +343,18 @@
       {% for m in por_estagio.em_analise %}{{ kcard(m) }}{% endfor %}
     </div>
     <button class="kadd-btn" onclick="abrirModalNova('em_analise')">+ Adicionar</button>
+  </div>
+
+  <div class="kanban-col col-aguarda" data-estagio="analisa">
+    <div class="kanban-col-header">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><polyline points="12 6 12 12 16 14"/></svg>
+      Analisada
+      <span class="kcount">{{ por_estagio.analisa | length }}</span>
+    </div>
+    <div class="kanban-cards">
+      {% for m in por_estagio.analisa %}{{ kcard(m) }}{% endfor %}
+    </div>
+    <button class="kadd-btn" onclick="abrirModalNova('analisa')">+ Adicionar</button>
   </div>
 
   <div class="kanban-col col-prog" data-estagio="em_programacao">

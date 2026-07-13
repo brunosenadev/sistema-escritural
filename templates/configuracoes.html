@@ -530,14 +530,8 @@
 
 <!-- ── Tabs de navegação ─────────────────────── -->
 <div class="tabs-config">
-  <button class="tab-btn ativo" onclick="trocarTab('planilha', this)">
-    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-    </svg>
-    Planilha
-  </button>
   {% if nivel_acesso in ('admin', 'master') %}
-  <button class="tab-btn" onclick="trocarTab('tecnicos', this)">
+  <button class="tab-btn ativo" onclick="trocarTab('tecnicos', this)">
     <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
       <circle cx="9" cy="7" r="4"/>
       <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -566,6 +560,7 @@
     </svg>
     Setores
   </button>
+  {% if nivel_acesso == 'master' %}
   <button class="tab-btn" onclick="trocarTab('bancos', this)">
     <svg viewBox="0 0 24 24"><line x1="3" y1="22" x2="21" y2="22"/>
       <rect x="5" y="11" width="4" height="11"/><rect x="10" y="11" width="4" height="11"/><rect x="15" y="11" width="4" height="11"/>
@@ -574,8 +569,9 @@
     Bancos
   </button>
   {% endif %}
+  {% endif %}
   {% if nivel_acesso in ('admin', 'master') or 'escritural' in telas_acesso %}
-  <button class="tab-btn" onclick="trocarTab('status-escritural', this)">
+  <button class="tab-btn{% if nivel_acesso not in ('admin', 'master') %} ativo{% endif %}" onclick="trocarTab('status-escritural', this)">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
       <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
     </svg>
@@ -585,128 +581,9 @@
 </div>
 
 <!-- ════════════════════════════════════════════ -->
-<!-- TAB: Planilha                               -->
-<!-- ════════════════════════════════════════════ -->
-<div id="tab-planilha" class="painel-tab ativo">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;">
-
-    {% if nivel_acesso == 'master' or nivel_acesso == 'admin' or 'importar_homologacoes_pendentes' in telas_acesso %}
-    <!-- Importar Homologações Pendentes -->
-    <div class="card-config">
-      <div class="card-config-header">
-        <span class="card-config-titulo">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          Importar Homologações Pendentes
-        </span>
-      </div>
-      <div class="card-config-body">
-        <div class="area-drop-upload" onclick="document.getElementById('input-arquivo-planilha').click()">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          <p>Clique para selecionar</p>
-          <small>Importa todas as abas de uma vez · .xlsx ou .xls</small>
-        </div>
-
-        <div style="margin-top:14px;">
-          <label style="font-size:12px;color:#64748b;font-weight:500;display:block;margin-bottom:8px;">Modo de importação:</label>
-          <div style="display:flex;gap:12px;">
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-              <input type="radio" name="modo-importacao" value="substituir" checked> Substituir tudo
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-              <input type="radio" name="modo-importacao" value="adicionar"> Adicionar ao existente
-            </label>
-          </div>
-        </div>
-
-        <!-- Totais por aba -->
-        <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-          <div style="padding:7px 10px;background:#f8fafc;border-radius:7px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;">
-            Pendente: <strong style="color:#2563eb;">{{ total_pendentes }}</strong>
-          </div>
-          <div style="padding:7px 10px;background:#f8fafc;border-radius:7px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;">
-            Hom. Cobrança: <strong style="color:#16a34a;">{{ total_hom_cobranca_db }}</strong>
-          </div>
-          <div style="padding:7px 10px;background:#f8fafc;border-radius:7px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;">
-            Hom. Pagamentos: <strong style="color:#16a34a;">{{ total_hom_pagamentos_db }}</strong>
-          </div>
-          <div style="padding:7px 10px;background:#f8fafc;border-radius:7px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;">
-            Hom. Extrato: <strong style="color:#16a34a;">{{ total_hom_extrato_db }}</strong>
-          </div>
-          <div style="padding:7px 10px;background:#f8fafc;border-radius:7px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;grid-column:span 2;">
-            Cancelados: <strong style="color:#dc2626;">{{ total_cancelados_db }}</strong>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
-    {% if nivel_acesso == 'master' or nivel_acesso == 'admin' or 'importar_novas_homologacoes' in telas_acesso %}
-    <!-- Importar Novas Homologações (Novos Escriturais) -->
-    <div class="card-config">
-      <div class="card-config-header">
-        <span class="card-config-titulo">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          Importar Novas Homologações
-        </span>
-      </div>
-      <div class="card-config-body">
-        <div class="area-drop-upload" onclick="document.getElementById('input-arquivo-escritural').click()">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          <p>Clique para selecionar</p>
-          <small>Importa registros para Novos Escriturais · .xlsx ou .xls</small>
-        </div>
-        <input type="file" id="input-arquivo-escritural" accept=".xlsx,.xls" style="display:none;" onchange="importarPlanilhaEscritural(this)">
-        <p id="status-import-escritural" style="font-size:12px;color:#64748b;margin-top:12px;"></p>
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Exportar -->
-    <div class="card-config">
-      <div class="card-config-header">
-        <span class="card-config-titulo">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Exportar Planilha
-        </span>
-      </div>
-      <div class="card-config-body">
-        <p style="font-size:13px;color:#64748b;margin-bottom:16px;line-height:1.6;">
-          Gera um arquivo <strong>.xlsx</strong> com todos os registros atuais do banco de dados
-          na aba Pendente.
-        </p>
-        <a href="/exportar-planilha"
-           style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#2563eb;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;transition:background 0.2s;"
-           onmouseover="this.style.background='#1d4ed8'"
-           onmouseout="this.style.background='#2563eb'">
-          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Baixar Excel com {{ total_pendentes }} registros
-        </a>
-        <p style="font-size:11px;color:#94a3b8;margin-top:10px;">
-          O arquivo exportado reflete o estado atual do banco, incluindo todas as edições feitas no sistema.
-        </p>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════ -->
 <!-- TAB: Técnicos                              -->
 <!-- ════════════════════════════════════════════ -->
-<div id="tab-tecnicos" class="painel-tab">
+<div id="tab-tecnicos" class="painel-tab{% if nivel_acesso in ('admin', 'master') %} ativo{% endif %}">
   <div class="card-config">
     <div class="card-config-header">
       <span class="card-config-titulo">
@@ -1066,7 +943,7 @@
 <!-- ════════════════════════════════════════════ -->
 <!-- TAB: Status Escriturais                     -->
 <!-- ════════════════════════════════════════════ -->
-<div id="tab-status-escritural" class="painel-tab">
+<div id="tab-status-escritural" class="painel-tab{% if nivel_acesso not in ('admin', 'master') %} ativo{% endif %}">
   <div class="card-config" style="max-width:500px;">
     <div class="card-config-header">
       <span class="card-config-titulo">
@@ -1343,87 +1220,6 @@
       document.querySelectorAll('.overlay-modal.aberto').forEach(m => m.classList.remove('aberto'));
     }
   });
-
-  // ─── Importação de planilha para o banco ─────────────────────
-  document.getElementById('input-arquivo-planilha').addEventListener('change', function(e) {
-    const arquivo = e.target.files[0];
-    if (!arquivo) return;
-
-    const inputRef = this;
-    const modo = (document.querySelector('input[name="modo-importacao"]:checked') || {}).value || 'substituir';
-
-    const executarImportacao = () => {
-      const form = new FormData();
-      form.append('arquivo', arquivo);
-      form.append('modo', modo);
-
-      mostrarToast('info', 'Importando planilha — todas as abas...');
-
-      fetch('/importar-planilha', { method: 'POST', body: form })
-        .then(r => r.json())
-        .then(d => {
-          if (d.sucesso) {
-            const imp = d.importados;
-            const partes = [];
-            if (imp.pendente)   partes.push(`Pendente: ${imp.pendente}`);
-            if (imp.cobranca)   partes.push(`Cobrança: ${imp.cobranca}`);
-            if (imp.pagamentos) partes.push(`Pagamentos: ${imp.pagamentos}`);
-            if (imp.extrato)    partes.push(`Extrato: ${imp.extrato}`);
-            if (imp.cancelados) partes.push(`Cancelados: ${imp.cancelados}`);
-            mostrarToast('sucesso', 'Importado! ' + partes.join(' · '));
-            setTimeout(() => location.reload(), 1800);
-          } else {
-            mostrarToast('erro', d.erro || 'Erro ao importar.');
-          }
-        })
-        .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
-
-      inputRef.value = '';
-    };
-
-    if (modo === 'substituir') {
-      abrirDialogo({
-        titulo: 'Substituir Todos os Dados?',
-        mensagem: 'Isso vai <strong>substituir TODOS</strong> os registros atuais do banco pelos da planilha (todas as abas).<br>Essa ação não pode ser desfeita.',
-        tipo: 'aviso',
-        textoBotao: 'Sim, importar',
-        callback: executarImportacao,
-      });
-    } else {
-      executarImportacao();
-    }
-  });
-
-  // ─── Importação de planilha — Novos Escriturais ───────────────
-  function importarPlanilhaEscritural(input) {
-    const arquivo = input.files[0];
-    if (!arquivo) return;
-
-    const status = document.getElementById('status-import-escritural');
-    const form = new FormData();
-    form.append('arquivo', arquivo);
-
-    status.textContent = 'Importando planilha...';
-    mostrarToast('info', 'Importando planilha de Novos Escriturais...');
-
-    fetch('/escritural/importar', { method: 'POST', body: form })
-      .then(r => r.json())
-      .then(d => {
-        if (d.sucesso) {
-          status.textContent = `Lidos: ${d.lidos} · Novos: ${d.novos} · Duplicados: ${d.duplicados}`;
-          mostrarToast('sucesso', `Importado! ${d.novos} novo(s) registro(s).`);
-        } else {
-          status.textContent = '';
-          mostrarToast('erro', d.erro || 'Erro ao importar.');
-        }
-      })
-      .catch(() => {
-        status.textContent = '';
-        mostrarToast('erro', 'Erro de comunicação.');
-      });
-
-    input.value = '';
-  }
 
   // ─── Técnicos ────────────────────────────────────────────────
   let modoEdicaoTecnico = false;
@@ -1927,17 +1723,6 @@
       else mostrarToast('erro', d.erro || 'Falha na conexão.');
     });
   }
-
-  // Preview de cor do técnico em tempo real
-  document.getElementById('campo-tecnico-cor').addEventListener('input', function() {
-    const preview = document.getElementById('preview-cor');
-    preview.style.color = this.value;
-    preview.textContent = document.getElementById('campo-tecnico-nome').value || 'Prévia do nome';
-  });
-
-  document.getElementById('campo-tecnico-nome').addEventListener('input', function() {
-    document.getElementById('preview-cor').textContent = this.value || 'Prévia do nome';
-  });
 
   // ─── Editor de assinatura (textarea HTML + preview) ─────
   function _assinaturaTogglePreview() {
