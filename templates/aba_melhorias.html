@@ -139,6 +139,13 @@
     gap: 4px;
   }
 
+  .kcard-img-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 0.60rem; color: #94a3b8;
+    flex-shrink: 0;
+  }
+  .kcard-img-badge svg { opacity: 0.7; }
+
   .kcard-solicitante {
     font-size: 0.63rem;
     color: #94a3b8;
@@ -293,6 +300,91 @@
   [data-tema="dark"] .fg textarea   { background: var(--z-elevated) !important; }
   [data-tema="dark"] .mbtn-cancel   { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-2) !important; }
   [data-tema="dark"] .mbtn-del      { background: rgba(220,38,38,.12) !important; border-color: rgba(220,38,38,.3) !important; color: #f87171 !important; }
+
+  /* ── Imagens anexadas ── */
+  .img-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 8px;
+  }
+  .img-thumb {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1.5px solid #e2e8f0;
+    flex-shrink: 0;
+    background: #f8fafc;
+  }
+  .img-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    cursor: zoom-in;
+    transition: opacity 0.12s;
+  }
+  .img-thumb img:hover { opacity: 0.88; }
+  .img-thumb-del {
+    position: absolute;
+    top: 3px; right: 3px;
+    width: 18px; height: 18px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; line-height: 1;
+    transition: background 0.12s;
+    padding: 0;
+  }
+  .img-thumb-del:hover { background: rgba(220,38,38,0.85); }
+
+  .img-dropzone {
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 0.76rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    user-select: none;
+  }
+  .img-dropzone svg { flex-shrink: 0; }
+  .img-dropzone:hover, .img-dropzone.drag-ov {
+    border-color: #6366f1;
+    background: #f5f3ff;
+    color: #6366f1;
+  }
+
+  [data-tema="dark"] .img-thumb { border-color: var(--z-border) !important; background: var(--z-elevated) !important; }
+  [data-tema="dark"] .img-dropzone { border-color: var(--z-border) !important; color: var(--z-text-3) !important; }
+  [data-tema="dark"] .img-dropzone:hover,
+  [data-tema="dark"] .img-dropzone.drag-ov { border-color: #6366f1 !important; background: rgba(99,102,241,0.08) !important; color: #818cf8 !important; }
+
+  /* ── Lightbox de preview ── */
+  .img-lightbox {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.88);
+    z-index: 3000;
+    display: flex; align-items: center; justify-content: center;
+    cursor: zoom-out;
+    animation: lb-in 0.15s ease;
+  }
+  @keyframes lb-in { from { opacity:0 } to { opacity:1 } }
+  .img-lightbox img {
+    max-width: 92vw; max-height: 92vh;
+    border-radius: 8px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    pointer-events: none;
+  }
 </style>
 {% endblock %}
 
@@ -311,6 +403,12 @@
   <div class="kcard-titulo">{{ m.titulo }}</div>
   <div class="kcard-footer">
     <span class="kcard-solicitante">{{ m.solicitante or m.criado_por or '' }}</span>
+    {% if m.imagens_count %}
+    <span class="kcard-img-badge">
+      <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      {{ m.imagens_count }}
+    </span>
+    {% endif %}
     <div class="kcard-acoes" onclick="event.stopPropagation()">
       {% if m.estagio == 'analisa' %}
         <button class="kbtn kbtn-av"  onclick="mover({{ m.id }}, 'em_analise')"     title="→ Em Análise">→ Análise</button>
@@ -409,6 +507,16 @@
       <label>Descrição</label>
       <textarea id="mel-desc" placeholder="Detalhes, motivação, critérios de aceite..."></textarea>
     </div>
+
+    <div class="fg">
+      <label>Imagens</label>
+      <div id="img-grid" class="img-grid"></div>
+      <div class="img-dropzone" id="img-dropzone" onclick="document.getElementById('img-input').click()">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Clique, arraste ou cole (Ctrl+V)
+      </div>
+      <input type="file" id="img-input" accept="image/*" multiple style="display:none">
+    </div>
     <div class="frow">
       <div class="fg">
         <label>Prioridade</label>
@@ -486,39 +594,137 @@
   const _B = '/melhorias';
   let _rejId = null;
 
-  const $  = id => document.getElementById(id);
+  const $ = id => document.getElementById(id);
 
+  // ── Imagens ───────────────────────────────────────────────
+  let _imgPendentes  = [];   // {tmpId, file, previewUrl}
+  let _imgExistentes = [];   // {id, url}
+  let _imgRemover    = [];   // ids de existentes a deletar
+
+  function _limparImagens() {
+    _imgPendentes.forEach(p => URL.revokeObjectURL(p.previewUrl));
+    _imgPendentes = []; _imgExistentes = []; _imgRemover = [];
+    _renderImagens();
+  }
+
+  async function _carregarImagens(melId) {
+    if (!melId) return;
+    try {
+      const r = await fetch(`${_B}/${melId}/imagens`);
+      _imgExistentes = await r.json();
+    } catch(e) { _imgExistentes = []; }
+    _renderImagens();
+  }
+
+  function _renderImagens() {
+    const grid = $('img-grid');
+    grid.innerHTML = '';
+    _imgExistentes.filter(i => !_imgRemover.includes(i.id)).forEach(img => {
+      grid.appendChild(_criarThumb(img.url, () => _imgRemover.push(img.id) || _renderImagens()));
+    });
+    _imgPendentes.forEach(p => {
+      grid.appendChild(_criarThumb(p.previewUrl, () => {
+        URL.revokeObjectURL(p.previewUrl);
+        _imgPendentes = _imgPendentes.filter(x => x.tmpId !== p.tmpId);
+        _renderImagens();
+      }));
+    });
+  }
+
+  function _criarThumb(url, onDel) {
+    const div = document.createElement('div');
+    div.className = 'img-thumb';
+    const img = document.createElement('img');
+    img.src = url;
+    img.onclick = e => { e.stopPropagation(); _lightbox(url); };
+    const btn = document.createElement('button');
+    btn.className = 'img-thumb-del';
+    btn.innerHTML = '×';
+    btn.title = 'Remover';
+    btn.onclick = e => { e.stopPropagation(); onDel(); };
+    div.appendChild(img);
+    div.appendChild(btn);
+    return div;
+  }
+
+  function _addArquivos(files) {
+    Array.from(files).filter(f => f.type.startsWith('image/')).forEach(f => {
+      _imgPendentes.push({ tmpId: Math.random().toString(36).slice(2), file: f, previewUrl: URL.createObjectURL(f) });
+    });
+    _renderImagens();
+  }
+
+  async function _uploadImagens(melId) {
+    await Promise.all(_imgRemover.map(id => fetch(`${_B}/imagens/${id}`, {method:'DELETE'})));
+    for (const p of _imgPendentes) {
+      const fd = new FormData();
+      fd.append('imagem', p.file);
+      await fetch(`${_B}/${melId}/imagens`, {method:'POST', body:fd});
+    }
+  }
+
+  function _lightbox(url) {
+    const ov = document.createElement('div');
+    ov.className = 'img-lightbox';
+    ov.onclick = () => ov.remove();
+    const img = document.createElement('img');
+    img.src = url;
+    ov.appendChild(img);
+    document.body.appendChild(ov);
+  }
+
+  // File input
+  $('img-input').addEventListener('change', function() { _addArquivos(this.files); this.value = ''; });
+
+  // Drag & drop na dropzone
+  const _dz = $('img-dropzone');
+  _dz.addEventListener('dragover', e => { e.preventDefault(); _dz.classList.add('drag-ov'); });
+  _dz.addEventListener('dragleave', () => _dz.classList.remove('drag-ov'));
+  _dz.addEventListener('drop', e => { e.preventDefault(); _dz.classList.remove('drag-ov'); _addArquivos(e.dataTransfer.files); });
+
+  // Paste (Ctrl+V) — só quando o modal está aberto
+  document.addEventListener('paste', e => {
+    if (!$('ov-mel').classList.contains('aberto')) return;
+    const imgs = Array.from(e.clipboardData?.items || [])
+      .filter(i => i.type.startsWith('image/')).map(i => i.getAsFile()).filter(Boolean);
+    if (imgs.length) { e.preventDefault(); _addArquivos(imgs); }
+  });
+
+  // ── Formulário ────────────────────────────────────────────
   function _setProg(valor) {
     const el = $('mel-prog');
-    if (!el || el.readOnly) return;  // readonly = vinculado, não sobrescreve
+    if (!el || el.readOnly) return;
     el.value = valor || '';
   }
 
   function abrirModalNova(estagio) {
     $('mel-titulo-modal').textContent = 'Nova Melhoria';
-    $('mel-id').value     = '';
-    $('mel-titulo').value = '';
-    $('mel-desc').value   = '';
-    $('mel-prior').value  = 'media';
+    $('mel-id').value      = '';
+    $('mel-titulo').value  = '';
+    $('mel-desc').value    = '';
+    $('mel-prior').value   = 'media';
     $('mel-estagio').value = estagio || 'em_analise';
     _setProg('');
-    $('mel-solic').value  = '';
+    $('mel-solic').value   = '';
     if ($('mbtn-del')) $('mbtn-del').style.display = 'none';
+    _limparImagens();
     $('ov-mel').classList.add('aberto');
     $('mel-titulo').focus();
   }
 
-  function abrirDetalhe(m) {
+  async function abrirDetalhe(m) {
     $('mel-titulo-modal').textContent = 'Editar Melhoria';
-    $('mel-id').value     = m.id;
-    $('mel-titulo').value = m.titulo    || '';
-    $('mel-desc').value   = m.descricao || '';
-    $('mel-prior').value  = m.prioridade || 'media';
-    $('mel-estagio').value = m.estagio  || 'em_analise';
+    $('mel-id').value      = m.id;
+    $('mel-titulo').value  = m.titulo     || '';
+    $('mel-desc').value    = m.descricao  || '';
+    $('mel-prior').value   = m.prioridade || 'media';
+    $('mel-estagio').value = m.estagio    || 'em_analise';
     _setProg(m.programador);
-    $('mel-solic').value  = m.solicitante || '';
+    $('mel-solic').value   = m.solicitante || '';
     if ($('mbtn-del')) $('mbtn-del').style.display = 'inline-flex';
+    _limparImagens();
     $('ov-mel').classList.add('aberto');
+    await _carregarImagens(m.id);
   }
 
   function fecharMel() { $('ov-mel').classList.remove('aberto'); }
@@ -528,22 +734,26 @@
     const id    = $('mel-id').value;
     const tit   = $('mel-titulo').value.trim();
     const solic = $('mel-solic').value.trim();
-    if (!tit)   { alert('Informe o título.');       return; }
-    if (!solic) { alert('Informe o solicitante.');  return; }
+    if (!tit)   { alert('Informe o título.');      return; }
+    if (!solic) { alert('Informe o solicitante.'); return; }
     const dados = {
       titulo:      tit,
       descricao:   $('mel-desc').value.trim(),
       prioridade:  $('mel-prior').value,
       estagio:     $('mel-estagio').value,
       programador: $('mel-prog').value,
-      solicitante: $('mel-solic').value.trim(),
+      solicitante: solic,
     };
+    let melId = id;
     if (id) {
       await _post(`${_B}/atualizar/${id}`, dados, 'PUT');
       await _post(`${_B}/mover/${id}`, {estagio: dados.estagio});
     } else {
-      await _post(`${_B}/adicionar`, dados);
+      const r  = await _post(`${_B}/adicionar`, dados);
+      const rj = await r.json();
+      melId = rj.id;
     }
+    await _uploadImagens(melId);
     fecharMel();
     location.reload();
   }

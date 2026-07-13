@@ -1,6 +1,12 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 import banco
+import os
+import uuid
+from werkzeug.utils import secure_filename
 from utils import usuario_logado, checar_tela
+
+_UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'uploads', 'melhorias')
+_EXTS_OK = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'}
 
 melhorias_bp = Blueprint('melhorias', __name__)
 
@@ -123,6 +129,54 @@ def api_deletar_melhoria(id_melhoria):
     err = _guard_mover()
     if err:
         return err
-    banco.remover_melhoria(id_melhoria)
+    arquivos = banco.remover_melhoria(id_melhoria)
+    for arq in (arquivos or []):
+        caminho = os.path.join(_UPLOAD_DIR, arq)
+        if os.path.exists(caminho):
+            os.remove(caminho)
     _log('DELETOU', f'Deletou melhoria #{id_melhoria}')
+    return jsonify({'sucesso': True})
+
+
+# ── API: Imagens ──────────────────────────────────────────
+
+@melhorias_bp.route('/melhorias/<int:id_melhoria>/imagens', methods=['GET'])
+def api_listar_imagens(id_melhoria):
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    imgs = banco.listar_imagens_melhoria(id_melhoria)
+    return jsonify([{
+        'id': i['id'],
+        'url': f'/static/uploads/melhorias/{i["nome_arquivo"]}',
+    } for i in imgs])
+
+
+@melhorias_bp.route('/melhorias/<int:id_melhoria>/imagens', methods=['POST'])
+def api_upload_imagem(id_melhoria):
+    err = _guard_criar()
+    if err:
+        return err
+    os.makedirs(_UPLOAD_DIR, exist_ok=True)
+    arq = request.files.get('imagem')
+    if not arq:
+        return jsonify({'erro': 'Nenhum arquivo enviado'}), 400
+    ext = os.path.splitext(secure_filename(arq.filename or 'img.png'))[1].lower()
+    if ext not in _EXTS_OK:
+        return jsonify({'erro': 'Tipo não permitido'}), 400
+    nome = f'{uuid.uuid4().hex}{ext}'
+    arq.save(os.path.join(_UPLOAD_DIR, nome))
+    img_id = banco.adicionar_imagem_melhoria(id_melhoria, nome)
+    return jsonify({'sucesso': True, 'id': img_id, 'url': f'/static/uploads/melhorias/{nome}'})
+
+
+@melhorias_bp.route('/melhorias/imagens/<int:img_id>', methods=['DELETE'])
+def api_remover_imagem(img_id):
+    err = _guard_criar()
+    if err:
+        return err
+    nome = banco.remover_imagem_melhoria(img_id)
+    if nome:
+        caminho = os.path.join(_UPLOAD_DIR, nome)
+        if os.path.exists(caminho):
+            os.remove(caminho)
     return jsonify({'sucesso': True})

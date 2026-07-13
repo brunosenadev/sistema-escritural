@@ -282,6 +282,12 @@ def inicializar_banco():
             criado_em       TEXT    DEFAULT (datetime('now','localtime')),
             atualizado_em   TEXT    DEFAULT (datetime('now','localtime'))
         );
+        CREATE TABLE IF NOT EXISTS melhorias_imagens (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            melhoria_id INTEGER NOT NULL,
+            nome_arquivo TEXT    NOT NULL,
+            criado_em   TEXT    DEFAULT (datetime('now','localtime'))
+        );
         CREATE TABLE IF NOT EXISTS hub_bancos (
             id                 INTEGER PRIMARY KEY AUTOINCREMENT,
             nome               TEXT    UNIQUE NOT NULL,
@@ -1090,7 +1096,9 @@ def remover_banco_cadastro(id_banco):
 def listar_melhorias():
     conn = conectar()
     rows = conn.execute(
-        "SELECT * FROM melhorias ORDER BY criado_em DESC"
+        """SELECT m.*,
+               (SELECT COUNT(*) FROM melhorias_imagens WHERE melhoria_id=m.id) AS imagens_count
+           FROM melhorias m ORDER BY m.criado_em DESC"""
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -1154,9 +1162,47 @@ def mover_estagio_melhoria(id_melhoria: int, novo_estagio: str, motivo: str = ''
 
 def remover_melhoria(id_melhoria: int):
     conn = conectar()
+    arquivos = [r[0] for r in conn.execute(
+        "SELECT nome_arquivo FROM melhorias_imagens WHERE melhoria_id=?", (id_melhoria,)
+    ).fetchall()]
+    conn.execute("DELETE FROM melhorias_imagens WHERE melhoria_id=?", (id_melhoria,))
     conn.execute("DELETE FROM melhorias WHERE id=?", (id_melhoria,))
     conn.commit()
     conn.close()
+    return arquivos
+
+
+def listar_imagens_melhoria(id_melhoria: int):
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT id, nome_arquivo FROM melhorias_imagens WHERE melhoria_id=? ORDER BY id",
+        (id_melhoria,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def adicionar_imagem_melhoria(id_melhoria: int, nome_arquivo: str) -> int:
+    conn = conectar()
+    cur = conn.execute(
+        "INSERT INTO melhorias_imagens (melhoria_id, nome_arquivo) VALUES (?,?)",
+        (id_melhoria, nome_arquivo)
+    )
+    conn.commit()
+    img_id = cur.lastrowid
+    conn.close()
+    return img_id
+
+
+def remover_imagem_melhoria(img_id: int):
+    conn = conectar()
+    row = conn.execute(
+        "SELECT nome_arquivo FROM melhorias_imagens WHERE id=?", (img_id,)
+    ).fetchone()
+    conn.execute("DELETE FROM melhorias_imagens WHERE id=?", (img_id,))
+    conn.commit()
+    conn.close()
+    return row['nome_arquivo'] if row else None
 
 
 def buscar_melhoria(id_melhoria: int):
