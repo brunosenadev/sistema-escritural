@@ -7,10 +7,14 @@
 
 {% block acoes_header %}
 <button class="hbtn hbtn-pdf" id="btn-gerar-pdf" onclick="gerarPDF()" style="display:none">
-  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
   Gerar PDF
 </button>
-{% if nivel_acesso == 'admin' %}
+{% if pode_editar %}
+<button class="hbtn hbtn-cfg" onclick="abrirPainelConfig()">
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  Configurar
+</button>
 <button class="hbtn hbtn-add" onclick="abrirModalBanco()">
   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   Novo Banco
@@ -20,285 +24,262 @@
 
 {% block estilos_extras %}
 <style>
-  /* ── Layout ── */
-  .hub-wrap {
-    padding-bottom: 32px;
-  }
+  .hub-wrap { padding-bottom: 32px; }
 
   .hub-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 20px; flex-wrap: wrap;
   }
-
   .hub-busca {
     flex: 1; min-width: 180px; max-width: 300px;
     padding: 7px 12px 7px 34px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border: 1px solid #e2e8f0; border-radius: 8px;
     font-size: 0.82rem;
     background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") no-repeat 10px center;
     color: #1e293b; outline: none;
   }
   .hub-busca:focus { border-color: #6366f1; background-color: #fff; }
+  .hub-sel-info { font-size: 0.78rem; color: #64748b; margin-left: auto; }
 
-  .hub-sel-info {
-    font-size: 0.78rem;
-    color: #64748b;
-    margin-left: auto;
-  }
-
-  /* ── Grid de cards ── */
+  /* Grid */
   .hub-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 16px;
   }
-
   .hub-card {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    overflow: hidden;
+    background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 12px; overflow: hidden;
     transition: box-shadow 0.15s, border-color 0.15s;
   }
   .hub-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
   .hub-card.selecionado { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
 
   .hub-card-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px 12px;
-    border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px 12px; border-bottom: 1px solid #f1f5f9;
   }
-
-  .hub-check {
-    width: 16px; height: 16px;
-    accent-color: #6366f1;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-
-  .hub-banco-nome {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #1e293b;
-    flex: 1;
-  }
-
-  .hub-card-actions {
-    display: flex;
-    gap: 4px;
-  }
+  .hub-check { width:16px;height:16px;accent-color:#6366f1;cursor:pointer;flex-shrink:0; }
+  .hub-banco-nome { font-size:0.95rem;font-weight:700;color:#1e293b;flex:1; }
+  .hub-card-actions { display:flex;gap:4px; }
 
   .hbtn-icon {
-    border: none; background: transparent; cursor: pointer;
-    padding: 4px 6px; border-radius: 6px; color: #94a3b8;
-    transition: background 0.12s, color 0.12s;
-    display: flex; align-items: center;
+    border:none;background:transparent;cursor:pointer;
+    padding:4px 6px;border-radius:6px;color:#94a3b8;
+    transition:background 0.12s,color 0.12s;
+    display:flex;align-items:center;
   }
-  .hbtn-icon:hover { background: #f1f5f9; color: #475569; }
-  .hbtn-icon.del:hover { background: #fee2e2; color: #dc2626; }
+  .hbtn-icon:hover { background:#f1f5f9;color:#475569; }
+  .hbtn-icon.del:hover { background:#fee2e2;color:#dc2626; }
+  .hbtn-icon svg { width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2; }
 
-  .hub-card-body {
-    padding: 12px 16px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+  .hub-card-body { padding:12px 16px 14px;display:flex;flex-direction:column;gap:10px; }
 
-  /* ── Seção de categoria ── */
-  .hub-secao {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
+  .hub-secao { display:flex;flex-direction:column;gap:6px; }
   .hub-secao-titulo {
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #94a3b8;
-    margin-bottom: 2px;
+    font-size:0.68rem;font-weight:700;letter-spacing:0.06em;
+    text-transform:uppercase;color:#94a3b8;margin-bottom:2px;
   }
-
-  .hub-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-  }
-
+  .hub-chips { display:flex;flex-wrap:wrap;gap:5px; }
   .hub-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.71rem;
-    font-weight: 600;
-    padding: 3px 9px;
-    border-radius: 20px;
-  }
-  .chip-envio    { background:#dbeafe; color:#1d4ed8; }
-  .chip-retorno  { background:#dcfce7; color:#15803d; }
-  .chip-instrucao{ background:#ede9fe; color:#6d28d9; }
-  .chip-boleto   { background:#fef3c7; color:#92400e; }
-  .chip-pix      { background:#d1fae5; color:#065f46; }
-  .chip-consulta { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
-
-  /* ── Tabela de instruções ── */
-  .hub-instrucoes-wrap {
-    margin-top: 2px;
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:0.71rem;font-weight:600;padding:3px 9px;border-radius:20px;
   }
 
+  /* Instruções */
   .hub-instrucoes-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #6366f1;
-    cursor: pointer;
-    background: none;
-    border: none;
-    padding: 0;
-    margin-bottom: 6px;
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:0.72rem;font-weight:600;color:#6366f1;
+    cursor:pointer;background:none;border:none;padding:0;margin-bottom:6px;
   }
-  .hub-instrucoes-toggle svg { transition: transform 0.15s; }
-  .hub-instrucoes-toggle.aberto svg { transform: rotate(90deg); }
-
-  .hub-instrucoes-tabela {
-    display: none;
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.74rem;
-  }
-  .hub-instrucoes-tabela.visivel { display: table; }
-
+  .hub-instrucoes-toggle svg { transition:transform 0.15s;width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.5; }
+  .hub-instrucoes-toggle.aberto svg { transform:rotate(90deg); }
+  .hub-instrucoes-tabela { display:none;width:100%;border-collapse:collapse;font-size:0.74rem; }
+  .hub-instrucoes-tabela.visivel { display:table; }
   .hub-instrucoes-tabela th {
-    text-align: left;
-    padding: 4px 8px;
-    font-size: 0.67rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #94a3b8;
-    border-bottom: 1px solid #f1f5f9;
+    text-align:left;padding:4px 8px;font-size:0.67rem;font-weight:700;
+    letter-spacing:0.04em;text-transform:uppercase;color:#94a3b8;border-bottom:1px solid #f1f5f9;
   }
-  .hub-instrucoes-tabela td {
-    padding: 5px 8px;
-    border-bottom: 1px solid #f8fafc;
-    color: #374151;
-    vertical-align: middle;
-  }
-  .hub-instrucoes-tabela tr:last-child td { border-bottom: none; }
-
+  .hub-instrucoes-tabela td { padding:5px 8px;border-bottom:1px solid #f8fafc;color:#374151;vertical-align:middle; }
+  .hub-instrucoes-tabela tr:last-child td { border-bottom:none; }
   .cod-badge {
-    display: inline-block;
-    font-weight: 700;
-    font-size: 0.68rem;
-    color: #6366f1;
-    background: rgba(99,102,241,0.08);
-    border-radius: 4px;
-    padding: 1px 6px;
-    min-width: 28px;
-    text-align: center;
+    display:inline-block;font-weight:700;font-size:0.68rem;color:#6366f1;
+    background:rgba(99,102,241,0.08);border-radius:4px;padding:1px 6px;
+    min-width:28px;text-align:center;
   }
-
-  .td-add-instr {
-    padding: 6px 8px !important;
+  .instr-add-row { display:flex;gap:6px;margin-top:6px; }
+  .instr-add-row input {
+    flex:1;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;
+    font-size:.78rem;background:#f8fafc;color:#1e293b;outline:none;
   }
-
-  /* ── Botões header ── */
-  .hbtn {
-    display: inline-flex; align-items: center; gap: 5px;
-    border: none; border-radius: 7px;
-    padding: 0 14px; height: 32px;
-    font-size: 0.8rem; font-weight: 600; cursor: pointer;
-    transition: background 0.15s;
-  }
-  .hbtn-pdf { background:#16a34a; color:#fff; }
-  .hbtn-pdf:hover { background:#15803d; }
-  .hbtn-add { background:#6366f1; color:#fff; }
-  .hbtn-add:hover { background:#4f46e5; }
-
-  /* ── Modal banco ── */
-  .ov-hub { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; }
-  .ov-hub.aberto { display:flex; }
-  .mod-hub { background:#fff; border-radius:12px; padding:24px; width:500px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,.20); }
-  .mod-hub h3 { margin:0 0 16px; font-size:.95rem; font-weight:700; color:#1e293b; }
-
-  .hub-fg { display:flex; flex-direction:column; gap:4px; margin-bottom:12px; }
-  .hub-fg label { font-size:.73rem; font-weight:600; color:#475569; }
-  .hub-fg input { padding:7px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:.82rem; background:#f8fafc; color:#1e293b; outline:none; font-family:inherit; }
-  .hub-fg input:focus { border-color:#6366f1; background:#fff; }
-
-  .hub-caps-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 14px;
-  }
-
-  .hub-cap-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: .80rem;
-    color: #374151;
-    cursor: pointer;
-  }
-  .hub-cap-item input[type=checkbox] { accent-color:#6366f1; width:15px; height:15px; cursor:pointer; }
-
-  .mod-hub-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; padding-top:14px; border-top:1px solid #f1f5f9; }
-  .mbtn-save2   { background:#6366f1;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:.82rem;font-weight:600;cursor:pointer; }
-  .mbtn-cancel2 { background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:7px;padding:8px 16px;font-size:.82rem;font-weight:600;cursor:pointer; }
-  .mbtn-del2    { background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:7px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;margin-right:auto; }
-
-  /* instrução inline add */
-  .instr-add-row { display:flex; gap:6px; margin-top:6px; }
-  .instr-add-row input { flex:1; padding:5px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:.78rem; background:#f8fafc; color:#1e293b; outline:none; }
   .instr-add-row input:focus { border-color:#6366f1; }
-  .instr-add-row .inp-cod { width:60px; flex:none; }
+  .instr-add-row .inp-cod { width:60px;flex:none; }
   .instr-btn-add { background:#6366f1;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap; }
 
-  /* empty state */
-  .hub-empty { text-align:center; padding:60px 20px; color:#94a3b8; font-size:.88rem; }
+  /* Botões header */
+  .hbtn {
+    display:inline-flex;align-items:center;gap:5px;
+    border:none;border-radius:7px;padding:0 14px;height:32px;
+    font-size:0.8rem;font-weight:600;cursor:pointer;transition:background 0.15s;
+  }
+  .hbtn-pdf  { background:#16a34a;color:#fff; }
+  .hbtn-pdf:hover  { background:#15803d; }
+  .hbtn-add  { background:#6366f1;color:#fff; }
+  .hbtn-add:hover  { background:#4f46e5; }
+  .hbtn-cfg  { background:#f1f5f9;color:#475569;border:1px solid #e2e8f0; }
+  .hbtn-cfg:hover  { background:#e2e8f0; }
+
+  /* ── Modais gerais ── */
+  .ov-hub { display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center; }
+  .ov-hub.aberto { display:flex; }
+  .mod-hub {
+    background:#fff;border-radius:14px;padding:24px;
+    width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;
+    box-shadow:0 24px 64px rgba(0,0,0,.20);
+  }
+  .mod-hub-titulo { margin:0 0 18px;font-size:.95rem;font-weight:700;color:#1e293b;display:flex;align-items:center;justify-content:space-between; }
+  .mod-hub-close { background:none;border:none;cursor:pointer;color:#94a3b8;padding:2px;border-radius:4px;display:flex; }
+  .mod-hub-close:hover { color:#475569; }
+  .mod-hub-close svg { width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2; }
+
+  .hub-fg { display:flex;flex-direction:column;gap:4px;margin-bottom:12px; }
+  .hub-fg label { font-size:.73rem;font-weight:600;color:#475569; }
+  .hub-fg input, .hub-fg select {
+    padding:7px 10px;border:1px solid #e2e8f0;border-radius:7px;
+    font-size:.82rem;background:#f8fafc;color:#1e293b;outline:none;font-family:inherit;
+  }
+  .hub-fg input:focus, .hub-fg select:focus { border-color:#6366f1;background:#fff; }
+
+  .mod-hub-actions { display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9; }
+  .mbtn-save   { background:#6366f1;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:.82rem;font-weight:600;cursor:pointer; }
+  .mbtn-cancel { background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:7px;padding:8px 16px;font-size:.82rem;font-weight:600;cursor:pointer; }
+  .mbtn-del    { background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:7px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;margin-right:auto; }
+  .mbtn-save:hover   { background:#4f46e5; }
+  .mbtn-cancel:hover { background:#f1f5f9; }
+  .mbtn-del:hover    { background:#fee2e2; }
+
+  /* ── Painel Config ── */
+  .ov-cfg { display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:flex-start;justify-content:flex-end; }
+  .ov-cfg.aberto { display:flex; }
+  .painel-cfg {
+    background:#fff;width:480px;max-width:95vw;height:100vh;
+    overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,.15);
+    display:flex;flex-direction:column;
+  }
+  .pcfg-header {
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 20px 0;border-bottom:1px solid #f1f5f9;padding-bottom:12px;
+    position:sticky;top:0;background:#fff;z-index:1;
+  }
+  .pcfg-header h3 { font-size:.92rem;font-weight:700;color:#1e293b;margin:0; }
+  .pcfg-close { background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;border-radius:6px;display:flex; }
+  .pcfg-close:hover { background:#f1f5f9;color:#475569; }
+  .pcfg-close svg { width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2; }
+
+  .pcfg-tabs { display:flex;gap:0;padding:0 20px;border-bottom:1px solid #f1f5f9;background:#fff;position:sticky;top:57px;z-index:1; }
+  .pcfg-tab {
+    padding:10px 14px;font-size:.80rem;font-weight:600;color:#94a3b8;
+    border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;
+    transition:color .15s,border-color .15s;
+  }
+  .pcfg-tab.ativo { color:#6366f1;border-bottom-color:#6366f1; }
+  .pcfg-tab:hover:not(.ativo) { color:#475569; }
+
+  .pcfg-body { padding:16px 20px;flex:1; }
+  .pcfg-panel { display:none; }
+  .pcfg-panel.ativo { display:block; }
+
+  .pcfg-item {
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 10px;border:1px solid #f1f5f9;border-radius:8px;margin-bottom:6px;
+    background:#fafafa;
+  }
+  .pcfg-item-nome { font-size:.82rem;font-weight:500;color:#374151; }
+  .pcfg-item-sub  { font-size:.72rem;color:#94a3b8;margin-top:1px; }
+  .pcfg-item-actions { display:flex;gap:4px; }
+
+  .chip-preview {
+    display:inline-flex;align-items:center;padding:2px 8px;
+    border-radius:20px;font-size:.70rem;font-weight:600;
+  }
+
+  .pcfg-add-form {
+    background:#f8fafc;border:1px dashed #e2e8f0;border-radius:10px;
+    padding:14px;margin-top:10px;
+  }
+  .pcfg-add-form h4 { font-size:.78rem;font-weight:700;color:#475569;margin:0 0 10px; }
+
+  .cor-row { display:flex;gap:12px; }
+  .cor-campo { display:flex;flex-direction:column;gap:4px;flex:1; }
+  .cor-campo label { font-size:.70rem;font-weight:600;color:#64748b; }
+  .cor-campo input[type=color] {
+    width:100%;height:34px;border:1px solid #e2e8f0;border-radius:6px;
+    cursor:pointer;padding:2px;background:#fff;
+  }
+  .cor-preview {
+    display:flex;align-items:center;justify-content:center;
+    padding:6px 10px;border-radius:6px;font-size:.75rem;font-weight:600;
+    margin-top:4px;
+  }
+
+  /* Serviços para editar banco */
+  .servicos-check-grid {
+    display:flex;flex-direction:column;gap:6px;margin-top:4px;
+  }
+  .serv-cat-grupo { margin-bottom:8px; }
+  .serv-cat-nome {
+    font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    color:#94a3b8;margin-bottom:5px;
+  }
+  .serv-checks { display:flex;flex-wrap:wrap;gap:6px; }
+  .serv-check-item {
+    display:flex;align-items:center;gap:5px;
+    padding:4px 10px;border:1px solid #e2e8f0;border-radius:20px;
+    font-size:.75rem;font-weight:600;cursor:pointer;
+    transition:border-color .12s,background .12s;
+    user-select:none;
+  }
+  .serv-check-item input { display:none; }
+  .serv-check-item.marcado { border-color:transparent; }
+
+  .hub-empty { text-align:center;padding:60px 20px;color:#94a3b8;font-size:.88rem; }
 
   /* ── Dark mode ── */
   [data-tema="dark"] .hub-card       { background:var(--z-surface);border-color:var(--z-border-s); }
   [data-tema="dark"] .hub-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.3); }
-  [data-tema="dark"] .hub-card.selecionado { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.2); }
+  [data-tema="dark"] .hub-card.selecionado { border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.2); }
   [data-tema="dark"] .hub-card-header { border-color:var(--z-border-s); }
   [data-tema="dark"] .hub-banco-nome  { color:var(--z-text-1); }
-  [data-tema="dark"] .hub-instrucoes-tabela th { color:var(--z-text-3); border-color:var(--z-border-s); }
-  [data-tema="dark"] .hub-instrucoes-tabela td { color:var(--z-text-2); border-color:var(--z-border-s); }
-  [data-tema="dark"] .hub-instrucoes-tabela tr:last-child td { border-bottom:none; }
   [data-tema="dark"] .hub-secao-titulo { color:var(--z-text-3); }
-  [data-tema="dark"] .chip-envio    { background:rgba(29,78,216,.2);  color:#93c5fd; }
-  [data-tema="dark"] .chip-retorno  { background:rgba(21,128,61,.2);  color:#4ade80; }
-  [data-tema="dark"] .chip-instrucao{ background:rgba(109,40,217,.2); color:#c4b5fd; }
-  [data-tema="dark"] .chip-boleto   { background:rgba(146,64,14,.2);  color:#fcd34d; }
-  [data-tema="dark"] .chip-pix      { background:rgba(6,95,70,.2);    color:#6ee7b7; }
-  [data-tema="dark"] .chip-consulta { background:rgba(22,101,52,.15); color:#86efac; border-color:rgba(22,101,52,.3); }
+  [data-tema="dark"] .hub-instrucoes-tabela th { color:var(--z-text-3);border-color:var(--z-border-s); }
+  [data-tema="dark"] .hub-instrucoes-tabela td { color:var(--z-text-2);border-color:var(--z-border-s); }
   [data-tema="dark"] .hub-busca     { background:var(--z-elevated);border-color:var(--z-border);color:var(--z-text-1); }
   [data-tema="dark"] .hub-busca:focus { background:var(--z-elevated);border-color:#6366f1; }
   [data-tema="dark"] .hub-sel-info  { color:var(--z-text-3); }
-  [data-tema="dark"] .hbtn-icon     { color:var(--z-text-3); }
   [data-tema="dark"] .hbtn-icon:hover { background:var(--z-elevated);color:var(--z-text-2); }
   [data-tema="dark"] .hbtn-icon.del:hover { background:rgba(220,38,38,.15);color:#f87171; }
-  [data-tema="dark"] .mod-hub       { background:var(--z-surface); }
-  [data-tema="dark"] .mod-hub h3    { color:var(--z-text-1); }
+  [data-tema="dark"] .hbtn-cfg { background:var(--z-elevated);color:var(--z-text-2);border-color:var(--z-border); }
+  [data-tema="dark"] .hbtn-cfg:hover { background:var(--z-border); }
+  [data-tema="dark"] .mod-hub, [data-tema="dark"] .painel-cfg { background:var(--z-surface); }
+  [data-tema="dark"] .mod-hub-titulo, [data-tema="dark"] .pcfg-header h3 { color:var(--z-text-1); }
+  [data-tema="dark"] .pcfg-header, [data-tema="dark"] .pcfg-tabs { background:var(--z-surface);border-color:var(--z-border-s); }
   [data-tema="dark"] .hub-fg label  { color:var(--z-text-2); }
-  [data-tema="dark"] .hub-fg input,
+  [data-tema="dark"] .hub-fg input, [data-tema="dark"] .hub-fg select,
   [data-tema="dark"] .instr-add-row input { background:var(--z-elevated);border-color:var(--z-border);color:var(--z-text-1); }
-  [data-tema="dark"] .hub-cap-item  { color:var(--z-text-2); }
-  [data-tema="dark"] .mod-hub-actions { border-color:var(--z-border-s); }
-  [data-tema="dark"] .mbtn-cancel2  { background:var(--z-elevated);border-color:var(--z-border);color:var(--z-text-2); }
-  [data-tema="dark"] .mbtn-del2     { background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.3);color:#f87171; }
-  [data-tema="dark"] .cod-badge     { background:rgba(99,102,241,.15);color:#a5b4fc; }
+  [data-tema="dark"] .mod-hub-actions, [data-tema="dark"] .mod-hub-titulo { border-color:var(--z-border-s); }
+  [data-tema="dark"] .mbtn-cancel { background:var(--z-elevated);border-color:var(--z-border);color:var(--z-text-2); }
+  [data-tema="dark"] .mbtn-del    { background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.3);color:#f87171; }
+  [data-tema="dark"] .cod-badge   { background:rgba(99,102,241,.15);color:#a5b4fc; }
+  [data-tema="dark"] .pcfg-item   { background:var(--z-elevated);border-color:var(--z-border-s); }
+  [data-tema="dark"] .pcfg-item-nome { color:var(--z-text-1); }
+  [data-tema="dark"] .pcfg-item-sub  { color:var(--z-text-3); }
+  [data-tema="dark"] .pcfg-add-form  { background:var(--z-elevated);border-color:var(--z-border); }
+  [data-tema="dark"] .pcfg-add-form h4 { color:var(--z-text-2); }
+  [data-tema="dark"] .cor-campo label { color:var(--z-text-3); }
+  [data-tema="dark"] .cor-campo input[type=color] { background:var(--z-elevated);border-color:var(--z-border); }
+  [data-tema="dark"] .serv-check-item { border-color:var(--z-border);color:var(--z-text-2); }
+  [data-tema="dark"] .pcfg-tab { color:var(--z-text-3); }
+  [data-tema="dark"] .pcfg-tab:hover:not(.ativo) { color:var(--z-text-2); }
 </style>
 {% endblock %}
 
@@ -307,6 +288,10 @@
 
   <div class="hub-toolbar">
     <input class="hub-busca" type="text" id="hub-busca" placeholder="Buscar banco..." oninput="filtrarHub()">
+    <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;color:#64748b;cursor:pointer;user-select:none;white-space:nowrap">
+      <input type="checkbox" id="chk-todos" style="accent-color:#6366f1;width:15px;height:15px;cursor:pointer" onchange="selecionarTodos(this.checked)">
+      Selecionar todos
+    </label>
     <span class="hub-sel-info" id="hub-sel-info" style="display:none"></span>
   </div>
 
@@ -318,94 +303,77 @@
       <div class="hub-card-header">
         <input type="checkbox" class="hub-check" id="hchk-{{ b.id }}" onchange="onSelecionarBanco()">
         <span class="hub-banco-nome">{{ b.nome }}</span>
-        {% if nivel_acesso == 'admin' %}
+        {% if pode_editar %}
         <div class="hub-card-actions">
-          <button class="hbtn-icon" title="Editar" onclick='editarBanco({{ b | tojson }})'><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-          <button class="hbtn-icon del" title="Remover" onclick="removerBanco({{ b.id }}, '{{ b.nome | e }}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
+          <button class="hbtn-icon" title="Editar serviços" onclick="abrirModalServicosbanCo({{ b.id }}, '{{ b.nome | e }}')">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="hbtn-icon del" title="Remover banco" onclick="removerBanco({{ b.id }}, '{{ b.nome | e }}')">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>
         </div>
         {% endif %}
       </div>
 
       <div class="hub-card-body">
-
-        {# Cobrança #}
-        {% if b.cobranca_envio or b.cobranca_instrucao or b.cobranca_retorno %}
+        {% for cat in b.categorias %}
         <div class="hub-secao">
-          <div class="hub-secao-titulo">Cobrança</div>
+          <div class="hub-secao-titulo">{{ cat.nome }}</div>
           <div class="hub-chips">
-            {% if b.cobranca_envio %}<span class="hub-chip chip-envio">Envio</span>{% endif %}
-            {% if b.cobranca_instrucao %}<span class="hub-chip chip-instrucao">Instrução</span>{% endif %}
-            {% if b.cobranca_retorno %}<span class="hub-chip chip-retorno">Retorno</span>{% endif %}
+            {% for s in cat.servicos %}
+            <span class="hub-chip" data-sid="{{ s.id }}" style="background:{{ s.cor_bg }};color:{{ s.cor_texto }}">{{ s.nome }}</span>
+            {% endfor %}
           </div>
-          {% if b.cobranca_instrucao and b.instrucoes %}
-          <div class="hub-instrucoes-wrap">
-            <button class="hub-instrucoes-toggle" onclick="toggleInstrucoes(this)" data-banco="{{ b.id }}">
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-              {{ b.instrucoes | length }} instruções disponíveis
-            </button>
-            <table class="hub-instrucoes-tabela" id="instr-{{ b.id }}">
-              <thead><tr><th>Cód.</th><th>Descrição</th>{% if nivel_acesso == 'admin' %}<th></th>{% endif %}</tr></thead>
-              <tbody>
-                {% for instr in b.instrucoes %}
-                <tr id="instr-row-{{ instr.id }}">
-                  <td><span class="cod-badge">{{ instr.codigo }}</span></td>
-                  <td>{{ instr.descricao }}</td>
-                  {% if nivel_acesso == 'admin' %}
-                  <td style="white-space:nowrap;text-align:right;">
-                    <button class="hbtn-icon del" title="Remover" onclick="removerInstrucao({{ instr.id }})"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                  </td>
-                  {% endif %}
-                </tr>
-                {% endfor %}
-                {% if nivel_acesso == 'admin' %}
-                <tr>
-                  <td colspan="3" class="td-add-instr">
-                    <div class="instr-add-row">
-                      <input class="inp-cod" type="text" placeholder="Cód." id="inp-cod-{{ b.id }}" maxlength="4">
-                      <input type="text" placeholder="Descrição da instrução" id="inp-desc-{{ b.id }}">
-                      <button class="instr-btn-add" onclick="adicionarInstrucao({{ b.id }})">+ Add</button>
-                    </div>
-                  </td>
-                </tr>
+        </div>
+        {% endfor %}
+
+        {% if b.instrucoes %}
+        <div class="hub-instrucoes-wrap">
+          <button class="hub-instrucoes-toggle" onclick="toggleInstrucoes(this)" data-banco="{{ b.id }}">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            {{ b.instrucoes | length }} {{ 'instrução' if b.instrucoes | length == 1 else 'instruções' }} disponíve{{ 'l' if b.instrucoes | length == 1 else 'is' }}
+          </button>
+          <table class="hub-instrucoes-tabela" id="instr-{{ b.id }}">
+            <thead><tr><th>Cód.</th><th>Descrição</th>{% if pode_editar %}<th></th>{% endif %}</tr></thead>
+            <tbody>
+              {% for instr in b.instrucoes %}
+              <tr id="instr-row-{{ instr.id }}">
+                <td><span class="cod-badge">{{ instr.codigo }}</span></td>
+                <td>{{ instr.descricao }}</td>
+                {% if pode_editar %}
+                <td style="text-align:right;white-space:nowrap">
+                  <button class="hbtn-icon del" onclick="removerInstrucao({{ instr.id }})">
+                    <svg viewBox="0 0 24 24" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </td>
                 {% endif %}
-              </tbody>
-            </table>
-          </div>
-          {% elif b.cobranca_instrucao and nivel_acesso == 'admin' %}
-          <div class="hub-instrucoes-wrap">
-            <div class="instr-add-row">
-              <input class="inp-cod" type="text" placeholder="Cód." id="inp-cod-{{ b.id }}" maxlength="4">
-              <input type="text" placeholder="Descrição da instrução" id="inp-desc-{{ b.id }}">
-              <button class="instr-btn-add" onclick="adicionarInstrucao({{ b.id }})">+ Add</button>
-            </div>
-          </div>
-          {% endif %}
+              </tr>
+              {% endfor %}
+              {% if pode_editar %}
+              <tr><td colspan="3" style="padding:6px 8px">
+                <div class="instr-add-row">
+                  <input class="inp-cod" type="text" placeholder="Cód." id="inp-cod-{{ b.id }}" maxlength="4">
+                  <input type="text" placeholder="Descrição da instrução" id="inp-desc-{{ b.id }}">
+                  <button class="instr-btn-add" onclick="adicionarInstrucao({{ b.id }})">+ Add</button>
+                </div>
+              </td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+        {% elif pode_editar %}
+        <div class="instr-add-row">
+          <input class="inp-cod" type="text" placeholder="Cód." id="inp-cod-{{ b.id }}" maxlength="4">
+          <input type="text" placeholder="Descrição da instrução" id="inp-desc-{{ b.id }}">
+          <button class="instr-btn-add" onclick="adicionarInstrucao({{ b.id }})">+ Instrução</button>
         </div>
         {% endif %}
 
-        {# Pagamento #}
-        {% if b.pagamento_boleto or b.pagamento_pix %}
-        <div class="hub-secao">
-          <div class="hub-secao-titulo">Pagamento</div>
-          <div class="hub-chips">
-            {% if b.pagamento_boleto %}<span class="hub-chip chip-boleto">Boleto</span>{% endif %}
-            {% if b.pagamento_pix %}<span class="hub-chip chip-pix">PIX</span>{% endif %}
-          </div>
-        </div>
+        {% if not b.categorias and not b.instrucoes %}
+        <span style="font-size:.78rem;color:#94a3b8">Nenhum serviço cadastrado.</span>
         {% endif %}
-
-        {# Extrato / DDA #}
-        {% if b.extrato_consulta or b.dda_consulta %}
-        <div class="hub-secao">
-          <div class="hub-secao-titulo">{% if b.extrato_consulta and b.dda_consulta %}Extrato / DDA{% elif b.extrato_consulta %}Extrato{% else %}DDA{% endif %}</div>
-          <div class="hub-chips">
-            {% if b.extrato_consulta %}<span class="hub-chip chip-consulta">Consulta Extrato</span>{% endif %}
-            {% if b.dda_consulta %}<span class="hub-chip chip-consulta">Consulta DDA</span>{% endif %}
-          </div>
-        </div>
-        {% endif %}
-
       </div>
+
     </div>
     {% endfor %}
   </div>
@@ -415,40 +383,159 @@
 
 </div>
 
-{# ── Modal banco ── #}
-<div class="ov-hub" id="ov-hub">
+{# ── Modal: Novo/Editar banco ── #}
+<div class="ov-hub" id="ov-banco">
   <div class="mod-hub" onclick="event.stopPropagation()">
-    <h3 id="hub-modal-titulo">Novo Banco</h3>
-    <input type="hidden" id="hub-id">
-
+    <div class="mod-hub-titulo">
+      <span id="banco-modal-titulo">Novo Banco</span>
+      <button class="mod-hub-close" onclick="fecharModal('ov-banco')">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <input type="hidden" id="banco-id">
     <div class="hub-fg">
       <label>Nome do Banco *</label>
-      <input type="text" id="hub-nome" placeholder="Ex: Nubank">
+      <input type="text" id="banco-nome" placeholder="Ex: Nubank">
     </div>
-
-    <div style="font-size:.73rem;font-weight:600;color:#475569;margin-bottom:8px;">Capacidades</div>
-
-    <div style="font-size:.70rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Cobrança</div>
-    <div class="hub-caps-grid" style="margin-bottom:10px;">
-      <label class="hub-cap-item"><input type="checkbox" id="cap-cob-envio"> Envio</label>
-      <label class="hub-cap-item"><input type="checkbox" id="cap-cob-instrucao"> Instrução</label>
-      <label class="hub-cap-item"><input type="checkbox" id="cap-cob-retorno"> Retorno</label>
+    <div class="hub-fg">
+      <label>Ordem (opcional)</label>
+      <input type="number" id="banco-ordem" value="99" min="1">
     </div>
-    <div style="font-size:.70rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Pagamento</div>
-    <div class="hub-caps-grid" style="margin-bottom:10px;">
-      <label class="hub-cap-item"><input type="checkbox" id="cap-pag-boleto"> Boleto</label>
-      <label class="hub-cap-item"><input type="checkbox" id="cap-pag-pix"> PIX</label>
-    </div>
-    <div style="font-size:.70rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Outros</div>
-    <div class="hub-caps-grid">
-      <label class="hub-cap-item"><input type="checkbox" id="cap-extrato"> Extrato (Consulta)</label>
-      <label class="hub-cap-item"><input type="checkbox" id="cap-dda"> DDA (Consulta)</label>
-    </div>
-
     <div class="mod-hub-actions">
-      <button class="mbtn-del2" id="hub-btn-del" style="display:none" onclick="removerBancoModal()">Excluir</button>
-      <button class="mbtn-cancel2" onclick="fecharModalBanco()">Cancelar</button>
-      <button class="mbtn-save2" onclick="salvarBanco()">Salvar</button>
+      <button class="mbtn-del" id="banco-btn-del" style="display:none" onclick="removerBancoModal()">Excluir</button>
+      <button class="mbtn-cancel" onclick="fecharModal('ov-banco')">Cancelar</button>
+      <button class="mbtn-save" onclick="salvarBanco()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+{# ── Modal: Editar serviços do banco ── #}
+<div class="ov-hub" id="ov-servicos-banco">
+  <div class="mod-hub" onclick="event.stopPropagation()">
+    <div class="mod-hub-titulo">
+      <span id="serv-banco-titulo">Serviços do Banco</span>
+      <button class="mod-hub-close" onclick="fecharModal('ov-servicos-banco')">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <input type="hidden" id="serv-banco-id">
+    <div id="serv-banco-lista" class="servicos-check-grid"></div>
+    <div class="mod-hub-actions">
+      <button class="mbtn-cancel" onclick="fecharModal('ov-servicos-banco')">Cancelar</button>
+      <button class="mbtn-save" onclick="salvarServicosbanCo()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+{# ── Painel: Configurar categorias/serviços ── #}
+<div class="ov-cfg" id="ov-cfg" onclick="fecharPainelConfig()">
+  <div class="painel-cfg" onclick="event.stopPropagation()">
+
+    <div class="pcfg-header">
+      <h3>Configurar Hub</h3>
+      <button class="pcfg-close" onclick="fecharPainelConfig()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="pcfg-tabs">
+      <button class="pcfg-tab ativo" onclick="trocarTabCfg('cats', this)">Categorias</button>
+      <button class="pcfg-tab"       onclick="trocarTabCfg('servs', this)">Serviços</button>
+    </div>
+
+    <div class="pcfg-body">
+
+      {# Tab: Categorias #}
+      <div class="pcfg-panel ativo" id="pcfg-cats">
+        <div id="lista-cats">
+          {% for c in categorias %}
+          <div class="pcfg-item" id="pcfg-cat-{{ c.id }}">
+            <div>
+              <div class="pcfg-item-nome">{{ c.nome }}</div>
+              <div class="pcfg-item-sub">Ordem: {{ c.ordem }}</div>
+            </div>
+            <div class="pcfg-item-actions">
+              <button class="hbtn-icon" onclick='editarCategoria({{ c | tojson }})' title="Editar">
+                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="hbtn-icon del" onclick="removerCategoria({{ c.id }}, '{{ c.nome | e }}')" title="Remover">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="pcfg-add-form">
+          <h4 id="cat-form-titulo">Nova Categoria</h4>
+          <input type="hidden" id="cat-id">
+          <div class="hub-fg"><label>Nome *</label><input type="text" id="cat-nome" placeholder="Ex: Pagamento"></div>
+          <div class="hub-fg"><label>Ordem</label><input type="number" id="cat-ordem" value="99" min="1"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="mbtn-cancel" id="cat-btn-cancel" onclick="limparFormCat()" style="display:none">Cancelar</button>
+            <button class="mbtn-save" onclick="salvarCategoria()">Salvar</button>
+          </div>
+        </div>
+      </div>
+
+      {# Tab: Serviços #}
+      <div class="pcfg-panel" id="pcfg-servs">
+        <div id="lista-servs">
+          {% for s in servicos %}
+          <div class="pcfg-item" id="pcfg-serv-{{ s.id }}">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="chip-preview" style="background:{{ s.cor_bg }};color:{{ s.cor_texto }}">{{ s.nome }}</span>
+              <div>
+                <div class="pcfg-item-nome">{{ s.nome }}</div>
+                <div class="pcfg-item-sub">{{ s.categoria_nome }}</div>
+              </div>
+            </div>
+            <div class="pcfg-item-actions">
+              <button class="hbtn-icon" onclick='editarServico({{ s | tojson }})' title="Editar">
+                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="hbtn-icon del" onclick="removerServico({{ s.id }}, '{{ s.nome | e }}')" title="Remover">
+                <svg viewBox="0 0 24 24"><polyline points="0 0 0 0 0 0"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><polyline points="3 6 5 6 21 6"/></svg>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="pcfg-add-form">
+          <h4 id="serv-form-titulo">Novo Serviço</h4>
+          <input type="hidden" id="serv-id">
+          <div class="hub-fg">
+            <label>Nome *</label>
+            <input type="text" id="serv-nome" placeholder="Ex: Envio" oninput="atualizarPreviewCor()">
+          </div>
+          <div class="hub-fg">
+            <label>Categoria *</label>
+            <select id="serv-cat">
+              {% for c in categorias %}
+              <option value="{{ c.id }}">{{ c.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cor-row">
+            <div class="cor-campo">
+              <label>Cor de fundo</label>
+              <input type="color" id="serv-cor-bg" value="#dbeafe" oninput="atualizarPreviewCor()">
+            </div>
+            <div class="cor-campo">
+              <label>Cor do texto</label>
+              <input type="color" id="serv-cor-txt" value="#1d4ed8" oninput="atualizarPreviewCor()">
+            </div>
+          </div>
+          <div class="cor-preview" id="cor-preview" style="background:#dbeafe;color:#1d4ed8;margin-top:8px;border-radius:20px;padding:4px 12px;font-size:.78rem;font-weight:600;display:inline-flex">
+            Prévia do serviço
+          </div>
+          <div class="hub-fg" style="margin-top:10px"><label>Ordem</label><input type="number" id="serv-ordem" value="99" min="1"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+            <button class="mbtn-cancel" id="serv-btn-cancel" onclick="limparFormServ()" style="display:none">Cancelar</button>
+            <button class="mbtn-save" onclick="salvarServico()">Salvar</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -456,135 +543,312 @@
 
 {% block scripts_extras %}
 <script>
-  const _HUB = '/api/hub';
+const _PODE_EDITAR = {{ 'true' if pode_editar else 'false' }};
+const _SERVICOS_DISPONIVEIS = {{ servicos | tojson }};
+const _CATEGORIAS = {{ categorias | tojson }};
 
-  /* ── Busca ── */
-  function filtrarHub() {
-    const t = document.getElementById('hub-busca').value.toLowerCase();
-    document.querySelectorAll('.hub-card').forEach(c => {
-      c.style.display = c.dataset.nome.includes(t) ? '' : 'none';
+/* ── Utilitários ── */
+function fecharModal(id) { document.getElementById(id).classList.remove('aberto'); }
+function abrirModal(id)  { document.getElementById(id).classList.add('aberto'); }
+
+async function req(url, method='GET', body=null) {
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  return r.json();
+}
+
+function toast(msg, tipo='sucesso') {
+  if (window.mostrarToast) mostrarToast(msg, tipo);
+  else alert(msg);
+}
+
+/* ── Filtro e seleção ── */
+function filtrarHub() {
+  const t = document.getElementById('hub-busca').value.toLowerCase();
+  document.querySelectorAll('.hub-card').forEach(c => {
+    c.style.display = c.dataset.nome.includes(t) ? '' : 'none';
+  });
+}
+
+function selecionarTodos(marcar) {
+  document.querySelectorAll('.hub-check').forEach(chk => {
+    const card = chk.closest('.hub-card');
+    if (!card || card.style.display === 'none') return;
+    chk.checked = marcar;
+    card.classList.toggle('selecionado', marcar);
+  });
+  _atualizarBarraSel();
+}
+
+function onSelecionarBanco() {
+  const todos   = document.querySelectorAll('.hub-check:not([style*="display:none"])');
+  const chkTodos = document.getElementById('chk-todos');
+  const marcados = [...todos].filter(c => c.closest('.hub-card')?.style.display !== 'none' && c.checked);
+  if (chkTodos) {
+    chkTodos.indeterminate = marcados.length > 0 && marcados.length < todos.length;
+    chkTodos.checked = marcados.length === todos.length && todos.length > 0;
+  }
+  document.querySelectorAll('.hub-card').forEach(c => {
+    const chk = c.querySelector('.hub-check');
+    c.classList.toggle('selecionado', chk && chk.checked);
+  });
+  _atualizarBarraSel();
+}
+
+function _atualizarBarraSel() {
+  const sels = document.querySelectorAll('.hub-check:checked');
+  const btn  = document.getElementById('btn-gerar-pdf');
+  const info = document.getElementById('hub-sel-info');
+  if (sels.length > 0) {
+    btn.style.display  = 'inline-flex';
+    info.style.display = '';
+    info.textContent   = sels.length + ' banco' + (sels.length > 1 ? 's' : '') + ' selecionado' + (sels.length > 1 ? 's' : '');
+  } else {
+    btn.style.display  = 'none';
+    info.style.display = 'none';
+  }
+}
+
+function gerarPDF() {
+  const ids = [...document.querySelectorAll('.hub-check:checked')].map(c => c.id.replace('hchk-','')).join(',');
+  window.open('/hub/print?ids=' + ids, '_blank');
+}
+
+function toggleInstrucoes(btn) {
+  const id  = btn.dataset.banco;
+  const tbl = document.getElementById('instr-' + id);
+  const vis = tbl.classList.toggle('visivel');
+  btn.classList.toggle('aberto', vis);
+}
+
+/* ── Modal Banco ── */
+function abrirModalBanco(b) {
+  document.getElementById('banco-modal-titulo').textContent = b ? 'Editar Banco' : 'Novo Banco';
+  document.getElementById('banco-id').value    = b ? b.id : '';
+  document.getElementById('banco-nome').value  = b ? b.nome : '';
+  document.getElementById('banco-ordem').value = b ? (b.ordem || 99) : 99;
+  document.getElementById('banco-btn-del').style.display = b ? 'inline-flex' : 'none';
+  abrirModal('ov-banco');
+  setTimeout(() => document.getElementById('banco-nome').focus(), 50);
+}
+
+async function salvarBanco() {
+  const nome = document.getElementById('banco-nome').value.trim();
+  if (!nome) { toast('Informe o nome do banco.', 'erro'); return; }
+  const id = document.getElementById('banco-id').value;
+  const dados = { nome, ordem: parseInt(document.getElementById('banco-ordem').value) || 99 };
+  const url    = id ? `/api/hub/bancos/${id}` : '/api/hub/bancos';
+  const method = id ? 'PUT' : 'POST';
+  const d = await req(url, method, dados);
+  if (d.sucesso) { fecharModal('ov-banco'); location.reload(); }
+  else toast(d.erro || 'Erro ao salvar.', 'erro');
+}
+
+async function removerBancoModal() {
+  const id = document.getElementById('banco-id').value;
+  if (!id) return;
+  if (!confirm('Remover este banco? Todas as suas instruções também serão removidas.')) return;
+  const d = await req(`/api/hub/bancos/${id}`, 'DELETE');
+  if (d.sucesso) { fecharModal('ov-banco'); location.reload(); }
+  else toast(d.erro || 'Erro ao remover.', 'erro');
+}
+
+async function removerBanco(id, nome) {
+  if (!confirm(`Remover "${nome}"? Todas as suas instruções também serão removidas.`)) return;
+  const d = await req(`/api/hub/bancos/${id}`, 'DELETE');
+  if (d.sucesso) location.reload();
+  else toast(d.erro || 'Erro ao remover.', 'erro');
+}
+
+/* ── Modal: serviços do banco ── */
+function abrirModalServicosbanCo(bancoId, bancoNome) {
+  document.getElementById('serv-banco-titulo').textContent = 'Serviços — ' + bancoNome;
+  document.getElementById('serv-banco-id').value = bancoId;
+
+  // Pegar serviços atuais do banco a partir do DOM
+  const card = document.getElementById('hcard-' + bancoId);
+  const selecionados = new Set();
+  card.querySelectorAll('.hub-chip[data-sid]').forEach(el => selecionados.add(parseInt(el.dataset.sid)));
+
+  // Agrupar por categoria
+  const porcategoria = {};
+  _SERVICOS_DISPONIVEIS.forEach(s => {
+    const catNome = s.categoria_nome;
+    if (!porcategoria[catNome]) porcategoria[catNome] = [];
+    porcategoria[catNome].push(s);
+  });
+
+  // Buscar chips atuais do card com data-sid
+  const idsAtuais = new Set();
+  card.querySelectorAll('[data-sid]').forEach(el => idsAtuais.add(parseInt(el.dataset.sid)));
+
+  let html = '';
+  Object.entries(porcategoria).forEach(([cat, servs]) => {
+    html += `<div class="serv-cat-grupo"><div class="serv-cat-nome">${cat}</div><div class="serv-checks">`;
+    servs.forEach(s => {
+      const marcado = idsAtuais.has(s.id);
+      html += `<label class="serv-check-item ${marcado ? 'marcado' : ''}" style="${marcado ? `background:${s.cor_bg};color:${s.cor_texto};border-color:${s.cor_bg}` : ''}" data-sid="${s.id}" data-bg="${s.cor_bg}" data-txt="${s.cor_texto}" onclick="toggleServicoCheck(this)">
+        <input type="checkbox" value="${s.id}" ${marcado ? 'checked' : ''}>${s.nome}
+      </label>`;
     });
-  }
+    html += '</div></div>';
+  });
+  document.getElementById('serv-banco-lista').innerHTML = html || '<p style="color:#94a3b8;font-size:.82rem">Nenhum serviço disponível. Cadastre em Configurar.</p>';
+  abrirModal('ov-servicos-banco');
+}
 
-  /* ── Seleção para PDF ── */
-  function onSelecionarBanco() {
-    const sels = document.querySelectorAll('.hub-check:checked');
-    const btn  = document.getElementById('btn-gerar-pdf');
-    const info = document.getElementById('hub-sel-info');
-    if (sels.length > 0) {
-      btn.style.display  = 'inline-flex';
-      info.style.display = '';
-      info.textContent   = sels.length + ' banco' + (sels.length > 1 ? 's' : '') + ' selecionado' + (sels.length > 1 ? 's' : '');
-      document.querySelectorAll('.hub-card').forEach(c => {
-        const chk = c.querySelector('.hub-check');
-        c.classList.toggle('selecionado', chk && chk.checked);
-      });
-    } else {
-      btn.style.display  = 'none';
-      info.style.display = 'none';
-      document.querySelectorAll('.hub-card').forEach(c => c.classList.remove('selecionado'));
-    }
+function toggleServicoCheck(el) {
+  const cb = el.querySelector('input');
+  cb.checked = !cb.checked;
+  if (cb.checked) {
+    el.classList.add('marcado');
+    el.style.background  = el.dataset.bg;
+    el.style.color       = el.dataset.txt;
+    el.style.borderColor = el.dataset.bg;
+  } else {
+    el.classList.remove('marcado');
+    el.style.background  = '';
+    el.style.color       = '';
+    el.style.borderColor = '';
   }
+}
 
-  function gerarPDF() {
-    const ids = [...document.querySelectorAll('.hub-check:checked')].map(c => c.id.replace('hchk-', '')).join(',');
-    window.open('/hub/print?ids=' + ids, '_blank');
-  }
+async function salvarServicosbanCo() {
+  const bancoId = document.getElementById('serv-banco-id').value;
+  const ids = [...document.querySelectorAll('#serv-banco-lista input:checked')].map(cb => parseInt(cb.value));
+  const d = await req(`/api/hub/bancos/${bancoId}/servicos`, 'PUT', { servicos: ids });
+  if (d.sucesso) { fecharModal('ov-servicos-banco'); location.reload(); }
+  else toast(d.erro || 'Erro ao salvar.', 'erro');
+}
 
-  /* ── Toggle instruções ── */
-  function toggleInstrucoes(btn) {
-    const id  = btn.dataset.banco;
-    const tbl = document.getElementById('instr-' + id);
-    const vis = tbl.classList.toggle('visivel');
-    btn.classList.toggle('aberto', vis);
-  }
+/* ── Instruções ── */
+async function adicionarInstrucao(bancoId) {
+  const cod  = (document.getElementById('inp-cod-'  + bancoId)?.value || '').trim();
+  const desc = (document.getElementById('inp-desc-' + bancoId)?.value || '').trim();
+  if (!cod || !desc) { toast('Informe código e descrição.', 'erro'); return; }
+  const d = await req(`/api/hub/bancos/${bancoId}/instrucoes`, 'POST', { codigo: cod, descricao: desc });
+  if (d.sucesso) location.reload();
+  else toast(d.erro || 'Erro ao adicionar.', 'erro');
+}
 
-  /* ── Modal banco ── */
-  function abrirModalBanco() {
-    document.getElementById('hub-modal-titulo').textContent = 'Novo Banco';
-    document.getElementById('hub-id').value   = '';
-    document.getElementById('hub-nome').value = '';
-    ['cob-envio','cob-instrucao','cob-retorno','pag-boleto','pag-pix','extrato','dda'].forEach(k => {
-      document.getElementById('cap-' + k).checked = false;
-    });
-    document.getElementById('hub-btn-del').style.display = 'none';
-    document.getElementById('ov-hub').classList.add('aberto');
-    document.getElementById('hub-nome').focus();
-  }
+async function removerInstrucao(id) {
+  if (!confirm('Remover esta instrução?')) return;
+  const d = await req(`/api/hub/instrucoes/${id}`, 'DELETE');
+  if (d.sucesso) { const row = document.getElementById('instr-row-' + id); if (row) row.remove(); }
+  else toast(d.erro || 'Erro ao remover.', 'erro');
+}
 
-  function editarBanco(b) {
-    document.getElementById('hub-modal-titulo').textContent = 'Editar Banco';
-    document.getElementById('hub-id').value   = b.id;
-    document.getElementById('hub-nome').value = b.nome;
-    document.getElementById('cap-cob-envio').checked     = !!b.cobranca_envio;
-    document.getElementById('cap-cob-instrucao').checked = !!b.cobranca_instrucao;
-    document.getElementById('cap-cob-retorno').checked   = !!b.cobranca_retorno;
-    document.getElementById('cap-pag-boleto').checked    = !!b.pagamento_boleto;
-    document.getElementById('cap-pag-pix').checked       = !!b.pagamento_pix;
-    document.getElementById('cap-extrato').checked       = !!b.extrato_consulta;
-    document.getElementById('cap-dda').checked           = !!b.dda_consulta;
-    document.getElementById('hub-btn-del').style.display = 'inline-flex';
-    document.getElementById('ov-hub').classList.add('aberto');
-  }
+/* ── Painel Configurar ── */
+function abrirPainelConfig()  { abrirModal('ov-cfg'); }
+function fecharPainelConfig() { fecharModal('ov-cfg'); }
 
-  function fecharModalBanco() { document.getElementById('ov-hub').classList.remove('aberto'); }
-  document.getElementById('ov-hub').addEventListener('click', fecharModalBanco);
+function trocarTabCfg(tab, btn) {
+  document.querySelectorAll('.pcfg-tab').forEach(b => b.classList.remove('ativo'));
+  document.querySelectorAll('.pcfg-panel').forEach(p => p.classList.remove('ativo'));
+  btn.classList.add('ativo');
+  document.getElementById('pcfg-' + tab).classList.add('ativo');
+}
 
-  async function salvarBanco() {
-    const nome = document.getElementById('hub-nome').value.trim();
-    if (!nome) { alert('Informe o nome do banco.'); return; }
-    const id = document.getElementById('hub-id').value;
-    const dados = {
-      nome,
-      cobranca_envio:     document.getElementById('cap-cob-envio').checked     ? 1 : 0,
-      cobranca_instrucao: document.getElementById('cap-cob-instrucao').checked ? 1 : 0,
-      cobranca_retorno:   document.getElementById('cap-cob-retorno').checked   ? 1 : 0,
-      pagamento_boleto:   document.getElementById('cap-pag-boleto').checked    ? 1 : 0,
-      pagamento_pix:      document.getElementById('cap-pag-pix').checked       ? 1 : 0,
-      extrato_consulta:   document.getElementById('cap-extrato').checked       ? 1 : 0,
-      dda_consulta:       document.getElementById('cap-dda').checked           ? 1 : 0,
-    };
-    const url    = id ? `${_HUB}/bancos/${id}` : `${_HUB}/bancos`;
-    const method = id ? 'PUT' : 'POST';
-    const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(dados) });
-    const d = await r.json();
-    if (d.sucesso) { fecharModalBanco(); location.reload(); }
-    else alert(d.erro || 'Erro ao salvar.');
-  }
+/* ── Categorias ── */
+function limparFormCat() {
+  document.getElementById('cat-id').value = '';
+  document.getElementById('cat-nome').value = '';
+  document.getElementById('cat-ordem').value = 99;
+  document.getElementById('cat-form-titulo').textContent = 'Nova Categoria';
+  document.getElementById('cat-btn-cancel').style.display = 'none';
+}
 
-  async function removerBancoModal() {
-    const id = document.getElementById('hub-id').value;
-    if (!id || !confirm('Remover este banco e todas as suas instruções?')) return;
-    await fetch(`${_HUB}/bancos/${id}`, { method:'DELETE' });
-    fecharModalBanco(); location.reload();
-  }
+function editarCategoria(c) {
+  document.getElementById('cat-id').value    = c.id;
+  document.getElementById('cat-nome').value  = c.nome;
+  document.getElementById('cat-ordem').value = c.ordem;
+  document.getElementById('cat-form-titulo').textContent = 'Editar Categoria';
+  document.getElementById('cat-btn-cancel').style.display = 'inline-flex';
+  document.getElementById('cat-nome').focus();
+}
 
-  async function removerBanco(id, nome) {
-    if (!confirm(`Remover "${nome}" e todas as suas instruções?`)) return;
-    await fetch(`${_HUB}/bancos/${id}`, { method:'DELETE' });
-    location.reload();
-  }
+async function salvarCategoria() {
+  const nome = document.getElementById('cat-nome').value.trim();
+  if (!nome) { toast('Informe o nome.', 'erro'); return; }
+  const id = document.getElementById('cat-id').value;
+  const dados = { nome, ordem: parseInt(document.getElementById('cat-ordem').value) || 99 };
+  const url    = id ? `/api/hub/categorias/${id}` : '/api/hub/categorias';
+  const method = id ? 'PUT' : 'POST';
+  const d = await req(url, method, dados);
+  if (d.sucesso) { toast('Categoria salva!'); location.reload(); }
+  else toast(d.erro || 'Erro ao salvar.', 'erro');
+}
 
-  /* ── Instruções ── */
-  async function adicionarInstrucao(bancoId) {
-    const cod  = (document.getElementById('inp-cod-'  + bancoId)?.value || '').trim();
-    const desc = (document.getElementById('inp-desc-' + bancoId)?.value || '').trim();
-    if (!cod || !desc) { alert('Informe código e descrição.'); return; }
-    const r = await fetch(`${_HUB}/bancos/${bancoId}/instrucoes`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({codigo: cod, descricao: desc}),
-    });
-    const d = await r.json();
-    if (d.sucesso) location.reload();
-    else alert(d.erro || 'Erro ao adicionar.');
-  }
+async function removerCategoria(id, nome) {
+  if (!confirm(`Remover categoria "${nome}"? Todos os serviços desta categoria também serão removidos.`)) return;
+  const d = await req(`/api/hub/categorias/${id}`, 'DELETE');
+  if (d.sucesso) { location.reload(); }
+  else toast(d.erro || 'Erro ao remover.', 'erro');
+}
 
-  async function removerInstrucao(id) {
-    if (!confirm('Remover esta instrução?')) return;
-    await fetch(`${_HUB}/instrucoes/${id}`, { method:'DELETE' });
-    const row = document.getElementById('instr-row-' + id);
-    if (row) row.remove();
-  }
+/* ── Serviços ── */
+function atualizarPreviewCor() {
+  const nome  = document.getElementById('serv-nome').value  || 'Prévia';
+  const bg    = document.getElementById('serv-cor-bg').value;
+  const txt   = document.getElementById('serv-cor-txt').value;
+  const prev  = document.getElementById('cor-preview');
+  prev.style.background = bg;
+  prev.style.color      = txt;
+  prev.textContent      = nome;
+}
+
+function limparFormServ() {
+  document.getElementById('serv-id').value    = '';
+  document.getElementById('serv-nome').value  = '';
+  document.getElementById('serv-cor-bg').value  = '#dbeafe';
+  document.getElementById('serv-cor-txt').value = '#1d4ed8';
+  document.getElementById('serv-ordem').value = 99;
+  document.getElementById('serv-form-titulo').textContent = 'Novo Serviço';
+  document.getElementById('serv-btn-cancel').style.display = 'none';
+  atualizarPreviewCor();
+}
+
+function editarServico(s) {
+  document.getElementById('serv-id').value      = s.id;
+  document.getElementById('serv-nome').value    = s.nome;
+  document.getElementById('serv-cat').value     = s.categoria_id;
+  document.getElementById('serv-cor-bg').value  = s.cor_bg;
+  document.getElementById('serv-cor-txt').value = s.cor_texto;
+  document.getElementById('serv-ordem').value   = s.ordem;
+  document.getElementById('serv-form-titulo').textContent = 'Editar Serviço';
+  document.getElementById('serv-btn-cancel').style.display = 'inline-flex';
+  atualizarPreviewCor();
+  document.getElementById('serv-nome').focus();
+}
+
+async function salvarServico() {
+  const nome = document.getElementById('serv-nome').value.trim();
+  const catId = document.getElementById('serv-cat').value;
+  if (!nome || !catId) { toast('Nome e categoria são obrigatórios.', 'erro'); return; }
+  const id = document.getElementById('serv-id').value;
+  const dados = {
+    nome, categoria_id: parseInt(catId),
+    cor_bg:    document.getElementById('serv-cor-bg').value,
+    cor_texto: document.getElementById('serv-cor-txt').value,
+    ordem:     parseInt(document.getElementById('serv-ordem').value) || 99,
+  };
+  const url    = id ? `/api/hub/servicos/${id}` : '/api/hub/servicos';
+  const method = id ? 'PUT' : 'POST';
+  const d = await req(url, method, dados);
+  if (d.sucesso) { toast('Serviço salvo!'); location.reload(); }
+  else toast(d.erro || 'Erro ao salvar.', 'erro');
+}
+
+async function removerServico(id, nome) {
+  if (!confirm(`Remover serviço "${nome}"? Será removido de todos os bancos.`)) return;
+  const d = await req(`/api/hub/servicos/${id}`, 'DELETE');
+  if (d.sucesso) location.reload();
+  else toast(d.erro || 'Erro ao remover.', 'erro');
+}
+
+/* Fechar modais clicando fora */
+document.getElementById('ov-banco').addEventListener('click', () => fecharModal('ov-banco'));
+document.getElementById('ov-servicos-banco').addEventListener('click', () => fecharModal('ov-servicos-banco'));
 </script>
 {% endblock %}

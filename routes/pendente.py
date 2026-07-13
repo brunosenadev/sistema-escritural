@@ -71,6 +71,18 @@ def aba_pendente():
     )
 
 
+@pendente_bp.route('/api/pendente/versao')
+def api_pendente_versao():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    conn = banco.conectar()
+    row = conn.execute(
+        "SELECT COUNT(*) as total, COALESCE(MAX(id), 0) as max_id FROM pendentes WHERE status != 'CANCELADO'"
+    ).fetchone()
+    conn.close()
+    return jsonify({'total': row['total'], 'max_id': row['max_id']})
+
+
 @pendente_bp.route('/pendente/adicionar', methods=['POST'])
 def adicionar_pendente():
     err = _sem_permissao()

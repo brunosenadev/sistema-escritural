@@ -19,28 +19,41 @@
       --azul-claro:    #3b82f6;
       --azul-hover:    #1a3a7a;
       --branco:        #ffffff;
-      --fundo-pagina:  #f0f4ff;
+      --fundo-pagina:  #eef2fb;
       --fundo-card:    #ffffff;
       --texto-escuro:  #1e293b;
       --texto-medio:   #475569;
       --texto-leve:    #94a3b8;
       --borda:         #e2e8f0;
       --sidebar-larg:  220px;
+      --sidebar-mini:  64px;
     }
+
+    html { background: #eef2fb; }
 
     body {
       font-family: 'Inter', sans-serif;
-      background: var(--fundo-pagina);
+      background: transparent;
       color: var(--texto-escuro);
       display: flex;
       min-height: 100vh;
+    }
+
+    /* ── Canvas de partículas ───────────────────── */
+    #canvas-fundo {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
     }
 
     /* ── Sidebar ────────────────────────────────── */
     .sidebar {
       width: var(--sidebar-larg);
       min-height: 100vh;
-      background: var(--azul-escuro);
+      background: rgba(10, 18, 35, 0.52);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(18px);
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
@@ -51,12 +64,16 @@
       z-index: 100;
       overflow-y: auto;
       scrollbar-width: none;
+      transition: transform 0.28s cubic-bezier(.4,0,.2,1), width 0.28s cubic-bezier(.4,0,.2,1);
+    }
+
+    .sidebar-recolhida .sidebar {
+      transform: translateX(-100%);
     }
     .sidebar::-webkit-scrollbar { display: none; }
 
     .sidebar-logo {
-      padding: 24px 20px 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 20px 20px 14px;
     }
 
     .logo-linha {
@@ -165,48 +182,59 @@
     }
 
     .nav-secao-titulo {
-      padding: 14px 20px 6px;
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 1px;
+      padding: 20px 20px 5px;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 2px;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.22);
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-secao-titulo::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.06);
     }
 
     .nav-item {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 9px 20px;
-      color: rgba(255,255,255,0.55);
+      padding: 8px 12px;
+      margin: 1px 8px;
+      color: rgba(255,255,255,0.65);
       text-decoration: none;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 450;
-      border-left: 3px solid transparent;
-      transition: color 0.2s, background 0.2s, border-color 0.2s;
+      border-radius: 8px;
+      transition: color 0.18s, background 0.18s;
       position: relative;
     }
 
     .nav-item svg {
-      width: 15px;
-      height: 15px;
+      width: 16px;
+      height: 16px;
       stroke: currentColor;
       fill: none;
-      stroke-width: 1.8;
+      stroke-width: 1.75;
       stroke-linecap: round;
+      stroke-linejoin: round;
       flex-shrink: 0;
     }
 
     .nav-item:hover {
       color: #ffffff;
-      background: rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.08);
     }
 
     .nav-item.ativo {
-      color: #93c5fd;
-      background: rgba(37, 99, 235, 0.12);
-      border-left-color: #3b82f6;
-      font-weight: 500;
+      color: #ffffff;
+      background: #2563eb;
+      font-weight: 600;
     }
 
     .nav-badge {
@@ -220,6 +248,50 @@
       min-width: 18px;
       text-align: center;
     }
+
+    /* ── Grupos colapsáveis da sidebar ──────────── */
+    .nav-grupo-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      padding: 18px 16px 5px 16px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.45);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      user-select: none;
+      font-family: 'Inter', sans-serif;
+      gap: 6px;
+      transition: color 0.15s;
+    }
+    .nav-grupo-btn:hover { color: rgba(255,255,255,0.75); }
+    .nav-grupo-linha {
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+    }
+    .nav-grupo-seta {
+      width: 11px;
+      height: 11px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+      flex-shrink: 0;
+    }
+    .nav-grupo.fechado .nav-grupo-seta { transform: rotate(-90deg); }
+    .nav-grupo-items {
+      overflow: hidden;
+      max-height: 900px;
+      transition: max-height 0.32s cubic-bezier(.4,0,.2,1);
+    }
+    .nav-grupo.fechado .nav-grupo-items { max-height: 0; }
 
     /* Rodapé da sidebar: usuário */
     .sidebar-rodape {
@@ -323,16 +395,52 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      transition: margin-left 0.28s cubic-bezier(.4,0,.2,1);
     }
+
+    .sidebar-recolhida .conteudo-principal {
+      margin-left: 0;
+    }
+
+    .sidebar-mini .conteudo-principal {
+      margin-left: var(--sidebar-mini);
+    }
+
+    .sidebar-mini.sidebar-recolhida .conteudo-principal {
+      margin-left: 0;
+    }
+
+    .btn-toggle-sidebar {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #94a3b8;
+      padding: 6px;
+      border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .btn-toggle-sidebar:hover { color: #1e293b; background: #f1f5f9; }
+    .btn-toggle-sidebar svg {
+      width: 18px; height: 18px;
+      stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round;
+    }
+    [data-tema="dark"] .btn-toggle-sidebar { color: var(--z-text-2); }
+    [data-tema="dark"] .btn-toggle-sidebar:hover { color: var(--z-text-1) !important; background: rgba(255,255,255,0.10) !important; }
 
     /* Header da página */
     .header-pagina {
-      background: #ffffff;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--borda);
       padding: 16px 28px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 14px;
       position: sticky;
       top: 0;
       z-index: 50;
@@ -355,6 +463,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      margin-left: auto;
     }
 
     /* Área de conteúdo da aba */
@@ -424,6 +533,41 @@
 
     /* ── Input de arquivo oculto ─────────────── */
     #input-arquivo-planilha { display: none; }
+
+    /* ── Sidebar mini (apenas ícones) ──────────── */
+    .sidebar-mini .sidebar {
+      width: var(--sidebar-mini);
+      overflow: hidden;
+    }
+    .sidebar-mini .nav-secao-titulo,
+    .sidebar-mini .nav-item-texto,
+    .sidebar-mini .nav-badge,
+    .sidebar-mini .logo-nome,
+    .sidebar-mini .logo-subtitulo,
+    .sidebar-mini .nome-usuario,
+    .sidebar-mini .nivel-usuario,
+    .sidebar-mini .botao-sair,
+    .sidebar-mini #banco-info-pendentes { display: none !important; }
+    .sidebar-mini .area-upload { display: none; }
+    .sidebar-mini .sidebar-logo { padding: 18px 0; }
+    .sidebar-mini .logo-linha { justify-content: center; }
+    .sidebar-mini .nav-item {
+      justify-content: center;
+      padding: 10px 0;
+      margin: 1px 6px;
+      border-radius: 8px;
+    }
+    .sidebar-mini .nav-item.ativo {
+      background: #2563eb;
+    }
+    .sidebar-mini .nav-item svg { width: 18px; height: 18px; }
+    .sidebar-mini .sidebar-rodape { padding: 12px 0; }
+    .sidebar-mini .info-usuario { justify-content: center; }
+    .sidebar-mini .banco-status-inner { justify-content: center; }
+    .sidebar-mini .banco-status-area { padding: 8px 0 !important; }
+    .sidebar-mini.sidebar-recolhida .sidebar { transform: translateX(-100%); }
+    .sidebar-mini .nav-grupo-btn { display: none; }
+    .sidebar-mini .nav-grupo-items { max-height: 900px !important; overflow: visible !important; }
   </style>
   {% block estilos_extras %}{% endblock %}
 
@@ -449,20 +593,21 @@
       --borda:        #3f3f46;
     }
 
-    [data-tema="dark"] body                { background: var(--z-bg); color: var(--z-text-1); }
-    [data-tema="dark"] .conteudo-principal { background: var(--z-bg); }
+    [data-tema="dark"]                      { background: #09090b; }
+    [data-tema="dark"] body                { background: transparent; color: var(--z-text-1); }
+    [data-tema="dark"] .conteudo-principal { background: transparent; }
+    [data-tema="dark"] .header-pagina      { background: rgba(9,9,11,0.82) !important; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom-color: var(--z-border-s) !important; }
 
-    /* Sidebar — mantém azul original em dark mode */
-    [data-tema="dark"] .sidebar { background: #0a1628 !important; border-right: 1px solid rgba(255,255,255,0.08) !important; }
-    [data-tema="dark"] .sidebar-logo   { border-bottom-color: rgba(255,255,255,0.06) !important; }
+    /* Sidebar semitransparente em dark mode */
+    [data-tema="dark"] .sidebar { background: transparent !important; backdrop-filter: blur(2px) !important; -webkit-backdrop-filter: blur(2px) !important; border-right: none !important; }
     [data-tema="dark"] .area-upload    { border-bottom-color: rgba(255,255,255,0.06) !important; }
     [data-tema="dark"] .sidebar-rodape { border-top-color:    rgba(255,255,255,0.06) !important; }
     [data-tema="dark"] .nav-secao-titulo { color: rgba(255,255,255,0.40) !important; }
     [data-tema="dark"] .botao-upload { background: rgba(255,255,255,0.04) !important; border-color: rgba(255,255,255,0.08) !important; color: var(--z-text-2) !important; }
     [data-tema="dark"] .botao-upload:hover { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.14) !important; }
-    [data-tema="dark"] .nav-item       { color: rgba(255,255,255,0.80) !important; }
-    [data-tema="dark"] .nav-item.ativo { color: #93c5fd !important; background: rgba(37,99,235,0.18) !important; border-left-color: #3b82f6 !important; }
-    [data-tema="dark"] .nav-item:hover { color: #ffffff !important; background: rgba(255,255,255,0.06) !important; }
+    [data-tema="dark"] .nav-item       { color: rgba(255,255,255,0.70) !important; }
+    [data-tema="dark"] .nav-item.ativo { color: #ffffff !important; background: #2563eb !important; }
+    [data-tema="dark"] .nav-item:hover { color: #ffffff !important; background: rgba(255,255,255,0.09) !important; }
     [data-tema="dark"] .botao-sair     { color: rgba(255,255,255,0.50) !important; }
     [data-tema="dark"] .botao-sair:hover { color: #f87171 !important; background: rgba(248,113,113,0.08) !important; }
 
@@ -756,6 +901,8 @@
 </head>
 <body>
 
+  <canvas id="canvas-fundo"></canvas>
+
   <!-- ═══ Sidebar ═══════════════════════════════ -->
   <aside class="sidebar">
 
@@ -773,8 +920,8 @@
     </div>
 
     <!-- Indicador do banco de dados -->
-    <div style="padding:10px 16px 6px; border-bottom:1px solid rgba(255,255,255,0.06);">
-      <div style="display:flex;align-items:center;gap:6px;">
+    <div class="banco-status-area" style="padding:6px 16px 10px;">
+      <div class="banco-status-inner" style="display:flex;align-items:center;gap:6px;">
         <span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#22c55e;"></span>
         <span id="banco-info-pendentes" style="font-size:11px;color:#86efac;">Banco ativo</span>
       </div>
@@ -782,216 +929,192 @@
 
     <!-- Navegação -->
     <nav class="sidebar-nav">
-      <div class="nav-secao-titulo">Processos</div>
-
       {% set _eh_master = nivel_acesso == 'master' %}
       {% set _ta = telas_acesso %}
 
-      {% if _eh_master or 'pendente' in _ta %}
-      <a href="/pendente" class="nav-item {% if aba_ativa == 'pendente' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-        Pendente
-        <span class="nav-badge" id="badge-pendente" style="display:none"></span>
-      </a>
+      <!-- ── PROCESSOS ── -->
+      <div class="nav-grupo" id="nav-grupo-processos">
+        <button class="nav-grupo-btn" onclick="toggleGrupo('processos')">
+          <span>Processos</span>
+          <span class="nav-grupo-linha"></span>
+          <svg class="nav-grupo-seta" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-grupo-items">
+
+          {% if _eh_master or 'pendente' in _ta %}
+          <a href="/pendente" class="nav-item {% if aba_ativa == 'pendente' %}ativo{% endif %}" title="Pendente">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14.5"/></svg>
+            <span class="nav-item-texto">Pendente</span>
+            <span class="nav-badge" id="badge-pendente" style="display:none"></span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'homologados_cobranca' in _ta %}
+          <a href="/homologados-cobranca" class="nav-item {% if aba_ativa == 'homologados_cobranca' %}ativo{% endif %}" title="Hom. Cobrança">
+            <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span class="nav-item-texto">Hom. Cobrança</span>
+            <span class="nav-badge" id="badge-cobranca" style="display:none;background:#15803d;"></span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'homologados_pagamentos' in _ta %}
+          <a href="/homologados-pagamentos" class="nav-item {% if aba_ativa == 'homologados_pagamentos' %}ativo{% endif %}" title="Hom. Pagamentos">
+            <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/><path d="M6 15h2M14 15h4"/></svg>
+            <span class="nav-item-texto">Hom. Pagamentos</span>
+            <span class="nav-badge" id="badge-pagamentos" style="display:none;background:#15803d;"></span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'homologados_extrato' in _ta %}
+          <a href="/homologados-extrato" class="nav-item {% if aba_ativa == 'homologados_extrato' %}ativo{% endif %}" title="Hom. Extrato Cartão">
+            <svg viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1z"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>
+            <span class="nav-item-texto">Hom. Extrato Cartão</span>
+            <span class="nav-badge" id="badge-extrato" style="display:none;background:#15803d;"></span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'homologados_ext_bancario' in _ta %}
+          <a href="/homologados-ext-bancario" class="nav-item {% if aba_ativa == 'homologados_ext_bancario' %}ativo{% endif %}" title="Hom. Extrato Bancário">
+            <svg viewBox="0 0 24 24"><path d="M3 22V12h18v10"/><path d="M3 12 12 3l9 9"/><path d="M9 22v-5h6v5"/></svg>
+            <span class="nav-item-texto">Hom. Extrato Bancário</span>
+            <span class="nav-badge" id="badge-ext-bancario" style="display:none;"></span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'cancelados' in _ta %}
+          <a href="/cancelados" class="nav-item {% if aba_ativa == 'cancelados' %}ativo{% endif %}" title="Cancelados">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+            <span class="nav-item-texto">Cancelados</span>
+            <span class="nav-badge" id="badge-cancelados" style="display:none;background:#dc2626;"></span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'sispbol' in _ta %}
+          <a href="#" class="nav-item {% if aba_ativa == 'sispbol' %}ativo{% endif %}" title="SispBol">
+            <svg viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a1 1 0 0 0 1 1h4"/><path d="M8 13h1v4H8zM12 13v4M16 13h1v4h-1z"/></svg>
+            <span class="nav-item-texto">SispBol</span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'escritural' in _ta %}
+          <a href="/escritural" class="nav-item {% if aba_ativa == 'escritural' %}ativo{% endif %}" title="Novos Escriturais">
+            <svg viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a1 1 0 0 0 1 1h4"/><path d="M9 15h6M12 12v6"/></svg>
+            <span class="nav-item-texto">Novos Escriturais</span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'credenciais' in _ta %}
+          <a href="/credenciais" class="nav-item {% if aba_ativa == 'credenciais' %}ativo{% endif %}" title="Credenciais">
+            <svg viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+            <span class="nav-item-texto">Credenciais</span>
+          </a>
+          {% endif %}
+
+        </div>
+      </div>
+
+      <!-- ── SISTEMA ── -->
+      {% if _eh_master or 'melhorias' in _ta or 'config' in _ta or 'email_modelos' in _ta or 'editor_sql' in _ta or 'logs' in _ta %}
+      <div class="nav-grupo" id="nav-grupo-sistema">
+        <button class="nav-grupo-btn" onclick="toggleGrupo('sistema')">
+          <span>Sistema</span>
+          <span class="nav-grupo-linha"></span>
+          <svg class="nav-grupo-seta" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-grupo-items">
+
+          <a href="/notificacoes" class="nav-item {% if aba_ativa == 'notificacoes' %}ativo{% endif %}" title="Notificações">
+            <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span class="nav-item-texto">Notificações</span>
+            <span class="nav-badge" id="badge-notif-sidebar" style="display:none;background:#dc2626;"></span>
+          </a>
+
+          {% if _eh_master or 'melhorias' in _ta %}
+          <a href="/melhorias" class="nav-item {% if aba_ativa == 'melhorias' %}ativo{% endif %}" title="Melhorias">
+            <svg viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5C17.7 10 18 8.5 18 7a6 6 0 0 0-12 0c0 1.5.3 3 1.5 4.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6M10 22h4"/></svg>
+            <span class="nav-item-texto">Melhorias</span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'config' in _ta %}
+          <a href="/configuracoes" class="nav-item {% if aba_ativa == 'configuracoes' %}ativo{% endif %}" title="Configurações">
+            <svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="6" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="6" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="9" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            <span class="nav-item-texto">Configurações</span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'email_modelos' in _ta %}
+          <a href="/email-modelos" class="nav-item {% if aba_ativa == 'email_modelos' %}ativo{% endif %}" title="Modelos de E-mail">
+            <svg viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            <span class="nav-item-texto">Modelos de E-mail</span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master %}
+          <a href="/acesso" class="nav-item {% if aba_ativa == 'acesso' %}ativo{% endif %}" title="Controle de Acesso">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            <span class="nav-item-texto">Controle de Acesso</span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master %}
+          <a href="/sessoes" class="nav-item {% if aba_ativa == 'sessoes' %}ativo{% endif %}" title="Sessões">
+            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span class="nav-item-texto">Sessões</span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'editor_sql' in _ta %}
+          <a href="/editor-sql" class="nav-item {% if aba_ativa == 'sql_editor' %}ativo{% endif %}" title="Editor SQL">
+            <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+            <span class="nav-item-texto">Editor SQL</span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master or 'logs' in _ta %}
+          <a href="/logs" class="nav-item {% if aba_ativa == 'logs' %}ativo{% endif %}" title="Logs">
+            <svg viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a1 1 0 0 0 1 1h4"/><path d="M10 9H8M16 13H8M16 17H8"/></svg>
+            <span class="nav-item-texto">Logs</span>
+          </a>
+          {% endif %}
+
+        </div>
+      </div>
       {% endif %}
 
-      {% if _eh_master or 'homologados_cobranca' in _ta %}
-      <a href="/homologados-cobranca" class="nav-item {% if aba_ativa == 'homologados_cobranca' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
-        Hom. Cobrança
-        <span class="nav-badge" id="badge-cobranca" style="display:none;background:#15803d;"></span>
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'homologados_pagamentos' in _ta %}
-      <a href="/homologados-pagamentos" class="nav-item {% if aba_ativa == 'homologados_pagamentos' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-          <line x1="1" y1="10" x2="23" y2="10"/>
-        </svg>
-        Hom. Pagamentos
-        <span class="nav-badge" id="badge-pagamentos" style="display:none;background:#15803d;"></span>
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'homologados_extrato' in _ta %}
-      <a href="/homologados-extrato" class="nav-item {% if aba_ativa == 'homologados_extrato' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/>
-          <line x1="2" y1="10" x2="22" y2="10"/>
-        </svg>
-        Hom. Extrato Cartão
-        <span class="nav-badge" id="badge-extrato" style="display:none;background:#15803d;"></span>
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'homologados_ext_bancario' in _ta %}
-      <a href="/homologados-ext-bancario" class="nav-item {% if aba_ativa == 'homologados_ext_bancario' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/>
-          <line x1="2" y1="10" x2="22" y2="10"/>
-          <line x1="6" y1="14" x2="10" y2="14"/>
-        </svg>
-        Hom. Extrato Bancário
-        <span class="nav-badge" id="badge-ext-bancario" style="display:none;"></span>
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'cancelados' in _ta %}
-      <a href="/cancelados" class="nav-item {% if aba_ativa == 'cancelados' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
-          <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-        </svg>
-        Cancelados
-        <span class="nav-badge" id="badge-cancelados" style="display:none;background:#dc2626;"></span>
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'sispbol' in _ta %}
-      <a href="#" class="nav-item {% if aba_ativa == 'sispbol' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-        </svg>
-        SispBol
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'escritural' in _ta %}
-      <a href="/escritural" class="nav-item {% if aba_ativa == 'escritural' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-        </svg>
-        Novos Escriturais
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'credenciais' in _ta %}
-      <a href="/credenciais" class="nav-item {% if aba_ativa == 'credenciais' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-        Credenciais
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'melhorias' in _ta or 'config' in _ta %}
-      <div class="nav-secao-titulo" style="margin-top:8px;">Sistema</div>
-
-      <a href="/notificacoes" class="nav-item {% if aba_ativa == 'notificacoes' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-        Notificações
-        <span class="nav-badge" id="badge-notif-sidebar" style="display:none;background:#dc2626;"></span>
-      </a>
-
-      {% if _eh_master or 'melhorias' in _ta %}
-      <a href="/melhorias" class="nav-item {% if aba_ativa == 'melhorias' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 11l3 3L22 4"/>
-          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-        </svg>
-        Melhorias
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'config' in _ta %}
-      <a href="/configuracoes" class="nav-item {% if aba_ativa == 'configuracoes' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-        Configurações
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'email_modelos' in _ta %}
-      <a href="/email-modelos" class="nav-item {% if aba_ativa == 'email_modelos' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-          <polyline points="22,6 12,13 2,6"/>
-        </svg>
-        Modelos de E-mail
-      </a>
-      {% endif %}
-
-      {% if _eh_master %}
-      <a href="/acesso" class="nav-item {% if aba_ativa == 'acesso' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-        Controle de Acesso
-      </a>
-      {% endif %}
-
-      {% if _eh_master %}
-      <a href="/sessoes" class="nav-item {% if aba_ativa == 'sessoes' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-        Sessões
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'editor_sql' in _ta %}
-      <a href="/editor-sql" class="nav-item {% if aba_ativa == 'sql_editor' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <ellipse cx="12" cy="5" rx="9" ry="3"/>
-          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-        </svg>
-        Editor SQL
-      </a>
-      {% endif %}
-
-      {% if _eh_master or 'logs' in _ta %}
-      <a href="/logs" class="nav-item {% if aba_ativa == 'logs' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10 9 9 9 8 9"/>
-        </svg>
-        Logs
-      </a>
-      {% endif %}
-
-      {% endif %}
-
+      <!-- ── REFERÊNCIA ── -->
       {% if _eh_master or 'hub' in _ta or 'api_pagamentos' in _ta or 'ajuda' in _ta %}
-      <div class="nav-secao-titulo" style="margin-top:8px;">Referência</div>
+      <div class="nav-grupo" id="nav-grupo-referencia">
+        <button class="nav-grupo-btn" onclick="toggleGrupo('referencia')">
+          <span>Referência</span>
+          <span class="nav-grupo-linha"></span>
+          <svg class="nav-grupo-seta" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-grupo-items">
 
-      {% if _eh_master or 'hub' in _ta %}
-      <a href="/hub" class="nav-item {% if aba_ativa == 'hub' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-          <path d="M7 8h.01M11 8h6"/>
-        </svg>
-        Hub Bancário
-      </a>
-      {% endif %}
+          {% if _eh_master or 'hub' in _ta %}
+          <a href="/hub" class="nav-item {% if aba_ativa == 'hub' %}ativo{% endif %}" title="Hub Bancário">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><path d="M7 8h.01M11 8h6"/></svg>
+            <span class="nav-item-texto">Hub Bancário</span>
+          </a>
+          {% endif %}
 
-      {% if _eh_master or 'api_pagamentos' in _ta %}
-      <a href="#" class="nav-item {% if aba_ativa == 'api_pagamentos' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        API Pagamentos
-      </a>
-      {% endif %}
+          {% if _eh_master or 'api_pagamentos' in _ta %}
+          <a href="#" class="nav-item {% if aba_ativa == 'api_pagamentos' %}ativo{% endif %}" title="API Pagamentos">
+            <svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <span class="nav-item-texto">API Pagamentos</span>
+          </a>
+          {% endif %}
 
-      {% if _eh_master or 'ajuda' in _ta %}
-      <a href="/ajuda" class="nav-item {% if aba_ativa == 'ajuda' %}ativo{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-        Ajuda
-      </a>
-      {% endif %}
+          {% if _eh_master or 'ajuda' in _ta %}
+          <a href="/ajuda" class="nav-item {% if aba_ativa == 'ajuda' %}ativo{% endif %}" title="Ajuda">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+            <span class="nav-item-texto">Ajuda</span>
+          </a>
+          {% endif %}
+
+        </div>
+      </div>
       {% endif %}
 
     </nav>
@@ -1058,6 +1181,9 @@
   <main class="conteudo-principal">
 
     <div class="header-pagina">
+      <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Recolher/expandir menu" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <div>
         <h1 class="titulo-pagina">{% block titulo_pagina %}{% endblock %}</h1>
         <div class="breadcrumb">{% block breadcrumb %}{% endblock %}</div>
@@ -1483,6 +1609,47 @@
   {% block scripts_extras %}{% endblock %}
 
   <script>
+    // ─── Grupos colapsáveis da sidebar ──────────────────────
+    (function() {
+      try {
+        var estados = JSON.parse(localStorage.getItem('sisplan_grupos') || '{}');
+        // Padrão: sistema e referencia fechados, processos aberto
+        ['sistema', 'referencia'].forEach(function(id) {
+          if (estados[id] !== 'aberto') {
+            var g = document.getElementById('nav-grupo-' + id);
+            if (g) g.classList.add('fechado');
+          }
+        });
+        if (estados.processos === 'fechado') {
+          var g = document.getElementById('nav-grupo-processos');
+          if (g) g.classList.add('fechado');
+        }
+        // Garante que o grupo da página ativa esteja aberto
+        var ativo = document.querySelector('.nav-item.ativo');
+        if (ativo) {
+          var grupo = ativo.closest('.nav-grupo');
+          if (grupo && grupo.classList.contains('fechado')) {
+            grupo.classList.remove('fechado');
+            var id = grupo.id.replace('nav-grupo-', '');
+            estados[id] = 'aberto';
+            localStorage.setItem('sisplan_grupos', JSON.stringify(estados));
+          }
+        }
+      } catch(e) {}
+    })();
+
+    window.toggleGrupo = function(id) {
+      var grupo = document.getElementById('nav-grupo-' + id);
+      if (!grupo) return;
+      var fechado = grupo.classList.toggle('fechado');
+      var estados = {};
+      try { estados = JSON.parse(localStorage.getItem('sisplan_grupos') || '{}'); } catch(e) {}
+      estados[id] = fechado ? 'fechado' : 'aberto';
+      try { localStorage.setItem('sisplan_grupos', JSON.stringify(estados)); } catch(e) {}
+    };
+  </script>
+
+  <script>
     // ─── Tema claro/escuro ───────────────────────────────────
     (function() {
       var tema = document.getElementById('html-root').getAttribute('data-tema') || 'light';
@@ -1511,6 +1678,46 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tema: novo }),
       });
+    }
+
+    // ─── Toggle sidebar (3 estados: aberta → mini → recolhida) ──
+    (function() {
+      try {
+        var e = localStorage.getItem('sisplan_sidebar') || 'aberta';
+        if (e === 'mini') document.body.classList.add('sidebar-mini');
+        else if (e === 'recolhida') document.body.classList.add('sidebar-recolhida');
+        var btn = document.getElementById('btn-toggle-sidebar');
+        if (btn) {
+          if (e === 'mini') btn.title = 'Esconder menu';
+          else if (e === 'recolhida') btn.title = 'Mostrar menu';
+          else btn.title = 'Recolher menu';
+        }
+      } catch(e) {}
+    })();
+
+    function toggleSidebar() {
+      var body = document.body;
+      var btn  = document.getElementById('btn-toggle-sidebar');
+      var estado;
+      if (!body.classList.contains('sidebar-mini') && !body.classList.contains('sidebar-recolhida')) {
+        // aberta → mini
+        body.classList.add('sidebar-mini');
+        estado = 'mini';
+        if (btn) btn.title = 'Esconder menu';
+      } else if (body.classList.contains('sidebar-mini')) {
+        // mini → recolhida (mantém mini durante animação de slide-out)
+        body.classList.add('sidebar-recolhida');
+        setTimeout(function() { body.classList.remove('sidebar-mini'); }, 290);
+        estado = 'recolhida';
+        if (btn) btn.title = 'Mostrar menu';
+      } else {
+        // recolhida → aberta
+        body.classList.remove('sidebar-recolhida');
+        body.classList.remove('sidebar-mini');
+        estado = 'aberta';
+        if (btn) btn.title = 'Recolher menu';
+      }
+      try { localStorage.setItem('sisplan_sidebar', estado); } catch(e) {}
     }
 
     // Carrega contadores da sidebar de forma assíncrona (não bloqueia o carregamento da página)
@@ -1566,6 +1773,109 @@
                  h.getFullYear();
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }, true);
+  </script>
+
+  <script>
+    // ─── Animação de partículas de fundo ────────────────────
+    (function() {
+      var canvas = document.getElementById('canvas-fundo');
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+      var largura, altura, particulas;
+      var posicaoMouse = { x: -999, y: -999 };
+
+      var isDark = function() {
+        return document.getElementById('html-root').getAttribute('data-tema') === 'dark';
+      };
+
+      function redimensionarCanvas() {
+        largura = canvas.width  = window.innerWidth;
+        altura  = canvas.height = window.innerHeight;
+      }
+
+      function criarParticulas() {
+        var quantidade = Math.floor((largura * altura) / 8000);
+        particulas = [];
+        for (var i = 0; i < quantidade; i++) {
+          particulas.push({
+            x:  Math.random() * largura,
+            y:  Math.random() * altura,
+            vx: (Math.random() - 0.5) * 0.4,
+            vy: (Math.random() - 0.5) * 0.4,
+            raio: Math.random() * 2.2 + 0.8,
+            opacidade: Math.random() * 0.5 + 0.15,
+          });
+        }
+      }
+
+      function animarParticulas() {
+        ctx.clearRect(0, 0, largura, altura);
+        var cor = isDark() ? '148, 163, 184' : '59, 130, 246';
+
+        particulas.forEach(function(p) {
+          var dx = p.x - posicaoMouse.x;
+          var dy = p.y - posicaoMouse.y;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 160 && dist > 0) {
+            var forca = (1 - dist / 160) * 0.12;
+            p.vx += (dx / dist) * forca;
+            p.vy += (dy / dist) * forca;
+          }
+
+          p.vx *= 0.97; p.vy *= 0.97;
+          p.x  += p.vx; p.y  += p.vy;
+
+          if (p.x < 0)       { p.x = 0;      p.vx *= -1; }
+          if (p.x > largura) { p.x = largura; p.vx *= -1; }
+          if (p.y < 0)       { p.y = 0;      p.vy *= -1; }
+          if (p.y > altura)  { p.y = altura;  p.vy *= -1; }
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.raio, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(' + cor + ', ' + p.opacidade + ')';
+          ctx.fill();
+        });
+
+        var DIST_LINHA = 140;
+        for (var i = 0; i < particulas.length; i++) {
+          for (var j = i + 1; j < particulas.length; j++) {
+            var dx   = particulas[i].x - particulas[j].x;
+            var dy   = particulas[i].y - particulas[j].y;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < DIST_LINHA) {
+              var alfa = (1 - dist / DIST_LINHA) * 0.22;
+              ctx.beginPath();
+              ctx.moveTo(particulas[i].x, particulas[i].y);
+              ctx.lineTo(particulas[j].x, particulas[j].y);
+              ctx.strokeStyle = 'rgba(' + cor + ', ' + alfa + ')';
+              ctx.lineWidth = 0.9;
+              ctx.stroke();
+            }
+          }
+          var mdx = particulas[i].x - posicaoMouse.x;
+          var mdy = particulas[i].y - posicaoMouse.y;
+          var mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+          if (mdist < 200) {
+            var alfa2 = (1 - mdist / 200) * 0.35;
+            ctx.beginPath();
+            ctx.moveTo(particulas[i].x, particulas[i].y);
+            ctx.lineTo(posicaoMouse.x, posicaoMouse.y);
+            ctx.strokeStyle = 'rgba(' + cor + ', ' + alfa2 + ')';
+            ctx.lineWidth = 0.7;
+            ctx.stroke();
+          }
+        }
+
+        requestAnimationFrame(animarParticulas);
+      }
+
+      window.addEventListener('resize', function() { redimensionarCanvas(); criarParticulas(); });
+      window.addEventListener('mousemove', function(e) { posicaoMouse.x = e.clientX; posicaoMouse.y = e.clientY; });
+
+      redimensionarCanvas();
+      criarParticulas();
+      animarParticulas();
+    })();
   </script>
 </body>
 </html>

@@ -56,17 +56,40 @@ BANCOS_CADASTRO_INICIAIS = [
     ('077', 'Banco Inter',                  0,  4),
     ('084', 'Uniprime Norte do Paraná',     0,  5),
     ('085', 'Ailos',                        1,  6),
-    ('104', 'Caixa Econômica Federal',      0,  7),
-    ('133', 'Cresol',                       0,  8),
-    ('136', 'Unicred',                      0,  9),
-    ('237', 'Banco Bradesco',               1, 10),
-    ('260', 'Nu Pagamentos (Nubank)',        0, 11),
-    ('341', 'Banco Itaú',                   1, 12),
-    ('422', 'Banco Safra',                  0, 13),
-    ('469', 'Banco Original',               0, 14),
-    ('655', 'Votorantim',                   0, 15),
-    ('748', 'Sicredi',                      1, 16),
-    ('756', 'Sicoob',                       1, 17),
+    ('085', 'Viacredi',                     1,  7),
+    ('085', 'Transpocred',                  0,  8),
+    ('104', 'Caixa Econômica Federal',      0,  9),
+    ('133', 'Cresol',                       0, 10),
+    ('136', 'Unicred',                      0, 11),
+    ('208', 'BTG Pactual',                  0, 12),
+    ('218', 'BS2',                          0, 13),
+    ('237', 'Banco Bradesco',               1, 14),
+    ('246', 'Banco ABC',                    0, 15),
+    ('260', 'Nu Pagamentos (Nubank)',        0, 16),
+    ('274', 'BMP',                          0, 17),
+    ('310', 'Vortx',                        0, 18),
+    ('336', 'C6',                           0, 19),
+    ('341', 'Banco Itaú',                   1, 20),
+    ('422', 'Banco Safra',                  0, 21),
+    ('461', 'Asaas',                        0, 22),
+    ('469', 'Banco Original',               0, 23),
+    ('637', 'Sofisa',                       0, 24),
+    ('655', 'Votorantim',                   0, 25),
+    ('707', 'Daycoval',                     0, 26),
+    ('748', 'Sicredi',                      1, 27),
+    ('756', 'Sicoob',                       1, 28),
+    ('004', 'BNB',                          0, 29),
+    # FIDCs e outros
+    ('FIDC', 'FIDC RNX',                    0, 50),
+    ('FIDC', 'FIDC OPERA',                  0, 51),
+    ('FIDC', 'FIDC WALL',                   0, 52),
+    ('FIDC', 'FIDC PRIME',                  0, 53),
+    ('FIDC', 'FIDC CREDVALE',               0, 54),
+    ('FIDC', 'FIDC BELLUNO',                0, 55),
+    ('FIDC', 'FIDC',                        0, 56),
+    ('---',  'Belluno',                     0, 57),
+    ('---',  'Multiplike',                  0, 58),
+    ('---',  'Factoring',                   0, 59),
 ]
 
 HUB_BANCOS_INICIAIS = [
@@ -152,6 +175,7 @@ TELAS_AGRUPADAS = [
     ]),
     ('Referência', [
         ('hub',                    'Hub Bancário'),
+        ('hub_edicao',             'Hub Bancário — Edição'),
         ('api_pagamentos',         'API Pagamentos'),
         ('ajuda',                  'Ajuda'),
         ('ajuda_gerenciar',        'Gerenciar Ajuda'),
@@ -277,6 +301,27 @@ def inicializar_banco():
             descricao TEXT    NOT NULL,
             ordem     INTEGER DEFAULT 99,
             FOREIGN KEY (banco_id) REFERENCES hub_bancos(id)
+        );
+        CREATE TABLE IF NOT EXISTS hub_categorias (
+            id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome  TEXT    UNIQUE NOT NULL,
+            ordem INTEGER DEFAULT 99
+        );
+        CREATE TABLE IF NOT EXISTS hub_servicos (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            categoria_id INTEGER NOT NULL,
+            nome         TEXT    NOT NULL,
+            cor_bg       TEXT    DEFAULT '#dbeafe',
+            cor_texto    TEXT    DEFAULT '#1d4ed8',
+            ordem        INTEGER DEFAULT 99,
+            FOREIGN KEY (categoria_id) REFERENCES hub_categorias(id)
+        );
+        CREATE TABLE IF NOT EXISTS hub_banco_servicos (
+            banco_id   INTEGER NOT NULL,
+            servico_id INTEGER NOT NULL,
+            PRIMARY KEY (banco_id, servico_id),
+            FOREIGN KEY (banco_id)   REFERENCES hub_bancos(id),
+            FOREIGN KEY (servico_id) REFERENCES hub_servicos(id)
         );
         CREATE TABLE IF NOT EXISTS permissoes_telas (
             usuario_id INTEGER NOT NULL,
@@ -1207,6 +1252,182 @@ def hub_atualizar_instrucao(instrucao_id: int, codigo: str, descricao: str, orde
 def hub_remover_instrucao(instrucao_id: int):
     conn = conectar()
     conn.execute("DELETE FROM hub_instrucoes WHERE id=?", (instrucao_id,))
+    conn.commit()
+    conn.close()
+
+
+# ── Hub v2: categorias, serviços dinâmicos ────────────────
+
+def migrar_hub_v2():
+    """Migra dados do hub_bancos (colunas booleanas) para o modelo de categorias/serviços."""
+    conn = conectar()
+    try:
+        if conn.execute("SELECT COUNT(*) FROM hub_categorias").fetchone()[0] > 0:
+            return
+        cat_ids = {}
+        for nome, ordem in [('Cobrança', 1), ('Pagamento', 2), ('Extrato', 3), ('DDA', 4)]:
+            conn.execute("INSERT INTO hub_categorias (nome, ordem) VALUES (?, ?)", (nome, ordem))
+            cat_ids[nome] = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        mapa = [
+            (cat_ids['Cobrança'],  'Envio',            '#dbeafe', '#1d4ed8', 1, 'cobranca_envio'),
+            (cat_ids['Cobrança'],  'Instrução',         '#ede9fe', '#6d28d9', 2, 'cobranca_instrucao'),
+            (cat_ids['Cobrança'],  'Retorno',           '#dcfce7', '#15803d', 3, 'cobranca_retorno'),
+            (cat_ids['Pagamento'], 'Boleto',            '#fef3c7', '#92400e', 1, 'pagamento_boleto'),
+            (cat_ids['Pagamento'], 'PIX',               '#d1fae5', '#065f46', 2, 'pagamento_pix'),
+            (cat_ids['Extrato'],   'Consulta Extrato',  '#f0fdf4', '#166534', 1, 'extrato_consulta'),
+            (cat_ids['DDA'],       'Consulta DDA',      '#ecfdf5', '#065f46', 1, 'dda_consulta'),
+        ]
+        serv_ids = {}
+        for cat_id, nome, cor_bg, cor_texto, ordem, col in mapa:
+            conn.execute(
+                "INSERT INTO hub_servicos (categoria_id, nome, cor_bg, cor_texto, ordem) VALUES (?,?,?,?,?)",
+                (cat_id, nome, cor_bg, cor_texto, ordem)
+            )
+            serv_ids[col] = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        bancos = conn.execute("SELECT * FROM hub_bancos").fetchall()
+        for b in bancos:
+            for col, sid in serv_ids.items():
+                try:
+                    if b[col]:
+                        conn.execute(
+                            "INSERT OR IGNORE INTO hub_banco_servicos (banco_id, servico_id) VALUES (?,?)",
+                            (b['id'], sid)
+                        )
+                except Exception:
+                    pass
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
+def hub_listar_bancos_v2():
+    conn = conectar()
+    bancos = conn.execute("SELECT id, nome, ordem FROM hub_bancos ORDER BY ordem, nome").fetchall()
+    resultado = []
+    for b in bancos:
+        servicos = conn.execute("""
+            SELECT s.id, s.nome, s.cor_bg, s.cor_texto, c.nome AS categoria, c.id AS categoria_id, c.ordem AS cat_ordem
+            FROM hub_banco_servicos bs
+            JOIN hub_servicos s ON s.id = bs.servico_id
+            JOIN hub_categorias c ON c.id = s.categoria_id
+            WHERE bs.banco_id = ?
+            ORDER BY c.ordem, s.ordem
+        """, (b['id'],)).fetchall()
+        instrucoes = conn.execute(
+            "SELECT * FROM hub_instrucoes WHERE banco_id=? ORDER BY ordem", (b['id'],)
+        ).fetchall()
+        cats = {}
+        for s in servicos:
+            cat = s['categoria']
+            if cat not in cats:
+                cats[cat] = {'id': s['categoria_id'], 'nome': cat, 'ordem': s['cat_ordem'], 'servicos': []}
+            cats[cat]['servicos'].append(dict(s))
+        resultado.append({
+            'id': b['id'], 'nome': b['nome'], 'ordem': b['ordem'],
+            'categorias': sorted(cats.values(), key=lambda x: x['ordem']),
+            'instrucoes': [dict(i) for i in instrucoes],
+        })
+    conn.close()
+    return resultado
+
+
+def hub_adicionar_banco_v2(nome: str, ordem: int = 99) -> int:
+    conn = conectar()
+    conn.execute("INSERT INTO hub_bancos (nome, ordem) VALUES (?, ?)", (nome, ordem))
+    conn.commit()
+    new_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.close()
+    return new_id
+
+
+def hub_atualizar_banco_v2(banco_id: int, nome: str, ordem: int = 99):
+    conn = conectar()
+    conn.execute("UPDATE hub_bancos SET nome=?, ordem=? WHERE id=?", (nome, ordem, banco_id))
+    conn.commit()
+    conn.close()
+
+
+def hub_sincronizar_banco_servicos(banco_id: int, servico_ids: list):
+    conn = conectar()
+    conn.execute("DELETE FROM hub_banco_servicos WHERE banco_id=?", (banco_id,))
+    for sid in servico_ids:
+        conn.execute("INSERT OR IGNORE INTO hub_banco_servicos (banco_id, servico_id) VALUES (?,?)", (banco_id, int(sid)))
+    conn.commit()
+    conn.close()
+
+
+def hub_listar_categorias():
+    conn = conectar()
+    rows = conn.execute("SELECT * FROM hub_categorias ORDER BY ordem, nome").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def hub_adicionar_categoria(nome: str, ordem: int = 99) -> int:
+    conn = conectar()
+    conn.execute("INSERT INTO hub_categorias (nome, ordem) VALUES (?, ?)", (nome, ordem))
+    conn.commit()
+    new_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.close()
+    return new_id
+
+
+def hub_atualizar_categoria(cat_id: int, nome: str, ordem: int = 99):
+    conn = conectar()
+    conn.execute("UPDATE hub_categorias SET nome=?, ordem=? WHERE id=?", (nome, ordem, cat_id))
+    conn.commit()
+    conn.close()
+
+
+def hub_remover_categoria(cat_id: int):
+    conn = conectar()
+    conn.execute("DELETE FROM hub_banco_servicos WHERE servico_id IN (SELECT id FROM hub_servicos WHERE categoria_id=?)", (cat_id,))
+    conn.execute("DELETE FROM hub_servicos WHERE categoria_id=?", (cat_id,))
+    conn.execute("DELETE FROM hub_categorias WHERE id=?", (cat_id,))
+    conn.commit()
+    conn.close()
+
+
+def hub_listar_servicos():
+    conn = conectar()
+    rows = conn.execute("""
+        SELECT s.*, c.nome AS categoria_nome
+        FROM hub_servicos s
+        JOIN hub_categorias c ON c.id = s.categoria_id
+        ORDER BY c.ordem, s.ordem, s.nome
+    """).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def hub_adicionar_servico(categoria_id: int, nome: str, cor_bg: str, cor_texto: str, ordem: int = 99) -> int:
+    conn = conectar()
+    conn.execute(
+        "INSERT INTO hub_servicos (categoria_id, nome, cor_bg, cor_texto, ordem) VALUES (?,?,?,?,?)",
+        (categoria_id, nome, cor_bg, cor_texto, ordem)
+    )
+    conn.commit()
+    new_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.close()
+    return new_id
+
+
+def hub_atualizar_servico(serv_id: int, categoria_id: int, nome: str, cor_bg: str, cor_texto: str, ordem: int = 99):
+    conn = conectar()
+    conn.execute(
+        "UPDATE hub_servicos SET categoria_id=?, nome=?, cor_bg=?, cor_texto=?, ordem=? WHERE id=?",
+        (categoria_id, nome, cor_bg, cor_texto, ordem, serv_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def hub_remover_servico(serv_id: int):
+    conn = conectar()
+    conn.execute("DELETE FROM hub_banco_servicos WHERE servico_id=?", (serv_id,))
+    conn.execute("DELETE FROM hub_servicos WHERE id=?", (serv_id,))
     conn.commit()
     conn.close()
 

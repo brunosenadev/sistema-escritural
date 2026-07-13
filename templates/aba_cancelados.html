@@ -141,7 +141,7 @@
   }
 
   .celula-obs {
-    max-width: 180px;
+    max-width: 340px;
     color: #94a3b8;
     font-size: 12px;
     font-style: italic;
@@ -367,13 +367,9 @@
               <th>Empresa</th>
               <th>Serviço</th>
               <th>Banco</th>
-              <th>Carteira</th>
-              <th>Conta</th>
               <th>Dt. Solicita</th>
               <th>Dt. Status</th>
               <th>Status</th>
-              <th>Retorno</th>
-              <th>Ordem Serv.</th>
               <th>Obs</th>
               <th></th>
             </tr>
@@ -392,13 +388,9 @@
                 <td title="{{ reg.empresa }}">{{ reg.empresa or '—' }}</td>
                 <td>{{ reg.servico or '—' }}</td>
                 <td>{{ reg.banco or '—' }}</td>
-                <td>{{ reg.carteira or '—' }}</td>
-                <td>{{ reg.conta or '—' }}</td>
                 <td>{{ reg.dt_solicita or '—' }}</td>
                 <td>{{ reg.dt_status or '—' }}</td>
                 <td><span class="badge-cancelado">CANCELADO</span></td>
-                <td>{{ reg.retorno or '—' }}</td>
-                <td>{{ reg.ordem_servico or '—' }}</td>
                 <td class="celula-obs" title="{{ reg.obs }}">{{ reg.obs or '' }}</td>
                 <td>
                   <div class="celula-acoes">
@@ -426,7 +418,7 @@
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="13" class="linha-vazia">
+                <td colspan="9" class="linha-vazia">
                   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
                     <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
                   </svg>
@@ -545,14 +537,14 @@
 
         <div class="grupo-form campo-completo">
           <label>Observação</label>
-          <input
+          <textarea
             class="input-form"
-            type="text"
             id="campo-obs"
             placeholder="DADOS NO E-MAIL:"
-            style="text-transform: uppercase;"
+            rows="4"
+            style="text-transform: uppercase; resize: vertical;"
             oninput="this.value = this.value.toUpperCase()"
-          >
+          ></textarea>
         </div>
 
       </div>

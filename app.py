@@ -35,6 +35,7 @@ banco.inicializar_banco()
 banco.migrar_pendentes_legados()
 banco.migrar_senhas_plaintext()
 banco.migrar_flags_avisos()
+banco.migrar_hub_v2()
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(pendente_bp)
@@ -101,7 +102,7 @@ def _jwt_guard():
         if jti and banco.sessao_valida(jti) is None:
             session.clear()
             return redirect(url_for('auth.pagina_login'))
-        u = banco.buscar_usuario_por_id(payload_r['sub'])
+        u = banco.buscar_usuario_por_id(int(payload_r['sub']))
         if u:
             new_access, new_refresh, _ = criar_tokens(u, jti=jti)
             _preencher_sessao({

@@ -23,7 +23,7 @@ def criar_tokens(usuario_row: dict, jti: str | None = None) -> tuple[str, str, s
         jti = str(uuid.uuid4())
     agora = datetime.datetime.utcnow()
     access = _encode({
-        'sub':   usuario_row['id'],
+        'sub':   str(usuario_row['id']),
         'usr':   usuario_row['usuario'],
         'nome':  usuario_row['nome'],
         'niv':   usuario_row['nivel'],
@@ -37,7 +37,7 @@ def criar_tokens(usuario_row: dict, jti: str | None = None) -> tuple[str, str, s
         'exp':   agora + datetime.timedelta(minutes=ACCESS_TTL),
     })
     refresh = _encode({
-        'sub':  usuario_row['id'],
+        'sub':  str(usuario_row['id']),
         'jti':  jti,
         'type': 'refresh',
         'exp':  agora + datetime.timedelta(days=REFRESH_TTL),
