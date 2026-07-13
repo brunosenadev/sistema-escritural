@@ -841,8 +841,8 @@
 
         <div class="grupo-form">
           <label for="campo-tecnico" id="label-campo-tecnico">Técnico</label>
-          <select class="select-form" id="campo-tecnico" name="tecnico">
-            <option value="">Selecionar...</option>
+          <select class="select-form" id="campo-tecnico" name="tecnico" required>
+            <option value="" disabled>Selecionar...</option>
             {% for t in lista_tecnicos %}
             <option value="{{ t.nome }}">{{ t.nome }}</option>
             {% endfor %}
@@ -1052,7 +1052,7 @@
     document.getElementById('botao-salvar-texto').textContent = 'Adicionar';
     document.getElementById('form-registro').reset();
     document.getElementById('campo-id').value          = '';
-    document.getElementById('campo-tecnico').value     = _tecnicoPadrao || 'SEM TEC.';
+    document.getElementById('campo-tecnico').value     = _tecnicoPadrao || '';
     document.getElementById('campo-empresa').value     = '';
     document.getElementById('campo-servico').value     = 'COBRANÇA';
     document.getElementById('campo-banco').value       = '';
@@ -1093,7 +1093,7 @@
     document.getElementById('titulo-modal').textContent = 'Duplicar Registro';
     document.getElementById('botao-salvar-texto').textContent = 'Adicionar';
     document.getElementById('campo-id').value            = '';
-    document.getElementById('campo-tecnico').value       = _tecnicoPadrao || 'SEM TEC.';
+    document.getElementById('campo-tecnico').value       = _tecnicoPadrao || '';
     _travarTecnico(true);
     document.getElementById('campo-empresa').value       = registro.empresa  || '';
     document.getElementById('campo-servico').value       = registro.servico  || '';
@@ -1120,8 +1120,15 @@
   function salvarRegistro(event) {
     event.preventDefault();
 
+    const _tec = document.getElementById('campo-tecnico').value;
+    if (!_tec || !_tec.trim()) {
+      mostrarToast('erro', 'Selecione um técnico antes de salvar.');
+      document.getElementById('campo-tecnico').focus();
+      return;
+    }
+
     const dados = {
-      tecnico:     document.getElementById('campo-tecnico').value,
+      tecnico:     _tec,
       empresa:     document.getElementById('campo-empresa').value,
       servico:     document.getElementById('campo-servico').value,
       banco:       document.getElementById('campo-banco').value,

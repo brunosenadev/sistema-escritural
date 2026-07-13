@@ -26,7 +26,6 @@ TECNICOS_INICIAIS = [
     {'nome': 'HEITOR',   'cor': '#1d4ed8'},
     {'nome': 'CAMILI',   'cor': '#0891b2'},
     {'nome': 'DIOGO D.', 'cor': '#7c3aed'},
-    {'nome': 'SEM TEC.', 'cor': '#64748b'},
 ]
 
 STATUS_INICIAIS = [
@@ -746,7 +745,9 @@ def _migrar_senha(id_usuario: int, senha_plain: str):
 
 def listar_tecnicos():
     conn = conectar()
-    rows = conn.execute("SELECT * FROM tecnicos ORDER BY nome").fetchall()
+    rows = conn.execute(
+        "SELECT * FROM tecnicos WHERE UPPER(TRIM(nome)) != 'SEM TEC.' ORDER BY nome"
+    ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
