@@ -406,6 +406,27 @@ def api_remover_sla_aviso(id_aviso):
     return jsonify({'sucesso': True})
 
 
+@config_bp.route('/api/sla-notif-pref', methods=['GET'])
+def api_get_notif_pref():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    uid = session.get('id_usuario')
+    return jsonify(banco.listar_notif_pref_usuario(uid))
+
+
+@config_bp.route('/api/sla-notif-pref', methods=['POST'])
+def api_salvar_notif_pref():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    dados = request.get_json() or {}
+    uid = session.get('id_usuario')
+    for faixa in ('critico', 'atrasado', 'atencao'):
+        if faixa in dados:
+            pref = dados[faixa]
+            banco.salvar_notif_pref(uid, faixa, pref.get('ativo', 0), max(1, int(pref.get('freq_dias', 1))))
+    return jsonify({'sucesso': True})
+
+
 _EXTENSOES_IMAGEM = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'}
 _RE_LOGIN_SEGURO = __import__('re').compile(r'[^A-Za-z0-9_\-]')
 

@@ -287,6 +287,15 @@ def inicializar_banco():
             criado_em  TEXT DEFAULT (datetime('now','localtime')),
             expira_em  TEXT DEFAULT ''
         );
+        CREATE TABLE IF NOT EXISTS sla_notif_pref (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id  INTEGER NOT NULL,
+            faixa       TEXT NOT NULL,
+            ativo       INTEGER DEFAULT 1,
+            freq_dias   INTEGER DEFAULT 1,
+            ultima_notif TEXT DEFAULT '',
+            UNIQUE(usuario_id, faixa)
+        );
         CREATE TABLE IF NOT EXISTS melhorias (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             titulo          TEXT    NOT NULL,
@@ -1371,7 +1380,6 @@ def resumo_sla():
     pendentes = calcular_sla_pendentes()
     totais = {'total': len(pendentes), 'ok': 0, 'atencao': 0, 'atrasado': 0, 'critico': 0}
     por_tecnico = {}
-    por_banco   = {}
     por_servico = {}
 
     for p in pendentes:
@@ -1379,45 +1387,115 @@ def resumo_sla():
         totais[faixa] = totais.get(faixa, 0) + 1
         dias = p['dias_em_aberto']
 
-        tec = (p.get('tecnico') or 'SEM TÉC.').strip() or 'SEM TÉC.'
+        tec = (p.get('tecnico') or '—').strip() or '—'
         if tec not in por_tecnico:
-            por_tecnico[tec] = {'tecnico': tec, 'total': 0, 'soma_dias': 0}
+            por_tecnico[tec] = {'tecnico': tec, 'total': 0, 'soma_dias': 0,
+                                'ok': 0, 'atencao': 0, 'atrasado': 0, 'critico': 0}
         por_tecnico[tec]['total']     += 1
         por_tecnico[tec]['soma_dias'] += dias
-
-        bnc = (p.get('banco') or '—').strip() or '—'
-        if bnc not in por_banco:
-            por_banco[bnc] = {'banco': bnc, 'total': 0, 'soma_dias': 0}
-        por_banco[bnc]['total']     += 1
-        por_banco[bnc]['soma_dias'] += dias
+        por_tecnico[tec][faixa]       += 1
 
         srv = (p.get('servico') or '—').strip() or '—'
         if srv not in por_servico:
-            por_servico[srv] = {'servico': srv, 'total': 0}
+            por_servico[srv] = {'servico': srv, 'total': 0,
+                                'ok': 0, 'atencao': 0, 'atrasado': 0, 'critico': 0}
         por_servico[srv]['total'] += 1
+        por_servico[srv][faixa]   += 1
 
     def _media(d):
         return round(d['soma_dias'] / d['total'], 1) if d['total'] else 0
 
     tecnicos_rank = sorted(
-        [{'tecnico': k, 'total': v['total'], 'media_dias': _media(v)} for k, v in por_tecnico.items()],
-        key=lambda x: x['media_dias'], reverse=True
+        [{'tecnico': k, 'total': v['total'], 'media_dias': _media(v),
+          'ok': v['ok'], 'atencao': v['atencao'], 'atrasado': v['atrasado'], 'critico': v['critico']}
+         for k, v in por_tecnico.items()],
+        key=lambda x: (x['critico'] * 1000 + x['atrasado'] * 100 + x['media_dias']),
+        reverse=True
     )
-    bancos_rank = sorted(
-        [{'banco': k, 'total': v['total'], 'media_dias': _media(v)} for k, v in por_banco.items()],
-        key=lambda x: x['media_dias'], reverse=True
-    )[:10]
 
     taxa = round((totais['ok'] / totais['total'] * 100), 1) if totais['total'] else 0.0
 
     return {
         'totais':    totais,
-        'taxa_sla':  taxa,
+        'taxa_ok':   taxa,
         'tecnicos':  tecnicos_rank,
-        'bancos':    bancos_rank,
-        'servicos':  sorted(por_servico.values(), key=lambda x: x['total'], reverse=True),
+        'servicos':  sorted(por_servico.values(), key=lambda x: x['critico'] * 100 + x['atrasado'], reverse=True),
         'pendentes': pendentes,
     }
+
+
+# ── SLA Notificações Preferências ─────────────────────────
+
+def listar_notif_pref_usuario(usuario_id):
+    conn = conectar()
+    rows = conn.execute("SELECT * FROM sla_notif_pref WHERE usuario_id=?", (usuario_id,)).fetchall()
+    conn.close()
+    defaults = {'critico': {'ativo': 1, 'freq_dias': 1}, 'atrasado': {'ativo': 0, 'freq_dias': 3}, 'atencao': {'ativo': 0, 'freq_dias': 7}}
+    for r in rows:
+        defaults[r['faixa']] = {'ativo': r['ativo'], 'freq_dias': r['freq_dias']}
+    return defaults
+
+
+def salvar_notif_pref(usuario_id, faixa, ativo, freq_dias):
+    conn = conectar()
+    conn.execute(
+        """INSERT INTO sla_notif_pref(usuario_id, faixa, ativo, freq_dias)
+           VALUES(?,?,?,?)
+           ON CONFLICT(usuario_id, faixa) DO UPDATE SET ativo=excluded.ativo, freq_dias=excluded.freq_dias""",
+        (usuario_id, faixa, int(bool(ativo)), int(freq_dias))
+    )
+    conn.commit()
+    conn.close()
+
+
+def verificar_e_notificar_sla(usuario_id):
+    from datetime import datetime as _dt
+    if not usuario_id:
+        return
+    prefs = listar_notif_pref_usuario(usuario_id)
+    pendentes = calcular_sla_pendentes()
+    hoje = _dt.now().strftime('%Y-%m-%d')
+    conn = conectar()
+
+    for faixa, pref in prefs.items():
+        if not pref.get('ativo'):
+            continue
+        freq = int(pref.get('freq_dias', 1))
+        row = conn.execute(
+            "SELECT ultima_notif FROM sla_notif_pref WHERE usuario_id=? AND faixa=?",
+            (usuario_id, faixa)
+        ).fetchone()
+        ultima = (row['ultima_notif'] if row else '') or ''
+        if ultima:
+            try:
+                diff = (_dt.now() - _dt.strptime(ultima, '%Y-%m-%d')).days
+                if diff < freq:
+                    continue
+            except Exception:
+                pass
+
+        items = [p for p in pendentes if p['sla_faixa'] == faixa]
+        if not items:
+            continue
+
+        nomes = {'critico': 'CRÍTICO', 'atrasado': 'atrasado', 'atencao': 'em atenção'}
+        titulo = f'SLA: {len(items)} pendente(s) {nomes.get(faixa, faixa)}'
+        primeiro = items[0]
+        msg = f"{primeiro.get('empresa','?')} — {primeiro.get('dias_em_aberto',0)} dias"
+        if len(items) > 1:
+            msg += f' e +{len(items)-1}'
+        tipo = 'alerta' if faixa == 'critico' else 'aviso'
+        criar_notificacao(usuario_id, titulo, msg, tipo)
+
+        conn.execute(
+            """INSERT INTO sla_notif_pref(usuario_id, faixa, ativo, freq_dias, ultima_notif)
+               VALUES(?,?,?,?,?)
+               ON CONFLICT(usuario_id, faixa) DO UPDATE SET ultima_notif=excluded.ultima_notif""",
+            (usuario_id, faixa, pref.get('ativo', 1), freq, hoje)
+        )
+        conn.commit()
+
+    conn.close()
 
 
 # ── Hub Bancário ─────────────────────────────────────────

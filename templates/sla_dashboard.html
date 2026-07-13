@@ -5,655 +5,710 @@
 
 {% block conteudo %}
 <style>
-  .sla-wrap { padding: 24px 28px; }
+/* ═══════════════════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════════════════ */
+.sla-wrap { max-width: 1400px; margin: 0 auto; padding: 0 1rem 3rem; }
 
-  /* ── Alerta automático ── */
-  .sla-alert-bar {
-    display: none;
-    align-items: center; gap: 12px;
-    padding: 12px 18px; border-radius: 12px; margin-bottom: 22px;
-    border: 1px solid; font-size: 13px; font-weight: 500;
-  }
-  .sla-alert-bar.critico { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
-  .sla-alert-bar.atrasado{ background:#fff7ed; border-color:#fed7aa; color:#9a3412; }
-  .sla-alert-bar svg { width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0; }
-  .sla-alert-pills { display:flex;gap:8px;flex-wrap:wrap;margin-left:auto; }
-  .sla-alert-pill { padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700; }
-  .sla-alert-pill.c { background:#dc2626;color:#fff; }
-  .sla-alert-pill.a { background:#ea580c;color:#fff; }
-  .sla-alert-pill.t { background:#d97706;color:#fff; }
+.sla-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;
+}
+.sla-header-left h1 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+.sla-header-left p  { color: var(--text-muted, #888); margin: .2rem 0 0; font-size: .9rem; }
+.sla-header-actions { display: flex; gap: .6rem; align-items: center; }
 
-  /* ── KPI Cards ── */
-  .sla-grid-kpi { display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-bottom:24px; }
-  .kpi-card {
-    background:#fff; border-radius:16px; padding:20px 20px 16px;
-    border:1px solid #e2e8f0; box-shadow:0 2px 8px rgba(0,0,0,0.04);
-    display:flex;flex-direction:column;gap:4px; position:relative;overflow:hidden;
-  }
-  .kpi-card::after {
-    content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 16px 16px;
-  }
-  .kpi-card.total::after  { background:#2563eb; }
-  .kpi-card.ok::after     { background:#16a34a; }
-  .kpi-card.atencao::after{ background:#d97706; }
-  .kpi-card.atrasado::after{ background:#ea580c; }
-  .kpi-card.critico::after{ background:#dc2626; }
-  .kpi-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#94a3b8; }
-  .kpi-valor { font-size:38px;font-weight:800;letter-spacing:-2px;line-height:1;margin:4px 0; }
-  .kpi-valor.ok      { color:#16a34a; }
-  .kpi-valor.atencao { color:#d97706; }
-  .kpi-valor.atrasado{ color:#ea580c; }
-  .kpi-valor.critico { color:#dc2626; }
-  .kpi-valor.total   { color:#2563eb; }
-  .kpi-sub { font-size:11px;color:#94a3b8; }
-  .kpi-icon-bg {
-    position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:10px;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .kpi-icon-bg svg { width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2; }
-  .kpi-card.total .kpi-icon-bg  { background:#eff6ff;color:#2563eb; }
-  .kpi-card.ok .kpi-icon-bg     { background:#f0fdf4;color:#16a34a; }
-  .kpi-card.atencao .kpi-icon-bg{ background:#fffbeb;color:#d97706; }
-  .kpi-card.atrasado .kpi-icon-bg{ background:#fff7ed;color:#ea580c; }
-  .kpi-card.critico .kpi-icon-bg { background:#fef2f2;color:#dc2626; }
+/* ── KPI cards ── */
+.sla-kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+@media(max-width:900px){ .sla-kpis { grid-template-columns: repeat(3,1fr); } }
+@media(max-width:600px){ .sla-kpis { grid-template-columns: repeat(2,1fr); } }
 
-  /* ── Charts ── */
-  .sla-charts-row { display:grid;grid-template-columns:260px 1fr;gap:18px;margin-bottom:24px; }
-  @media(max-width:900px){.sla-charts-row{grid-template-columns:1fr;}}
-  .chart-card { background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px 22px;box-shadow:0 2px 8px rgba(0,0,0,0.04); }
-  .chart-titulo { font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:7px; }
-  .chart-titulo svg { width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2; }
+.kpi-card {
+  border-radius: 14px; padding: 1.1rem 1.2rem; position: relative; overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  transition: transform .2s, box-shadow .2s;
+  cursor: default;
+}
+.kpi-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(0,0,0,.18); }
+.kpi-card::before {
+  content: ''; position: absolute; top: -30px; right: -30px;
+  width: 90px; height: 90px; border-radius: 50%;
+  background: rgba(255,255,255,.12);
+}
+.kpi-card .kpi-label { font-size: .72rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; opacity: .85; }
+.kpi-card .kpi-val   { font-size: 2.4rem; font-weight: 800; line-height: 1.1; margin: .3rem 0 .1rem; }
+.kpi-card .kpi-sub   { font-size: .78rem; opacity: .8; }
 
-  .donut-wrap { display:flex;align-items:center;gap:18px; }
-  .donut-legenda { display:flex;flex-direction:column;gap:7px;flex:1; }
-  .leg-item { display:flex;align-items:center;gap:7px;font-size:12px; }
-  .leg-dot  { width:8px;height:8px;border-radius:3px;flex-shrink:0; }
-  .leg-nome { color:#475569;flex:1; }
-  .leg-val  { font-weight:700;color:#0f172a; }
+.kpi-critico  { background: linear-gradient(135deg,#dc2626,#b91c1c); color: #fff; }
+.kpi-atrasado { background: linear-gradient(135deg,#ea580c,#c2410c); color: #fff; }
+.kpi-atencao  { background: linear-gradient(135deg,#d97706,#b45309); color: #fff; }
+.kpi-ok       { background: linear-gradient(135deg,#16a34a,#15803d); color: #fff; }
+.kpi-total    { background: linear-gradient(135deg,#4f46e5,#6d28d9); color: #fff; }
 
-  .bar-list { display:flex;flex-direction:column;gap:10px; }
-  .bar-row  { display:flex;flex-direction:column;gap:3px; }
-  .bar-info { display:flex;justify-content:space-between;font-size:12px; }
-  .bar-nome { color:#475569;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%; }
-  .bar-dias { font-weight:700;color:#0f172a;font-size:11px; }
-  .bar-track{ background:#f1f5f9;border-radius:99px;height:7px;overflow:hidden; }
-  .bar-fill { height:100%;border-radius:99px;transform-origin:left;transform:scaleX(0);transition:transform 0.9s cubic-bezier(.4,0,.2,1); }
+/* ── Charts row ── */
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+@media(max-width:900px){ .charts-row { grid-template-columns: 1fr; } }
 
-  /* ── Tabela de risco ── */
-  .tabela-sla { width:100%;border-collapse:collapse;font-size:13px; }
-  .tabela-sla th { background:#f8fafc;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;padding:10px 14px;border-bottom:1px solid #e2e8f0;text-align:left; }
-  .tabela-sla td { padding:11px 14px;border-bottom:1px solid #f1f5f9;vertical-align:middle; }
-  .tabela-sla tbody tr:hover td { background:#f8fafc; }
-  .tabela-sla tbody tr:last-child td { border-bottom:none; }
-  .chip-faixa { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700; }
-  .chip-ok      { background:#dcfce7;color:#15803d; }
-  .chip-atencao { background:#fef9c3;color:#92400e; }
-  .chip-atrasado{ background:#ffedd5;color:#c2410c; }
-  .chip-critico { background:#fee2e2;color:#991b1b; }
-  @keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.35);}50%{box-shadow:0 0 0 6px rgba(220,38,38,0);} }
-  .pulse-critico { animation:pulse-red 1.8s ease-in-out infinite; }
+.chart-card {
+  background: var(--bg-card, #fff); border-radius: 14px;
+  padding: 1.2rem; box-shadow: 0 2px 16px rgba(0,0,0,.08);
+  overflow: hidden;
+}
+.chart-card h3 { font-size: .9rem; font-weight: 700; margin: 0 0 1rem; display: flex; align-items: center; gap: .5rem; }
+.chart-card h3 .badge-cnt {
+  background: var(--bg-badge,#f3f4f6); color: var(--text-muted,#666);
+  font-size: .72rem; padding: .1rem .5rem; border-radius: 99px; font-weight: 500;
+}
 
-  /* ── Count-up ── */
-  @keyframes kpi-blink { 0%,100%{opacity:1;}50%{opacity:.6;} }
-  .kpi-critico-blink { animation:kpi-blink 2s ease-in-out infinite; }
-  .taxa-sla.boa  { color:#16a34a;font-weight:800; }
-  .taxa-sla.media{ color:#d97706;font-weight:800; }
-  .taxa-sla.ruim { color:#dc2626;font-weight:800; }
+/* ── Donut SVG ── */
+#donut-svg { display: block; margin: 0 auto; filter: drop-shadow(0 4px 12px rgba(0,0,0,.15)); }
+.donut-legend { display: flex; flex-wrap: wrap; gap: .4rem .9rem; margin-top: .8rem; justify-content: center; }
+.donut-legend-item { display: flex; align-items: center; gap: .35rem; font-size: .8rem; }
+.donut-legend-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-  /* ── Separador de seção ── */
-  .sla-section-titulo {
-    font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.7px;
-    margin-bottom:14px;display:flex;align-items:center;gap:10px;
-  }
-  .sla-section-titulo::after { content:'';flex:1;height:1px;background:#e2e8f0; }
+/* ── Stacked horizontal bars (técnicos) ── */
+.tec-bar-wrap { margin-bottom: .6rem; }
+.tec-bar-label { display: flex; justify-content: space-between; font-size: .78rem; margin-bottom: .25rem; align-items: center; }
+.tec-bar-label .tname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; display: flex; align-items: center; gap: .4rem; }
+.tec-bar-label .ttotal { color: var(--text-muted,#888); font-size: .72rem; }
+.tec-bar-track {
+  height: 18px; border-radius: 9px; overflow: hidden;
+  display: flex; background: var(--bg-inset,#f3f4f6);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.08);
+}
+.tec-seg {
+  height: 100%; transition: width .7s cubic-bezier(.4,0,.2,1);
+  position: relative; cursor: default;
+}
+.tec-seg:hover::after {
+  content: attr(data-tip);
+  position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.82); color: #fff; padding: .25rem .55rem;
+  border-radius: 6px; font-size: .72rem; white-space: nowrap; z-index: 99;
+  pointer-events: none;
+}
 
-  /* ── Comunicados ── */
-  .comunicados-section { margin-top:32px; }
-  .comunicado-card {
-    display:flex;align-items:flex-start;gap:14px;
-    padding:14px 18px;border-radius:12px;margin-bottom:10px;
-    border-left:4px solid;background:#fff;border:1px solid #e2e8f0;
-    border-left-width:4px;
-    transition:transform .15s,box-shadow .15s;
-  }
-  .comunicado-card:hover { transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.07); }
-  .comunicado-card.info    { border-left-color:#2563eb; }
-  .comunicado-card.aviso   { border-left-color:#d97706; }
-  .comunicado-card.critico { border-left-color:#dc2626; }
-  .comunicado-card.sucesso { border-left-color:#16a34a; }
-  .com-ico {
-    width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  }
-  .com-ico svg { width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2; }
-  .comunicado-card.info    .com-ico { background:#eff6ff;color:#2563eb; }
-  .comunicado-card.aviso   .com-ico { background:#fffbeb;color:#d97706; }
-  .comunicado-card.critico .com-ico { background:#fef2f2;color:#dc2626; }
-  .comunicado-card.sucesso .com-ico { background:#f0fdf4;color:#16a34a; }
-  .com-corpo { flex:1;min-width:0; }
-  .com-titulo { font-size:13px;font-weight:600;color:#0f172a; }
-  .com-meta { font-size:11px;color:#94a3b8;margin-top:3px;display:flex;align-items:center;gap:8px; }
-  .com-badge { padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700; }
-  .comunicado-card.info    .com-badge { background:#eff6ff;color:#2563eb; }
-  .comunicado-card.aviso   .com-badge { background:#fffbeb;color:#d97706; }
-  .comunicado-card.critico .com-badge { background:#fef2f2;color:#dc2626; }
-  .comunicado-card.sucesso .com-badge { background:#f0fdf4;color:#16a34a; }
-  .com-del { background:none;border:none;cursor:pointer;padding:4px;opacity:.4;transition:opacity .15s;color:#64748b;border-radius:6px; }
-  .com-del:hover { opacity:1;background:#f1f5f9; }
-  .com-del svg { width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;display:block; }
-  .com-vazio { text-align:center;padding:28px 0;color:#94a3b8;font-size:13px; }
+/* ── Service mini-bars ── */
+.srv-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .55rem; font-size: .8rem; }
+.srv-name { width: 130px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.srv-track { flex: 1; height: 12px; border-radius: 6px; background: var(--bg-inset,#f3f4f6); overflow: hidden; position: relative; }
+.srv-fill  { height: 100%; border-radius: 6px; transition: width .7s ease; }
+.srv-count { font-size: .72rem; color: var(--text-muted,#888); width: 28px; text-align: right; flex-shrink: 0; }
 
-  /* ── Modal Comunicado ── */
-  .overlay-com {
-    position:fixed;inset:0;z-index:5000;
-    background:rgba(0,0,0,.45);backdrop-filter:blur(4px);
-    display:none;align-items:center;justify-content:center;
-  }
-  .overlay-com.aberto { display:flex; }
-  .modal-com {
-    background:#fff;border-radius:20px;padding:28px 28px 24px;
-    width:100%;max-width:520px;box-shadow:0 24px 64px rgba(0,0,0,.18);
-    animation:modal-in .25s cubic-bezier(.4,0,.2,1);
-  }
-  @keyframes modal-in { from{opacity:0;transform:scale(.94) translateY(-12px);}to{opacity:1;transform:none;} }
-  .modal-com-titulo { font-size:16px;font-weight:700;color:#0f172a;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between; }
-  .modal-com-fechar { background:none;border:none;cursor:pointer;padding:4px;color:#94a3b8;border-radius:8px; }
-  .modal-com-fechar:hover { background:#f1f5f9;color:#0f172a; }
-  .modal-com-fechar svg { width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;display:block; }
-  .modal-com-grade { display:grid;gap:14px; }
-  .modal-com-label { font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px; }
-  .modal-com-input {
-    width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;
-    font-size:13px;font-family:inherit;background:#fff;color:#0f172a;
-    outline:none;transition:border-color .15s,box-shadow .15s;
-  }
-  .modal-com-input:focus { border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1); }
-  .modal-com-row { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
-  .tipo-btns { display:grid;grid-template-columns:repeat(4,1fr);gap:8px; }
-  .tipo-btn {
-    padding:8px 6px;border-radius:10px;border:2px solid transparent;cursor:pointer;
-    font-size:11px;font-weight:700;text-align:center;background:#f8fafc;color:#475569;
-    transition:all .15s;
-  }
-  .tipo-btn:hover { border-color:#e2e8f0;background:#fff; }
-  .tipo-btn.sel-info    { background:#eff6ff;color:#2563eb;border-color:#bfdbfe; }
-  .tipo-btn.sel-aviso   { background:#fffbeb;color:#d97706;border-color:#fde68a; }
-  .tipo-btn.sel-critico { background:#fef2f2;color:#dc2626;border-color:#fecaca; }
-  .tipo-btn.sel-sucesso { background:#f0fdf4;color:#16a34a;border-color:#bbf7d0; }
-  .modal-com-footer { display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:18px;border-top:1px solid #f1f5f9; }
-  .btn-com-cancel { padding:9px 18px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#475569; }
-  .btn-com-cancel:hover { background:#f8fafc; }
-  .btn-com-pub { padding:9px 20px;border-radius:10px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px; }
-  .btn-com-pub:hover { background:#1d4ed8; }
-  .btn-com-pub svg { width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2; }
+/* ── Ranking cards ── */
+.ranking-row { display: flex; flex-direction: column; gap: .55rem; }
+.rank-card {
+  display: flex; align-items: center; gap: .75rem; padding: .7rem .9rem;
+  border-radius: 10px; background: var(--bg-inset,#f9fafb);
+  border: 1px solid var(--border-color,#e5e7eb);
+  transition: box-shadow .2s;
+}
+.rank-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.rank-num { font-size: 1.1rem; font-weight: 800; width: 28px; text-align: center; flex-shrink: 0; }
+.rank-info { flex: 1; min-width: 0; }
+.rank-info .rname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .85rem; }
+.rank-info .rsub  { font-size: .75rem; color: var(--text-muted,#888); margin-top: .1rem; }
+.rank-badge { border-radius: 8px; padding: .2rem .6rem; font-size: .72rem; font-weight: 700; color: #fff; flex-shrink: 0; }
 
-  /* ── Controles tabela ── */
-  .tabela-controles { display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px; }
-  .tabela-controles input,.tabela-controles select {
-    padding:8px 12px;border:1px solid #e2e8f0;border-radius:9px;font-size:13px;
-    font-family:inherit;background:#fff;color:#0f172a;outline:none;
-  }
-  .tabela-controles input:focus,.tabela-controles select:focus { border-color:#2563eb; }
-  .tabela-controles input { flex:1;min-width:200px;max-width:340px; }
+/* ── Pendentes table ── */
+.sla-table-card { background: var(--bg-card,#fff); border-radius: 14px; padding: 1.2rem; box-shadow: 0 2px 16px rgba(0,0,0,.08); }
+.sla-table-card h3 { font-size: .9rem; font-weight: 700; margin: 0 0 .8rem; }
+.filter-bar { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .9rem; }
+.filter-btn {
+  padding: .3rem .8rem; border-radius: 99px; font-size: .78rem; font-weight: 600;
+  border: 1.5px solid transparent; cursor: pointer; transition: all .18s; background: transparent;
+}
+.fb-all      { border-color: #6366f1; color: #6366f1; }  .fb-all.active      { background: #6366f1; color: #fff; }
+.fb-critico  { border-color: #dc2626; color: #dc2626; }  .fb-critico.active  { background: #dc2626; color: #fff; }
+.fb-atrasado { border-color: #ea580c; color: #ea580c; }  .fb-atrasado.active { background: #ea580c; color: #fff; }
+.fb-atencao  { border-color: #d97706; color: #d97706; }  .fb-atencao.active  { background: #d97706; color: #fff; }
+.fb-ok       { border-color: #16a34a; color: #16a34a; }  .fb-ok.active       { background: #16a34a; color: #fff; }
 
-  /* ── Dark mode ── */
-  [data-tema="dark"] .kpi-card   { background:var(--z-surface);border-color:var(--z-border-s); }
-  [data-tema="dark"] .kpi-label  { color:var(--z-text-3); }
-  [data-tema="dark"] .kpi-sub    { color:var(--z-text-3); }
-  [data-tema="dark"] .kpi-card.total .kpi-icon-bg  { background:rgba(37,99,235,.15); }
-  [data-tema="dark"] .kpi-card.ok .kpi-icon-bg     { background:rgba(22,163,74,.15); }
-  [data-tema="dark"] .kpi-card.atencao .kpi-icon-bg{ background:rgba(217,119,6,.15); }
-  [data-tema="dark"] .kpi-card.atrasado .kpi-icon-bg{ background:rgba(234,88,12,.15); }
-  [data-tema="dark"] .kpi-card.critico .kpi-icon-bg { background:rgba(220,38,38,.15); }
-  [data-tema="dark"] .kpi-valor.ok      { color:#4ade80; }
-  [data-tema="dark"] .kpi-valor.atencao { color:#fbbf24; }
-  [data-tema="dark"] .kpi-valor.atrasado{ color:#fb923c; }
-  [data-tema="dark"] .kpi-valor.critico { color:#f87171; }
-  [data-tema="dark"] .kpi-valor.total   { color:#818cf8; }
-  [data-tema="dark"] .chart-card  { background:var(--z-surface);border-color:var(--z-border-s); }
-  [data-tema="dark"] .chart-titulo{ color:var(--z-text-3); }
-  [data-tema="dark"] .leg-nome    { color:var(--z-text-2); }
-  [data-tema="dark"] .leg-val     { color:var(--z-text-1); }
-  [data-tema="dark"] .bar-nome    { color:var(--z-text-2); }
-  [data-tema="dark"] .bar-dias    { color:var(--z-text-1); }
-  [data-tema="dark"] .bar-track   { background:var(--z-elevated); }
-  [data-tema="dark"] .tabela-sla th { background:var(--z-elevated);color:var(--z-text-3);border-color:var(--z-border-s); }
-  [data-tema="dark"] .tabela-sla td { border-color:var(--z-border-s);color:var(--z-text-1); }
-  [data-tema="dark"] .tabela-sla tbody tr:hover td { background:var(--z-elevated); }
-  [data-tema="dark"] .chip-ok       { background:rgba(22,163,74,.15);color:#4ade80; }
-  [data-tema="dark"] .chip-atencao  { background:rgba(217,119,6,.15);color:#fbbf24; }
-  [data-tema="dark"] .chip-atrasado { background:rgba(234,88,12,.15);color:#fb923c; }
-  [data-tema="dark"] .chip-critico  { background:rgba(220,38,38,.15);color:#f87171; }
-  [data-tema="dark"] .sla-section-titulo { color:var(--z-text-3); }
-  [data-tema="dark"] .sla-section-titulo::after { background:var(--z-border-s); }
-  [data-tema="dark"] .comunicado-card { background:var(--z-surface);border-color:var(--z-border-s); }
-  [data-tema="dark"] .com-titulo { color:var(--z-text-1); }
-  [data-tema="dark"] .com-del    { color:var(--z-text-3); }
-  [data-tema="dark"] .com-del:hover { background:var(--z-elevated); }
-  [data-tema="dark"] .comunicado-card.info    .com-ico { background:rgba(37,99,235,.15);color:#818cf8; }
-  [data-tema="dark"] .comunicado-card.aviso   .com-ico { background:rgba(217,119,6,.15);color:#fbbf24; }
-  [data-tema="dark"] .comunicado-card.critico .com-ico { background:rgba(220,38,38,.15);color:#f87171; }
-  [data-tema="dark"] .comunicado-card.sucesso .com-ico { background:rgba(22,163,74,.15);color:#4ade80; }
-  [data-tema="dark"] .comunicado-card.info    .com-badge { background:rgba(37,99,235,.15);color:#818cf8; }
-  [data-tema="dark"] .comunicado-card.aviso   .com-badge { background:rgba(217,119,6,.15);color:#fbbf24; }
-  [data-tema="dark"] .comunicado-card.critico .com-badge { background:rgba(220,38,38,.15);color:#f87171; }
-  [data-tema="dark"] .comunicado-card.sucesso .com-badge { background:rgba(22,163,74,.15);color:#4ade80; }
-  [data-tema="dark"] .sla-alert-bar.critico { background:rgba(220,38,38,.1);border-color:rgba(220,38,38,.3);color:#f87171; }
-  [data-tema="dark"] .sla-alert-bar.atrasado{ background:rgba(234,88,12,.1);border-color:rgba(234,88,12,.3);color:#fb923c; }
-  [data-tema="dark"] .modal-com  { background:var(--z-surface);border:1px solid var(--z-border-s); }
-  [data-tema="dark"] .modal-com-titulo  { color:var(--z-text-1); }
-  [data-tema="dark"] .modal-com-input   { background:var(--z-elevated);border-color:var(--z-border);color:var(--z-text-1); }
-  [data-tema="dark"] .modal-com-input:focus { border-color:#3b82f6; }
-  [data-tema="dark"] .tipo-btn     { background:var(--z-elevated);color:var(--z-text-2);border-color:transparent; }
-  [data-tema="dark"] .modal-com-footer  { border-top-color:var(--z-border-s); }
-  [data-tema="dark"] .btn-com-cancel { background:var(--z-elevated);border-color:var(--z-border);color:var(--z-text-2); }
-  [data-tema="dark"] .tabela-controles input,
-  [data-tema="dark"] .tabela-controles select { background:var(--z-surface);border-color:var(--z-border);color:var(--z-text-1); }
-  [data-tema="dark"] .com-vazio { color:var(--z-text-3); }
+.sla-table-wrap { overflow-x: auto; }
+.sla-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.sla-table th { text-align: left; padding: .5rem .6rem; border-bottom: 2px solid var(--border-color,#e5e7eb); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted,#888); }
+.sla-table td { padding: .55rem .6rem; border-bottom: 1px solid var(--border-color,#f0f0f0); vertical-align: middle; }
+.sla-table tr:last-child td { border: none; }
+.chip { display: inline-block; padding: .15rem .6rem; border-radius: 99px; font-size: .72rem; font-weight: 700; color: #fff; }
+.chip-critico  { background: #dc2626; }
+.chip-atrasado { background: #ea580c; }
+.chip-atencao  { background: #d97706; }
+.chip-ok       { background: #16a34a; }
+
+/* ── Spinner / empty ── */
+.sla-spinner { display: flex; align-items: center; justify-content: center; padding: 3rem; }
+.spin-ring { width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--border-color,#e5e7eb); border-top-color: #6366f1; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted,#999); font-size: .85rem; }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000;
+  display: none; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--bg-card,#fff); border-radius: 16px; padding: 1.8rem;
+  width: min(480px, 96vw); box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  animation: pop-in .25s cubic-bezier(.175,.885,.32,1.275) both;
+}
+@keyframes pop-in { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.modal-box h2 { margin: 0 0 .3rem; font-size: 1.15rem; font-weight: 700; }
+.modal-box .modal-sub { color: var(--text-muted,#888); font-size: .83rem; margin-bottom: 1.3rem; }
+.modal-footer { display: flex; gap: .7rem; justify-content: flex-end; margin-top: 1.4rem; }
+
+/* ── Notif rows ── */
+.notif-faixa-row {
+  display: flex; align-items: center; gap: .9rem; padding: .8rem 1rem;
+  border-radius: 10px; background: var(--bg-inset,#f9fafb);
+  border: 1.5px solid var(--border-color,#e5e7eb); margin-bottom: .6rem;
+  transition: border-color .18s;
+}
+.notif-faixa-row.ativo { border-color: #6366f1; }
+.nf-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.nf-label { font-weight: 600; font-size: .85rem; }
+.nf-sub   { font-size: .72rem; color: var(--text-muted,#888); }
+.nf-toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.nf-toggle input { opacity: 0; width: 0; height: 0; }
+.nf-toggle .slider {
+  position: absolute; inset: 0; cursor: pointer;
+  background: var(--border-color,#ccc); border-radius: 22px; transition: .2s;
+}
+.nf-toggle .slider::before {
+  content: ''; position: absolute; height: 16px; width: 16px;
+  left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s;
+}
+.nf-toggle input:checked + .slider { background: #6366f1; }
+.nf-toggle input:checked + .slider::before { transform: translateX(18px); }
+.nf-freq { display: flex; align-items: center; gap: .3rem; font-size: .78rem; white-space: nowrap; }
+.nf-freq input[type=number] {
+  width: 48px; padding: .25rem .4rem; border: 1px solid var(--border-color,#ccc);
+  border-radius: 6px; background: var(--bg-card,#fff); color: inherit; text-align: center; font-size: .78rem;
+}
+
+/* ── Alert bar ── */
+.sla-alert-bar {
+  border-radius: 10px; padding: .65rem 1rem; margin-bottom: 1rem;
+  display: none; align-items: center; gap: .7rem; font-size: .84rem; font-weight: 500;
+}
+.sla-alert-bar.show { display: flex; }
+.sla-alert-bar.critico  { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.sla-alert-bar.atrasado { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+@media(prefers-color-scheme:dark){
+  .sla-alert-bar.critico  { background: #3b0a0a; color: #fca5a5; border-color: #7f1d1d; }
+  .sla-alert-bar.atrasado { background: #341810; color: #fdba74; border-color: #7c2d12; }
+  .chart-card, .sla-table-card, .modal-box { background: #1e2030; }
+  .rank-card, .notif-faixa-row { background: #252840; border-color: #353855; }
+  .tec-bar-track, .srv-track { background: #2a2d45; }
+  .sla-table th { color: #9ca3af; }
+  .sla-table td { border-color: #2a2d45; }
+}
+
+/* ── Pulse ── */
+@keyframes pulse-ring { 0%,100%{ opacity:1; } 50%{ opacity:.5; } }
+.pulse { animation: pulse-ring 1.5s ease-in-out infinite; }
+
+/* ── Btn ── */
+.btn { display: inline-flex; align-items: center; gap: .4rem; padding: .45rem 1rem; border-radius: 8px; font-size: .82rem; font-weight: 600; border: none; cursor: pointer; transition: all .18s; }
+.btn-primary { background: #6366f1; color: #fff; } .btn-primary:hover { background: #4f46e5; }
+.btn-ghost   { background: transparent; border: 1.5px solid var(--border-color,#ccc); color: inherit; } .btn-ghost:hover { border-color: #6366f1; color: #6366f1; }
+.btn-sm { padding: .3rem .75rem; font-size: .78rem; }
 </style>
-
-<!-- Header -->
-<div class="header-pagina">
-  <div>
-    <div class="titulo-pagina">Dashboard SLA</div>
-    <div class="breadcrumb">Controle de prazos e atrasos · <span id="ultima-atualizacao" style="font-style:italic;">carregando…</span></div>
-  </div>
-  <div class="acoes-header">
-    <button onclick="recarregar()" style="display:flex;align-items:center;gap:6px;padding:7px 13px;border:1px solid #e2e8f0;border-radius:9px;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#475569;font-family:inherit;" title="Atualizar">
-      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-      Atualizar
-    </button>
-    {% if nivel_acesso in ('admin','master') %}
-    <button onclick="abrirModalComunicado()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:9px;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">
-      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Comunicado
-    </button>
-    {% endif %}
-  </div>
-</div>
 
 <div class="sla-wrap">
 
-  <!-- ── Alerta automático (populado por JS) ── -->
-  <div id="sla-alert-bar" class="sla-alert-bar">
-    <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <span id="sla-alert-texto"></span>
-    <div class="sla-alert-pills" id="sla-alert-pills"></div>
-  </div>
-
-  <!-- ── KPI Cards ── -->
-  <div class="sla-section-titulo">
-    <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-    Visão Geral
-  </div>
-  <div class="sla-grid-kpi">
-    <div class="kpi-card total">
-      <div class="kpi-icon-bg"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14.5"/></svg></div>
-      <div class="kpi-label">Total em aberto</div>
-      <div class="kpi-valor total" id="kpi-total">—</div>
-      <div class="kpi-sub">taxa: <span id="kpi-taxa" class="taxa-sla">—</span></div>
+  <!-- HEADER -->
+  <div class="sla-header">
+    <div class="sla-header-left">
+      <h1>📊 Dashboard SLA</h1>
+      <p id="sla-subtitle">Carregando dados...</p>
     </div>
-    <div class="kpi-card ok">
-      <div class="kpi-icon-bg"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div class="kpi-label">No prazo</div>
-      <div class="kpi-valor ok" id="kpi-ok">—</div>
-      <div class="kpi-sub">dentro do SLA</div>
-    </div>
-    <div class="kpi-card atencao">
-      <div class="kpi-icon-bg"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-      <div class="kpi-label">Atenção</div>
-      <div class="kpi-valor atencao" id="kpi-atencao">—</div>
-      <div class="kpi-sub">próximos do prazo</div>
-    </div>
-    <div class="kpi-card atrasado">
-      <div class="kpi-icon-bg"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-      <div class="kpi-label">Atrasados</div>
-      <div class="kpi-valor atrasado" id="kpi-atrasado">—</div>
-      <div class="kpi-sub">acima do prazo</div>
-    </div>
-    <div class="kpi-card critico">
-      <div class="kpi-icon-bg"><svg viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-      <div class="kpi-label">Críticos</div>
-      <div class="kpi-valor critico kpi-critico-blink" id="kpi-critico">—</div>
-      <div class="kpi-sub">nível crítico</div>
-    </div>
-  </div>
-
-  <!-- ── Charts row ── -->
-  <div class="sla-charts-row">
-    <div class="chart-card">
-      <div class="chart-titulo">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
-        Distribuição SLA
-      </div>
-      <div class="donut-wrap">
-        <svg width="120" height="120" viewBox="0 0 120 120" id="donut-svg">
-          <circle cx="60" cy="60" r="46" fill="none" stroke="#f1f5f9" stroke-width="16"/>
-        </svg>
-        <div class="donut-legenda" id="donut-legenda"></div>
-      </div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-titulo">
-        <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="9" width="4" height="12"/><rect x="15" y="5" width="4" height="16"/></svg>
-        Top Bancos por Atraso Médio
-      </div>
-      <div class="bar-list" id="bar-bancos"></div>
-    </div>
-  </div>
-
-  <!-- ── Tabela de risco ── -->
-  <div class="sla-section-titulo">
-    <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-    Pendentes em Risco
-  </div>
-  <div class="chart-card" style="margin-bottom:32px;overflow-x:auto;">
-    <div class="tabela-controles">
-      <input type="text" id="filtro-risco" placeholder="Filtrar empresa, banco, serviço, técnico…" oninput="filtrarRisco()">
-      <select id="filtro-faixa" onchange="filtrarRisco()">
-        <option value="">Todas as faixas</option>
-        <option value="critico">Crítico</option>
-        <option value="atrasado">Atrasado</option>
-        <option value="atencao">Atenção</option>
-        <option value="ok">No prazo</option>
-      </select>
-    </div>
-    <table class="tabela-sla">
-      <thead>
-        <tr>
-          <th>Empresa</th><th>Banco</th><th>Serviço</th>
-          <th>Técnico</th><th>Dt. Solicita</th><th>Dias em aberto</th><th>Status SLA</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-risco">
-        <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:28px;">Carregando…</td></tr>
-      </tbody>
-    </table>
-    <div id="risco-rodape" style="font-size:11px;color:#94a3b8;padding:8px 0 0;"></div>
-  </div>
-
-  <!-- ── Comunicados ── -->
-  <div class="comunicados-section">
-    <div class="sla-section-titulo" style="margin-bottom:16px;">
-      <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Comunicados da Equipe
-    </div>
-    <div id="lista-comunicados">
-      <div class="com-vazio">Carregando comunicados…</div>
-    </div>
-  </div>
-
-</div>
-
-<!-- ── Modal Comunicado ── -->
-<div class="overlay-com" id="overlay-com" onclick="fecharModalComunicadoFora(event)">
-  <div class="modal-com">
-    <div class="modal-com-titulo">
-      Novo Comunicado
-      <button class="modal-com-fechar" onclick="fecharModalComunicado()">
-        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <div class="sla-header-actions">
+      <button class="btn btn-ghost btn-sm" onclick="_abrirModalNotif()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        Alertas
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="carregarDados()" id="btn-refresh">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        Atualizar
       </button>
     </div>
-    <div class="modal-com-grade">
-      <div>
-        <label class="modal-com-label">Mensagem</label>
-        <input type="text" id="com-texto" class="modal-com-input" placeholder="Ex: Reunião de revisão SLA hoje às 15h…">
-      </div>
-      <div>
-        <label class="modal-com-label">Tipo</label>
-        <div class="tipo-btns">
-          <button class="tipo-btn sel-info" data-tipo="info" onclick="selecionarTipo('info')">ℹ️ Info</button>
-          <button class="tipo-btn" data-tipo="aviso" onclick="selecionarTipo('aviso')">⚠️ Alerta</button>
-          <button class="tipo-btn" data-tipo="critico" onclick="selecionarTipo('critico')">🔴 Urgente</button>
-          <button class="tipo-btn" data-tipo="sucesso" onclick="selecionarTipo('sucesso')">✅ Concluído</button>
-        </div>
-      </div>
-      <div>
-        <label class="modal-com-label">Expira em <span style="font-weight:400;opacity:.6;">(opcional)</span></label>
-        <input type="date" id="com-expira" class="modal-com-input">
-      </div>
+  </div>
+
+  <!-- ALERT BAR -->
+  <div class="sla-alert-bar" id="sla-alert-bar">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span id="sla-alert-msg"></span>
+  </div>
+
+  <!-- KPI CARDS (critico → atrasado → atencao → ok → total) -->
+  <div class="sla-kpis">
+    <div class="kpi-card kpi-critico">
+      <div class="kpi-label">🔴 Crítico</div>
+      <div class="kpi-val" id="kpi-critico">—</div>
+      <div class="kpi-sub">Exige ação imediata</div>
     </div>
-    <div class="modal-com-footer">
-      <button class="btn-com-cancel" onclick="fecharModalComunicado()">Cancelar</button>
-      <button class="btn-com-pub" onclick="publicarComunicado()">
-        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        Publicar
-      </button>
+    <div class="kpi-card kpi-atrasado">
+      <div class="kpi-label">🟠 Atrasado</div>
+      <div class="kpi-val" id="kpi-atrasado">—</div>
+      <div class="kpi-sub">Passou do prazo</div>
+    </div>
+    <div class="kpi-card kpi-atencao">
+      <div class="kpi-label">🟡 Atenção</div>
+      <div class="kpi-val" id="kpi-atencao">—</div>
+      <div class="kpi-sub">Próximo do prazo</div>
+    </div>
+    <div class="kpi-card kpi-ok">
+      <div class="kpi-label">🟢 No Prazo</div>
+      <div class="kpi-val" id="kpi-ok">—</div>
+      <div class="kpi-sub" id="kpi-taxa-sub">Dentro do SLA</div>
+    </div>
+    <div class="kpi-card kpi-total">
+      <div class="kpi-label">📋 Total</div>
+      <div class="kpi-val" id="kpi-total">—</div>
+      <div class="kpi-sub">Pendentes ativos</div>
+    </div>
+  </div>
+
+  <!-- ROW 1: Donut + Serviços -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Distribuição por Status SLA
+      </h3>
+      <svg id="donut-svg" width="180" height="180" viewBox="0 0 180 180">
+        <defs>
+          <filter id="shadow3d" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="rgba(0,0,0,.22)"/>
+          </filter>
+        </defs>
+        <g id="donut-g" filter="url(#shadow3d)"></g>
+        <text id="donut-center-val" x="90" y="86" text-anchor="middle" font-size="26" font-weight="800" fill="currentColor"></text>
+        <text id="donut-center-lbl" x="90" y="104" text-anchor="middle" font-size="11" fill="#999"></text>
+      </svg>
+      <div class="donut-legend" id="donut-legend"></div>
+    </div>
+
+    <div class="chart-card">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Pendentes por Serviço
+        <span class="badge-cnt" id="srv-badge">0</span>
+      </h3>
+      <div id="srv-bars"></div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Técnicos (full width) -->
+  <div class="chart-card" style="margin-bottom:1rem">
+    <h3>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Performance por Técnico — Distribuição de Risco
+      <span class="badge-cnt" id="tec-badge">0</span>
+    </h3>
+    <div id="tec-bars" style="max-height:360px;overflow-y:auto;padding-right:.3rem"></div>
+    <div style="display:flex;gap:1.2rem;margin-top:.8rem;flex-wrap:wrap;font-size:.75rem">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#dc2626;margin-right:.3rem"></span>Crítico</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ea580c;margin-right:.3rem"></span>Atrasado</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#d97706;margin-right:.3rem"></span>Atenção</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#16a34a;margin-right:.3rem"></span>No Prazo</span>
+    </div>
+  </div>
+
+  <!-- ROW 3: Rankings -->
+  <div class="charts-row" style="margin-bottom:1rem">
+    <div class="chart-card">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        Técnicos com Mais Críticos
+      </h3>
+      <div class="ranking-row" id="rank-piores"></div>
+    </div>
+    <div class="chart-card">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+        Técnicos com Melhor SLA
+      </h3>
+      <div class="ranking-row" id="rank-melhores"></div>
+    </div>
+  </div>
+
+  <!-- TABELA -->
+  <div class="sla-table-card">
+    <h3>Detalhamento dos Pendentes</h3>
+    <div class="filter-bar">
+      <button class="filter-btn fb-all active"      onclick="_filtrar('todos',    this)">Todos</button>
+      <button class="filter-btn fb-critico"         onclick="_filtrar('critico',  this)">🔴 Crítico</button>
+      <button class="filter-btn fb-atrasado"        onclick="_filtrar('atrasado', this)">🟠 Atrasado</button>
+      <button class="filter-btn fb-atencao"         onclick="_filtrar('atencao',  this)">🟡 Atenção</button>
+      <button class="filter-btn fb-ok"              onclick="_filtrar('ok',       this)">🟢 No Prazo</button>
+    </div>
+    <div class="sla-table-wrap">
+      <table class="sla-table">
+        <thead>
+          <tr>
+            <th>Empresa</th><th>Banco</th><th>Serviço</th>
+            <th>Técnico</th><th>Dias Aberto</th><th>Status SLA</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-body">
+          <tr><td colspan="6"><div class="sla-spinner"><div class="spin-ring"></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /sla-wrap -->
+
+<!-- MODAL ALERTAS -->
+<div class="modal-overlay" id="modal-notif" onclick="_fecharModalNotif(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h2>🔔 Preferências de Alerta SLA</h2>
+    <p class="modal-sub">Defina quando e com que frequência quer ser notificado sobre pendentes com SLA comprometido.</p>
+
+    <div class="notif-faixa-row" id="nfrow-critico">
+      <div class="nf-dot" style="background:#dc2626"></div>
+      <div style="flex:1">
+        <div class="nf-label">Nível Crítico</div>
+        <div class="nf-sub">Pendentes que ultrapassaram o prazo máximo</div>
+      </div>
+      <div class="nf-freq">
+        a cada <input type="number" id="nf-freq-critico" min="1" max="30" value="1"> dia(s)
+      </div>
+      <label class="nf-toggle">
+        <input type="checkbox" id="nf-ativo-critico" onchange="_toggleFaixaRow('critico')">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="notif-faixa-row" id="nfrow-atrasado">
+      <div class="nf-dot" style="background:#ea580c"></div>
+      <div style="flex:1">
+        <div class="nf-label">Nível Atrasado</div>
+        <div class="nf-sub">Pendentes que passaram do prazo de atenção</div>
+      </div>
+      <div class="nf-freq">
+        a cada <input type="number" id="nf-freq-atrasado" min="1" max="30" value="3"> dia(s)
+      </div>
+      <label class="nf-toggle">
+        <input type="checkbox" id="nf-ativo-atrasado" onchange="_toggleFaixaRow('atrasado')">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="notif-faixa-row" id="nfrow-atencao">
+      <div class="nf-dot" style="background:#d97706"></div>
+      <div style="flex:1">
+        <div class="nf-label">Nível Atenção</div>
+        <div class="nf-sub">Pendentes se aproximando do prazo limite</div>
+      </div>
+      <div class="nf-freq">
+        a cada <input type="number" id="nf-freq-atencao" min="1" max="30" value="7"> dia(s)
+      </div>
+      <label class="nf-toggle">
+        <input type="checkbox" id="nf-ativo-atencao" onchange="_toggleFaixaRow('atencao')">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="_fecharModalNotif()">Cancelar</button>
+      <button class="btn btn-primary" onclick="_salvarNotifPref()">Salvar</button>
     </div>
   </div>
 </div>
 
 <script>
-  const _isAdmin  = {{ (nivel_acesso in ('admin','master')) | tojson }};
-  const _CHIP_NOMES = {ok:'OK', atencao:'Atenção', atrasado:'Atrasado', critico:'Crítico'};
-  const _FAIXA_COR  = {ok:'#16a34a', atencao:'#d97706', atrasado:'#ea580c', critico:'#dc2626'};
-  const _COM_TIPOS  = {info:'Informação', aviso:'Alerta', critico:'Urgente', sucesso:'Concluído'};
-  const _COM_ICONS  = {
-    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-    aviso:   '<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-    critico: '<svg viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-    sucesso: '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
-  };
-  let _pendentes = [];
-  let _tipoSel   = 'info';
+const _FAIXAS      = ['critico','atrasado','atencao','ok'];
+const _FAIXA_NOMES = {critico:'Crítico', atrasado:'Atrasado', atencao:'Atenção', ok:'No Prazo'};
+const _FAIXA_CORES = {critico:'#dc2626', atrasado:'#ea580c', atencao:'#d97706', ok:'#16a34a'};
+const _CHIP_CLASS  = {critico:'chip-critico', atrasado:'chip-atrasado', atencao:'chip-atencao', ok:'chip-ok'};
+const _NOTIF_INIT  = {{ notif_pref | tojson }};
 
-  // ── Count-up ──────────────────────────────────────────
-  function countUp(el, fim, dur=600) {
-    const ini = Date.now();
-    const tick = () => {
-      const p = Math.min(1, (Date.now()-ini)/dur);
-      el.textContent = Math.round(fim*(1-Math.pow(1-p,3)));
-      if (p<1) requestAnimationFrame(tick);
+let _dados = null;
+let _filtroAtivo = 'todos';
+
+// ── LOAD ──
+async function carregarDados() {
+  const btn = document.getElementById('btn-refresh');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spin-ring" style="width:14px;height:14px;border-width:2px;border-radius:50%;border:2px solid #ccc;border-top-color:#fff;animation:spin .7s linear infinite;margin:0 auto"></div>';
+
+  try {
+    const r = await fetch('/api/sla/resumo');
+    if (!r.ok) throw new Error('Erro HTTP ' + r.status);
+    _dados = await r.json();
+    _renderTudo();
+  } catch(e) {
+    document.getElementById('tabela-body').innerHTML =
+      '<tr><td colspan="6" style="text-align:center;color:#dc2626;padding:2rem">Erro ao carregar: ' + e.message + '</td></tr>';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Atualizar';
+}
+
+function _renderTudo() {
+  if (!_dados) return;
+  const t = _dados.totais || {};
+
+  // KPIs
+  document.getElementById('kpi-critico').textContent  = t.critico  ?? 0;
+  document.getElementById('kpi-atrasado').textContent = t.atrasado ?? 0;
+  document.getElementById('kpi-atencao').textContent  = t.atencao  ?? 0;
+  document.getElementById('kpi-ok').textContent       = t.ok       ?? 0;
+  document.getElementById('kpi-total').textContent    = t.total    ?? 0;
+
+  const taxa = _dados.taxa_ok ?? 0;
+  document.getElementById('kpi-taxa-sub').textContent = taxa + '% dos pendentes no prazo';
+
+  // Alert bar
+  const bar = document.getElementById('sla-alert-bar');
+  const msg = document.getElementById('sla-alert-msg');
+  if ((t.critico ?? 0) > 0) {
+    bar.className = 'sla-alert-bar show critico';
+    msg.textContent = (t.critico) + ' pendente(s) em nível CRÍTICO — atenção imediata necessária!';
+  } else if ((t.atrasado ?? 0) > 0) {
+    bar.className = 'sla-alert-bar show atrasado';
+    msg.textContent = (t.atrasado) + ' pendente(s) estão atrasados.';
+  } else {
+    bar.className = 'sla-alert-bar';
+  }
+
+  // Subtitle
+  document.getElementById('sla-subtitle').textContent =
+    'Atualizado em ' + new Date().toLocaleString('pt-BR');
+
+  _desenharDonut(t);
+  _desenharServicos(_dados.servicos || []);
+  _desenharTecnicos(_dados.tecnicos || []);
+  _desenharRankings(_dados.tecnicos || []);
+  _renderTabela(_dados.pendentes || [], _filtroAtivo);
+}
+
+// ── DONUT ──
+function _desenharDonut(t) {
+  const total = t.total || 1;
+  const cx = 90, cy = 90, R = 72, r = 44;
+  const g = document.getElementById('donut-g');
+  g.innerHTML = '';
+  document.getElementById('donut-legend').innerHTML = '';
+
+  const segs = _FAIXAS.map(f => ({ f, v: t[f] || 0 })).filter(s => s.v > 0);
+  if (!segs.length) {
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', (R+r)/2);
+    c.setAttribute('fill','none'); c.setAttribute('stroke','#e5e7eb'); c.setAttribute('stroke-width', R-r);
+    g.appendChild(c);
+    document.getElementById('donut-center-val').textContent = '0';
+    document.getElementById('donut-center-lbl').textContent = 'pendentes';
+    return;
+  }
+
+  let ang = -Math.PI / 2;
+  segs.forEach(s => {
+    const theta = (s.v / total) * 2 * Math.PI;
+    const x1 = cx + R*Math.cos(ang),   y1 = cy + R*Math.sin(ang);
+    const x2 = cx + R*Math.cos(ang+theta), y2 = cy + R*Math.sin(ang+theta);
+    const xi1 = cx + r*Math.cos(ang),   yi1 = cy + r*Math.sin(ang);
+    const xi2 = cx + r*Math.cos(ang+theta), yi2 = cy + r*Math.sin(ang+theta);
+    const lg = theta > Math.PI ? 1 : 0;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',
+      'M'+x1+','+y1+' A'+R+','+R+' 0 '+lg+',1 '+x2+','+y2+
+      ' L'+xi2+','+yi2+' A'+r+','+r+' 0 '+lg+',0 '+xi1+','+yi1+' Z'
+    );
+    path.setAttribute('fill', _FAIXA_CORES[s.f]);
+    path.style.transformOrigin = cx+'px '+cy+'px';
+    path.style.transition = 'transform .18s';
+    path.onmouseenter = () => {
+      path.style.transform = 'scale(1.05)';
+      document.getElementById('donut-center-val').textContent = s.v;
+      document.getElementById('donut-center-lbl').textContent = _FAIXA_NOMES[s.f];
     };
-    requestAnimationFrame(tick);
-  }
+    path.onmouseleave = () => {
+      path.style.transform = '';
+      document.getElementById('donut-center-val').textContent = total;
+      document.getElementById('donut-center-lbl').textContent = 'pendentes';
+    };
+    g.appendChild(path);
+    ang += theta;
+  });
 
-  // ── Alerta automático ──────────────────────────────────
-  function atualizarAlertaBar(t) {
-    const bar  = document.getElementById('sla-alert-bar');
-    const txt  = document.getElementById('sla-alert-texto');
-    const pills= document.getElementById('sla-alert-pills');
-    if (!t.critico && !t.atrasado) { bar.style.display='none'; return; }
-    bar.className = 'sla-alert-bar ' + (t.critico ? 'critico' : 'atrasado');
-    bar.style.display = 'flex';
-    txt.textContent = t.critico
-      ? 'Atenção: há pendentes em nível crítico que precisam de ação imediata.'
-      : 'Existem pendentes atrasados além do prazo configurado.';
-    pills.innerHTML = '';
-    if (t.critico)  pills.innerHTML += `<span class="sla-alert-pill c">${t.critico} crítico${t.critico>1?'s':''}</span>`;
-    if (t.atrasado) pills.innerHTML += `<span class="sla-alert-pill a">${t.atrasado} atrasado${t.atrasado>1?'s':''}</span>`;
-    if (t.atencao)  pills.innerHTML += `<span class="sla-alert-pill t">${t.atencao} atenção</span>`;
-  }
+  document.getElementById('donut-center-val').textContent = total;
+  document.getElementById('donut-center-lbl').textContent = 'pendentes';
 
-  // ── Donut ─────────────────────────────────────────────
-  function desenharDonut(t) {
-    const R=46, CX=60, CY=60, circ=2*Math.PI*R;
-    const total = t.ok+t.atencao+t.atrasado+t.critico || 1;
-    const ordens = ['critico','atrasado','atencao','ok'];
-    const nomes  = {ok:'No prazo',atencao:'Atenção',atrasado:'Atrasado',critico:'Crítico'};
-    const cores  = {ok:'#16a34a',atencao:'#d97706',atrasado:'#ea580c',critico:'#dc2626'};
-    const svg=document.getElementById('donut-svg');
-    const leg=document.getElementById('donut-legenda');
-    svg.querySelectorAll('.darco').forEach(e=>e.remove());
-    leg.innerHTML='';
-    let off=0;
-    ordens.forEach(f => {
-      const val=t[f]||0, frac=val/total, dash=frac*circ, gap=circ-dash;
-      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
-      c.setAttribute('cx',CX);c.setAttribute('cy',CY);c.setAttribute('r',R);
-      c.setAttribute('fill','none');c.setAttribute('stroke',cores[f]);c.setAttribute('stroke-width','16');
-      c.setAttribute('stroke-dasharray',`${dash} ${gap}`);
-      c.setAttribute('stroke-dashoffset',-off*circ);
-      c.setAttribute('transform',`rotate(-90 ${CX} ${CY})`);
-      c.classList.add('darco');
-      c.style.transition='stroke-dasharray .8s cubic-bezier(.4,0,.2,1)';
-      svg.appendChild(c);
-      leg.innerHTML+=`<div class="leg-item"><span class="leg-dot" style="background:${cores[f]}"></span><span class="leg-nome">${nomes[f]}</span><span class="leg-val">${val}</span></div>`;
-      off+=frac;
-    });
-  }
+  const leg = document.getElementById('donut-legend');
+  segs.forEach(s => {
+    const pct = Math.round(s.v / total * 100);
+    const item = document.createElement('div');
+    item.className = 'donut-legend-item';
+    item.innerHTML = '<div class="donut-legend-dot" style="background:'+_FAIXA_CORES[s.f]+'"></div><span>'+_FAIXA_NOMES[s.f]+' ('+s.v+' · '+pct+'%)</span>';
+    leg.appendChild(item);
+  });
+}
 
-  // ── Barras ────────────────────────────────────────────
-  function desenharBarras(bancos) {
-    const el=document.getElementById('bar-bancos');
-    el.innerHTML='';
-    if(!bancos||!bancos.length){el.innerHTML='<p style="color:#94a3b8;font-size:13px;">Sem dados suficientes.</p>';return;}
-    const max=bancos[0].media_dias||1;
-    bancos.slice(0,8).forEach(b => {
-      const cor=b.media_dias>=40?'#dc2626':b.media_dias>=25?'#ea580c':b.media_dias>=15?'#d97706':'#16a34a';
-      const row=document.createElement('div');
-      row.className='bar-row';
-      row.innerHTML=`<div class="bar-info"><span class="bar-nome" title="${b.banco}">${b.banco}</span><span class="bar-dias">${b.media_dias}d médio (${b.total})</span></div><div class="bar-track"><div class="bar-fill" style="background:${cor};width:${(b.media_dias/max*100).toFixed(1)}%"></div></div>`;
-      el.appendChild(row);
-    });
-    setTimeout(()=>el.querySelectorAll('.bar-fill').forEach(f=>f.style.transform='scaleX(1)'),60);
-  }
+// ── SERVIÇOS ──
+function _desenharServicos(servicos) {
+  const wrap = document.getElementById('srv-bars');
+  document.getElementById('srv-badge').textContent = servicos.length;
+  if (!servicos.length) { wrap.innerHTML = '<div class="empty-state">Sem dados de serviços</div>'; return; }
 
-  // ── Tabela ────────────────────────────────────────────
-  function renderTabela(lista) {
-    const tbody=document.getElementById('tbody-risco');
-    if(!lista||!lista.length){
-      tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:28px;">Nenhum pendente encontrado.</td></tr>';
-      document.getElementById('risco-rodape').textContent='';
-      return;
-    }
-    tbody.innerHTML=lista.map(p=>{
-      const f=p.sla_faixa;
-      const cor=_FAIXA_COR[f]||'inherit';
-      const chip=`<span class="chip-faixa chip-${f}${f==='critico'?' pulse-critico':''}">${_CHIP_NOMES[f]||f}</span>`;
-      return `<tr data-faixa="${f}" data-busca="${[p.empresa,p.banco,p.servico,p.tecnico].join(' ').toLowerCase()}">
-        <td style="font-weight:600;">${p.empresa||'—'}</td>
-        <td>${p.banco||'—'}</td>
-        <td>${p.servico||'—'}</td>
-        <td>${p.tecnico||'—'}</td>
-        <td>${p.dt_solicita||'—'}</td>
-        <td style="font-weight:800;color:${cor};">${p.dias_em_aberto}d</td>
-        <td>${chip}</td>
-      </tr>`;
+  const max = Math.max(...servicos.map(s => s.total), 1);
+  wrap.innerHTML = servicos.slice(0,10).map(s => {
+    const pct = Math.round(s.total / max * 100);
+    const cor = (s.critico||0) > 0 ? _FAIXA_CORES.critico : ((s.atrasado||0) > 0 ? _FAIXA_CORES.atrasado : _FAIXA_CORES.ok);
+    return '<div class="srv-row">' +
+      '<div class="srv-name" title="'+s.servico+'">'+s.servico+'</div>' +
+      '<div class="srv-track"><div class="srv-fill" style="width:'+pct+'%;background:'+cor+'"></div></div>' +
+      '<div class="srv-count">'+s.total+'</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── TÉCNICOS STACKED ──
+function _desenharTecnicos(tecnicos) {
+  const wrap = document.getElementById('tec-bars');
+  document.getElementById('tec-badge').textContent = tecnicos.length;
+  if (!tecnicos.length) { wrap.innerHTML = '<div class="empty-state">Sem dados de técnicos</div>'; return; }
+
+  wrap.innerHTML = tecnicos.map(t => {
+    const total = t.total || 1;
+    const segs = _FAIXAS.map(f => {
+      const v = t[f] || 0;
+      if (!v) return '';
+      const pct = (v / total * 100).toFixed(1);
+      return '<div class="tec-seg" style="width:'+pct+'%;background:'+_FAIXA_CORES[f]+'" data-tip="'+_FAIXA_NOMES[f]+': '+v+'"></div>';
     }).join('');
-    document.getElementById('risco-rodape').textContent=`${lista.length} registro(s)`;
-  }
 
-  function filtrarRisco() {
-    const busca=document.getElementById('filtro-risco').value.toLowerCase();
-    const faixa=document.getElementById('filtro-faixa').value;
-    renderTabela(_pendentes.filter(p=>
-      (!faixa||p.sla_faixa===faixa)&&
-      (!busca||p.busca.includes(busca))
-    ));
-  }
+    const criticoBadge = (t.critico||0) > 0
+      ? ' <span class="chip chip-critico pulse" style="font-size:.65rem">'+t.critico+' crít.</span>'
+      : '';
+    const mediaStr = t.media_dias ? ' · '+t.media_dias+'d/pend.' : '';
 
-  // ── Comunicados ───────────────────────────────────────
-  async function carregarComunicados() {
-    const r=await fetch('/api/sla-avisos?ativos=1');
-    const lista=await r.json();
-    const el=document.getElementById('lista-comunicados');
-    if(!lista||!lista.length){
-      el.innerHTML='<div class="com-vazio">Nenhum comunicado ativo no momento.</div>';
-      return;
+    return '<div class="tec-bar-wrap">' +
+      '<div class="tec-bar-label">' +
+        '<span class="tname">'+t.tecnico+criticoBadge+'</span>' +
+        '<span class="ttotal">'+t.total+' pendente(s)'+mediaStr+'</span>' +
+      '</div>' +
+      '<div class="tec-bar-track">'+(segs || '<div style="width:100%;height:100%;background:#e5e7eb"></div>')+'</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── RANKINGS ──
+function _desenharRankings(tecnicos) {
+  const piores   = [...tecnicos].sort((a,b) => (b.critico*1000+b.atrasado) - (a.critico*1000+a.atrasado));
+  const melhores = [...tecnicos].sort((a,b) => (b.ok - a.ok) || (a.media_dias - b.media_dias));
+  const emojis   = ['🥇','🥈','🥉'];
+
+  function mkCard(t, idx, modo) {
+    let badgeVal, badgeCor, badgeLabel;
+    if (modo === 'pior') {
+      badgeVal   = (t.critico||0) > 0 ? t.critico : (t.atrasado||0);
+      badgeCor   = (t.critico||0) > 0 ? _FAIXA_CORES.critico : _FAIXA_CORES.atrasado;
+      badgeLabel = (t.critico||0) > 0 ? 'crítico' : 'atrasado';
+    } else {
+      badgeVal   = t.ok||0;
+      badgeCor   = _FAIXA_CORES.ok;
+      badgeLabel = 'no prazo';
     }
-    el.innerHTML=lista.map(a=>`
-      <div class="comunicado-card ${a.tipo}" id="com-${a.id}">
-        <div class="com-ico">${_COM_ICONS[a.tipo]||_COM_ICONS.info}</div>
-        <div class="com-corpo">
-          <div class="com-titulo">${a.texto}</div>
-          <div class="com-meta">
-            <span class="com-badge">${_COM_TIPOS[a.tipo]||a.tipo}</span>
-            <span>por ${a.criado_por||'sistema'}</span>
-            ${a.expira_em?`<span>· expira ${a.expira_em}</span>`:''}
-          </div>
-        </div>
-        ${_isAdmin?`<button class="com-del" onclick="deletarComunicado(${a.id})" title="Remover"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>`:''}
-      </div>`).join('');
+    return '<div class="rank-card">' +
+      '<div class="rank-num">'+(emojis[idx]||((idx+1)+'º'))+'</div>' +
+      '<div class="rank-info">' +
+        '<div class="rname">'+t.tecnico+'</div>' +
+        '<div class="rsub">'+t.total+' pendente(s) · média '+t.media_dias+' dias</div>' +
+      '</div>' +
+      '<div class="rank-badge" style="background:'+badgeCor+'">'+badgeVal+' '+badgeLabel+'</div>' +
+    '</div>';
   }
 
-  async function deletarComunicado(id) {
-    if(!confirm('Remover este comunicado?')) return;
-    await fetch(`/api/sla-avisos/${id}`,{method:'DELETE'});
-    document.getElementById(`com-${id}`)?.remove();
-    if(!document.querySelector('.comunicado-card'))
-      document.getElementById('lista-comunicados').innerHTML='<div class="com-vazio">Nenhum comunicado ativo no momento.</div>';
-  }
+  const pioRes = piores.slice(0,3).filter(t => (t.critico||0)>0||(t.atrasado||0)>0);
+  document.getElementById('rank-piores').innerHTML =
+    pioRes.length ? pioRes.map((t,i) => mkCard(t,i,'pior')).join('') :
+    '<div class="empty-state" style="padding:1rem;font-size:.82rem">Nenhum técnico com atrasos 🎉</div>';
 
-  // ── Modal comunicado ──────────────────────────────────
-  function selecionarTipo(tipo) {
-    _tipoSel=tipo;
-    document.querySelectorAll('.tipo-btn').forEach(b=>{
-      b.className='tipo-btn'+(b.dataset.tipo===tipo?' sel-'+tipo:'');
+  const melRes = melhores.slice(0,3).filter(t => (t.ok||0)>0);
+  document.getElementById('rank-melhores').innerHTML =
+    melRes.length ? melRes.map((t,i) => mkCard(t,i,'bom')).join('') :
+    '<div class="empty-state" style="padding:1rem;font-size:.82rem">Sem dados</div>';
+}
+
+// ── TABELA ──
+function _filtrar(faixa, btn) {
+  _filtroAtivo = faixa;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (_dados) _renderTabela(_dados.pendentes || [], faixa);
+}
+
+function _renderTabela(pendentes, filtro) {
+  const tbody = document.getElementById('tabela-body');
+  const lista = filtro === 'todos' ? pendentes : pendentes.filter(p => p.sla_faixa === filtro);
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">Nenhum pendente neste filtro</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = lista.map(p => {
+    const faixa = p.sla_faixa || 'ok';
+    return '<tr>' +
+      '<td style="font-weight:600">'+(p.empresa||'—')+'</td>' +
+      '<td>'+(p.banco||'—')+'</td>' +
+      '<td>'+(p.servico||'—')+'</td>' +
+      '<td>'+(p.tecnico||'—')+'</td>' +
+      '<td style="font-weight:700;color:'+_FAIXA_CORES[faixa]+'">'+(p.dias_em_aberto??0)+'d</td>' +
+      '<td><span class="chip '+_CHIP_CLASS[faixa]+'">'+_FAIXA_NOMES[faixa]+'</span></td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ── NOTIF MODAL ──
+function _abrirModalNotif() {
+  const p = _NOTIF_INIT;
+  ['critico','atrasado','atencao'].forEach(f => {
+    const pref = p[f] || {};
+    document.getElementById('nf-ativo-'+f).checked = !!pref.ativo;
+    document.getElementById('nf-freq-'+f).value    = pref.freq_dias || 1;
+    _toggleFaixaRow(f);
+  });
+  document.getElementById('modal-notif').classList.add('open');
+}
+
+function _fecharModalNotif(e) {
+  if (!e || e.target === document.getElementById('modal-notif'))
+    document.getElementById('modal-notif').classList.remove('open');
+}
+
+function _toggleFaixaRow(faixa) {
+  const ativo = document.getElementById('nf-ativo-'+faixa).checked;
+  document.getElementById('nfrow-'+faixa).classList.toggle('ativo', ativo);
+}
+
+async function _salvarNotifPref() {
+  const payload = {};
+  ['critico','atrasado','atencao'].forEach(f => {
+    payload[f] = {
+      ativo:     document.getElementById('nf-ativo-'+f).checked ? 1 : 0,
+      freq_dias: parseInt(document.getElementById('nf-freq-'+f).value) || 1,
+    };
+  });
+  try {
+    const r = await fetch('/api/sla-notif-pref', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
     });
+    if (!r.ok) throw new Error(await r.text());
+    document.getElementById('modal-notif').classList.remove('open');
+    mostrarToast('sucesso', 'Preferências de alerta salvas!');
+  } catch(e) {
+    mostrarToast('erro', 'Erro ao salvar: ' + e.message);
   }
+}
 
-  function abrirModalComunicado() {
-    document.getElementById('com-texto').value='';
-    document.getElementById('com-expira').value='';
-    selecionarTipo('info');
-    document.getElementById('overlay-com').classList.add('aberto');
-    setTimeout(()=>document.getElementById('com-texto').focus(),50);
-  }
-
-  function fecharModalComunicado() {
-    document.getElementById('overlay-com').classList.remove('aberto');
-  }
-
-  function fecharModalComunicadoFora(e) {
-    if(e.target===document.getElementById('overlay-com')) fecharModalComunicado();
-  }
-
-  async function publicarComunicado() {
-    const texto=(document.getElementById('com-texto').value||'').trim();
-    if(!texto){document.getElementById('com-texto').focus();return;}
-    const expira=document.getElementById('com-expira').value;
-    const r=await fetch('/api/sla-avisos',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({texto,tipo:_tipoSel,expira_em:expira})
-    });
-    const d=await r.json();
-    if(d.sucesso){fecharModalComunicado();carregarComunicados();}
-  }
-
-  // ── Carga principal ───────────────────────────────────
-  async function carregarDados() {
-    try {
-      const r=await fetch('/api/sla/resumo');
-      const res=await r.json();
-      const t=res.totais;
-      _pendentes=(res.pendentes||[]).map(p=>({...p,busca:[p.empresa,p.banco,p.servico,p.tecnico].join(' ').toLowerCase()}));
-
-      countUp(document.getElementById('kpi-total'),    t.total);
-      countUp(document.getElementById('kpi-ok'),       t.ok);
-      countUp(document.getElementById('kpi-atencao'),  t.atencao);
-      countUp(document.getElementById('kpi-atrasado'), t.atrasado);
-      countUp(document.getElementById('kpi-critico'),  t.critico);
-
-      const taxa=res.taxa_sla??0;
-      const el=document.getElementById('kpi-taxa');
-      el.textContent=taxa+'%';
-      el.className='taxa-sla '+(taxa>=80?'boa':taxa>=50?'media':'ruim');
-
-      atualizarAlertaBar(t);
-      desenharDonut(t);
-      desenharBarras(res.bancos||[]);
-      renderTabela(_pendentes);
-
-      const agora=new Date();
-      document.getElementById('ultima-atualizacao').textContent=
-        `atualizado às ${agora.getHours().toString().padStart(2,'0')}:${agora.getMinutes().toString().padStart(2,'0')}`;
-    } catch(e) {
-      document.getElementById('tbody-risco').innerHTML=
-        '<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:28px;">Erro ao carregar dados.</td></tr>';
-    }
-  }
-
-  function recarregar() {
-    _pendentes=[];
-    document.getElementById('tbody-risco').innerHTML=
-      '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:28px;">Carregando…</td></tr>';
-    carregarDados();
-    carregarComunicados();
-  }
-
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape') fecharModalComunicado(); });
-
-  carregarDados();
-  carregarComunicados();
+// ── INIT ──
+carregarDados();
 </script>
 {% endblock %}
