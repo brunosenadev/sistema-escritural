@@ -230,29 +230,6 @@
     transition: background 0.2s;
   }
   .btn-salvar-modal:hover { background: #1d4ed8; }
-  .wrapper-cor {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  input[type="color"] {
-    width: 40px; height: 36px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 2px;
-    cursor: pointer;
-    background: #f8fafc;
-  }
-  .preview-cor-nome {
-    flex: 1;
-    padding: 9px 12px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 13px;
-    color: #64748b;
-    background: #f8fafc;
-    transition: background 0.15s, border-color 0.15s;
-  }
   .dica-campo {
     font-size: 11px;
     color: #94a3b8;
@@ -313,9 +290,6 @@
   [data-tema="dark"] .btn-cancelar-modal { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
   [data-tema="dark"] .btn-cancelar-modal:hover { background: var(--z-border-s); }
   [data-tema="dark"] .rodape-modal { border-top-color: var(--z-border-s); }
-  [data-tema="dark"] .preview-cor-nome { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] input[type="color"] { background: var(--z-elevated); border-color: var(--z-border); }
-  [data-tema="dark"] .wrapper-cor label { color: var(--z-text-3); }
   [data-tema="dark"] .modal-tabs { border-color: var(--z-border-s); }
   [data-tema="dark"] .modal-tab-btn { color: var(--z-text-3); }
   [data-tema="dark"] .modal-tab-btn:hover { color: var(--z-text-1); }
@@ -483,16 +457,6 @@
           </select>
         </div>
         <div class="grupo-modal" style="grid-column:span 2;">
-          <label>Cor de identificação <span style="color:#94a3b8;font-weight:400;">(sidebar e destaque nos grids)</span></label>
-          <div class="wrapper-cor">
-            <input type="color" id="campo-usuario-cor" value="#2563eb" oninput="document.getElementById('preview-cor-usuario').style.color=this.value">
-            <span id="preview-cor-usuario" class="preview-cor-nome" style="color:#2563eb;font-weight:600;">Prévia do nome</span>
-            <label style="display:flex;align-items:center;gap:6px;margin-left:12px;font-size:12px;color:#64748b;cursor:pointer;">
-              <input type="checkbox" id="campo-usuario-sem-cor" onchange="toggleSemCor(this)"> Sem cor (usar padrão)
-            </label>
-          </div>
-        </div>
-        <div class="grupo-modal" style="grid-column:span 2;">
           <label>Avisos automáticos</label>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
             <label class="aviso-label" style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
@@ -620,24 +584,6 @@
   // ─── Usuários ────────────────────────────────────────────────
   let modoEdicaoUsuario = false;
 
-  function toggleSemCor(cb) {
-    const inp  = document.getElementById('campo-usuario-cor');
-    const prev = document.getElementById('preview-cor-usuario');
-    inp.disabled = cb.checked;
-    if (cb.checked) { prev.style.color = '#94a3b8'; prev.textContent = 'Sem cor (padrão do sistema)'; }
-    else { prev.style.color = inp.value; prev.textContent = 'Prévia do nome'; }
-  }
-
-  function _setCorUsuario(cor) {
-    const temCor = !!cor;
-    document.getElementById('campo-usuario-sem-cor').checked = !temCor;
-    document.getElementById('campo-usuario-cor').disabled    = !temCor;
-    document.getElementById('campo-usuario-cor').value       = cor || '#2563eb';
-    const prev = document.getElementById('preview-cor-usuario');
-    if (temCor) { prev.style.color = cor; prev.textContent = 'Prévia do nome'; }
-    else        { prev.style.color = '#94a3b8'; prev.textContent = 'Sem cor (padrão do sistema)'; }
-  }
-
   function abrirModalNovoUsuario() {
     modoEdicaoUsuario = false;
     document.getElementById('titulo-modal-usuario').textContent = 'Novo Usuário';
@@ -652,7 +598,6 @@
     document.getElementById('campo-usuario-setor').value = '';
     document.getElementById('hint-login').style.display = 'none';
     document.getElementById('dica-senha').textContent = 'Mínimo 6 caracteres.';
-    _setCorUsuario('');
     document.getElementById('tab-btn-email-usuario').style.display = 'none';
     trocarTabModal('dados', document.querySelector('.modal-tab-btn'));
     abrirModal('overlay-usuario');
@@ -676,7 +621,6 @@
     document.getElementById('campo-pode-enviar-notif').checked = !!(usuario.pode_enviar_notificacao);
     document.getElementById('hint-login').style.display = 'inline';
     document.getElementById('dica-senha').textContent = 'Deixe em branco para manter a senha atual.';
-    _setCorUsuario(usuario.cor || '');
     document.getElementById('tab-btn-email-usuario').style.display = '';
     trocarTabModal('dados', document.querySelector('.modal-tab-btn'));
     _carregarEmailUsuario(usuario.id);
@@ -691,15 +635,13 @@
     const nivel   = document.getElementById('campo-usuario-nivel').value;
     const tecnico = document.getElementById('campo-usuario-tecnico').value;
     const setor   = document.getElementById('campo-usuario-setor').value;
-    const semCor  = document.getElementById('campo-usuario-sem-cor').checked;
-    const cor     = semCor ? '' : document.getElementById('campo-usuario-cor').value;
 
     if (!nome) { mostrarToast('erro', 'Informe o nome.'); return; }
     if (!modoEdicaoUsuario && !login) { mostrarToast('erro', 'Informe o login.'); return; }
     if (!modoEdicaoUsuario && senha.length < 6) { mostrarToast('erro', 'Senha deve ter pelo menos 6 caracteres.'); return; }
 
     const dados = {
-      nome, nivel, tecnico_vinculado: tecnico || null, setor: setor || '', cor,
+      nome, nivel, tecnico_vinculado: tecnico || null, setor: setor || '',
       recebe_aviso_escritural:  document.getElementById('campo-aviso-escritural').checked  ? 1 : 0,
       recebe_aviso_melhorias:   document.getElementById('campo-aviso-melhorias').checked   ? 1 : 0,
       recebe_aviso_credenciais: document.getElementById('campo-aviso-credenciais').checked ? 1 : 0,

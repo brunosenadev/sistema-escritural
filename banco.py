@@ -168,6 +168,7 @@ TELAS_AGRUPADAS = [
         ('config',                             'Configurações'),
         ('sla_dashboard',                      'Dashboard SLA'),
         ('email_modelos',                      'Modelos de E-mail'),
+        ('usuarios',                           'Usuários'),
         ('importar_homologacoes_pendentes',    'Importar Homologações Pendentes'),
         ('importar_novas_homologacoes',        'Importar Novas Homologações'),
         ('logs',                               'Logs do Sistema'),

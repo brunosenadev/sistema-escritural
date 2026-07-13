@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, request, jsonify, session, make_re
 import banco
 import os
 import uuid
-from utils import checar_master, usuario_logado, criar_tokens, _preencher_sessao
+from utils import checar_master, checar_login, usuario_logado, criar_tokens, _preencher_sessao, tem_acesso_tela
+from flask import redirect, url_for
 
 usuarios_bp = Blueprint('usuarios', __name__)
 
@@ -26,9 +27,11 @@ def _eh_master():
 
 @usuarios_bp.route('/usuarios')
 def pagina_usuarios():
-    bloqueio = checar_master()
+    bloqueio = checar_login()
     if bloqueio:
         return bloqueio
+    if session.get('nivel_acesso') != 'master' and not tem_acesso_tela('usuarios'):
+        return redirect(url_for('auth.inicio'))
     return render_template(
         'gerenciar_usuarios.html',
         usuarios=banco.listar_usuarios(),

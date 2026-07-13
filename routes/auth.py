@@ -164,6 +164,20 @@ def api_minha_senha():
     return jsonify({'sucesso': True})
 
 
+@auth_bp.route('/api/minha-cor', methods=['PUT'])
+def api_minha_cor():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    id_usuario = session.get('id_usuario')
+    if not id_usuario:
+        return jsonify({'erro': 'Sessão inválida'}), 401
+    d   = request.get_json() or {}
+    cor = d.get('cor', '').strip()
+    banco.atualizar_usuario(id_usuario, {'cor': cor})
+    session['cor'] = cor
+    return jsonify({'sucesso': True})
+
+
 @auth_bp.route('/sair')
 def sair():
     banco.registrar_log(
