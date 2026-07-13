@@ -1058,6 +1058,13 @@
           {% endif %}
 
           {% if _eh_master %}
+          <a href="/usuarios" class="nav-item {% if aba_ativa == 'usuarios' %}ativo{% endif %}" title="Usuários">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="nav-item-texto">Usuários</span>
+          </a>
+          {% endif %}
+
+          {% if _eh_master %}
           <a href="/acesso" class="nav-item {% if aba_ativa == 'acesso' %}ativo{% endif %}" title="Controle de Acesso">
             <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
             <span class="nav-item-texto">Controle de Acesso</span>

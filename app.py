@@ -28,6 +28,7 @@ from routes.sessoes             import sessoes_bp
 from routes.notificacoes        import notificacoes_bp
 from routes.credenciais         import credenciais_bp, iniciar_checker as iniciar_checker_credenciais
 from routes.sla                 import sla_bp
+from routes.usuarios            import usuarios_bp
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
@@ -59,6 +60,7 @@ app.register_blueprint(sessoes_bp)
 app.register_blueprint(notificacoes_bp)
 app.register_blueprint(credenciais_bp)
 app.register_blueprint(sla_bp)
+app.register_blueprint(usuarios_bp)
 
 iniciar_polling()
 iniciar_checker_credenciais()
