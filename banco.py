@@ -167,6 +167,7 @@ TELAS_AGRUPADAS = [
         ('notificacoes',                       'Notificações'),
         ('melhorias',                          'Melhorias'),
         ('config',                             'Configurações'),
+        ('sla_dashboard',                      'Dashboard SLA'),
         ('email_modelos',                      'Modelos de E-mail'),
         ('importar_homologacoes_pendentes',    'Importar Homologações Pendentes'),
         ('importar_novas_homologacoes',        'Importar Novas Homologações'),
@@ -267,6 +268,25 @@ def inicializar_banco():
         CREATE TABLE IF NOT EXISTS setores_lista (
             id    INTEGER PRIMARY KEY AUTOINCREMENT,
             texto TEXT    UNIQUE NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS config_geral (
+            chave TEXT PRIMARY KEY,
+            valor TEXT DEFAULT ''
+        );
+        CREATE TABLE IF NOT EXISTS sla_config (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            servico         TEXT UNIQUE NOT NULL,
+            dias_atencao    INTEGER DEFAULT 15,
+            dias_atrasado   INTEGER DEFAULT 25,
+            dias_critico    INTEGER DEFAULT 40
+        );
+        CREATE TABLE IF NOT EXISTS sla_avisos (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            texto      TEXT NOT NULL,
+            tipo       TEXT DEFAULT 'info',
+            criado_por TEXT DEFAULT '',
+            criado_em  TEXT DEFAULT (datetime('now','localtime')),
+            expira_em  TEXT DEFAULT ''
         );
         CREATE TABLE IF NOT EXISTS melhorias (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1212,6 +1232,193 @@ def buscar_melhoria(id_melhoria: int):
     return dict(row) if row else None
 
 
+# ── Config Geral ─────────────────────────────────────────
+
+def get_config(chave, default=''):
+    conn = conectar()
+    row  = conn.execute("SELECT valor FROM config_geral WHERE chave=?", (chave,)).fetchone()
+    conn.close()
+    return row['valor'] if row else default
+
+
+def set_config(chave, valor):
+    conn = conectar()
+    conn.execute("INSERT OR REPLACE INTO config_geral(chave, valor) VALUES(?,?)", (chave, str(valor)))
+    conn.commit()
+    conn.close()
+
+
+# ── SLA Config ───────────────────────────────────────────
+
+def listar_sla_config():
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT * FROM sla_config ORDER BY CASE WHEN servico='__default__' THEN 0 ELSE 1 END, servico"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def salvar_sla_servico(servico, dias_atencao, dias_atrasado, dias_critico):
+    conn = conectar()
+    conn.execute(
+        """INSERT INTO sla_config(servico, dias_atencao, dias_atrasado, dias_critico)
+           VALUES(?,?,?,?)
+           ON CONFLICT(servico) DO UPDATE SET
+               dias_atencao=excluded.dias_atencao,
+               dias_atrasado=excluded.dias_atrasado,
+               dias_critico=excluded.dias_critico""",
+        (servico, int(dias_atencao), int(dias_atrasado), int(dias_critico))
+    )
+    conn.commit()
+    conn.close()
+
+
+def remover_sla_servico(id_sla):
+    conn = conectar()
+    conn.execute("DELETE FROM sla_config WHERE id=? AND servico != '__default__'", (id_sla,))
+    conn.commit()
+    conn.close()
+
+
+# ── SLA Avisos ───────────────────────────────────────────
+
+def listar_sla_avisos(apenas_ativos=False):
+    from datetime import datetime as _dt
+    conn = conectar()
+    rows = conn.execute("SELECT * FROM sla_avisos ORDER BY criado_em DESC").fetchall()
+    conn.close()
+    hoje = _dt.now().strftime('%Y-%m-%d')
+    result = []
+    for r in rows:
+        d = dict(r)
+        if apenas_ativos and d.get('expira_em') and d['expira_em'] < hoje:
+            continue
+        result.append(d)
+    return result
+
+
+def adicionar_sla_aviso(texto, tipo, expira_em, criado_por):
+    conn = conectar()
+    conn.execute(
+        "INSERT INTO sla_avisos(texto, tipo, expira_em, criado_por) VALUES(?,?,?,?)",
+        (texto, tipo or 'info', expira_em or '', criado_por)
+    )
+    conn.commit()
+    conn.close()
+
+
+def remover_sla_aviso(id_aviso):
+    conn = conectar()
+    conn.execute("DELETE FROM sla_avisos WHERE id=?", (id_aviso,))
+    conn.commit()
+    conn.close()
+
+
+# ── SLA Cálculo ──────────────────────────────────────────
+
+def migrar_sla():
+    conn = conectar()
+    for col in ('cadastrado_por_tec',):
+        try:
+            conn.execute(f"ALTER TABLE pendentes ADD COLUMN {col} TEXT DEFAULT ''")
+            conn.commit()
+        except Exception:
+            pass
+    conn.close()
+
+
+def calcular_sla_pendentes():
+    from datetime import datetime as _dt, date as _date
+    conn = conectar()
+    pendentes = conn.execute(
+        "SELECT * FROM pendentes WHERE status NOT IN ('CANCELADO')"
+    ).fetchall()
+    sla_rows = conn.execute("SELECT * FROM sla_config").fetchall()
+    conn.close()
+
+    sla_map  = {r['servico']: dict(r) for r in sla_rows}
+    default  = sla_map.get('__default__', {'dias_atencao': 15, 'dias_atrasado': 25, 'dias_critico': 40})
+    hoje     = _date.today()
+    result   = []
+
+    for p in pendentes:
+        pd = dict(p)
+        try:
+            dt_ini = _dt.strptime((pd.get('dt_solicita') or '').strip(), '%d/%m/%Y').date()
+            dias   = (hoje - dt_ini).days
+        except Exception:
+            dias = 0
+
+        servico = (pd.get('servico') or '').strip()
+        sla = sla_map.get(servico, default)
+
+        if   dias >= sla.get('dias_critico',  40): faixa = 'critico'
+        elif dias >= sla.get('dias_atrasado', 25): faixa = 'atrasado'
+        elif dias >= sla.get('dias_atencao',  15): faixa = 'atencao'
+        else:                                       faixa = 'ok'
+
+        pd['dias_em_aberto'] = dias
+        pd['sla_faixa']      = faixa
+        pd['sla_prazo']      = sla
+        result.append(pd)
+
+    return sorted(result, key=lambda x: x['dias_em_aberto'], reverse=True)
+
+
+def resumo_sla():
+    pendentes = calcular_sla_pendentes()
+    totais = {'total': len(pendentes), 'ok': 0, 'atencao': 0, 'atrasado': 0, 'critico': 0}
+    por_tecnico = {}
+    por_banco   = {}
+    por_servico = {}
+
+    for p in pendentes:
+        faixa = p['sla_faixa']
+        totais[faixa] = totais.get(faixa, 0) + 1
+        dias = p['dias_em_aberto']
+
+        tec = (p.get('tecnico') or 'SEM TÉC.').strip() or 'SEM TÉC.'
+        if tec not in por_tecnico:
+            por_tecnico[tec] = {'tecnico': tec, 'total': 0, 'soma_dias': 0}
+        por_tecnico[tec]['total']     += 1
+        por_tecnico[tec]['soma_dias'] += dias
+
+        bnc = (p.get('banco') or '—').strip() or '—'
+        if bnc not in por_banco:
+            por_banco[bnc] = {'banco': bnc, 'total': 0, 'soma_dias': 0}
+        por_banco[bnc]['total']     += 1
+        por_banco[bnc]['soma_dias'] += dias
+
+        srv = (p.get('servico') or '—').strip() or '—'
+        if srv not in por_servico:
+            por_servico[srv] = {'servico': srv, 'total': 0}
+        por_servico[srv]['total'] += 1
+
+    def _media(d):
+        return round(d['soma_dias'] / d['total'], 1) if d['total'] else 0
+
+    tecnicos_rank = sorted(
+        [{'tecnico': k, 'total': v['total'], 'media_dias': _media(v)} for k, v in por_tecnico.items()],
+        key=lambda x: x['media_dias'], reverse=True
+    )
+    bancos_rank = sorted(
+        [{'banco': k, 'total': v['total'], 'media_dias': _media(v)} for k, v in por_banco.items()],
+        key=lambda x: x['media_dias'], reverse=True
+    )[:10]
+
+    taxa = round((totais['ok'] / totais['total'] * 100), 1) if totais['total'] else 0.0
+
+    return {
+        'totais':    totais,
+        'taxa_sla':  taxa,
+        'tecnicos':  tecnicos_rank,
+        'bancos':    bancos_rank,
+        'servicos':  sorted(por_servico.values(), key=lambda x: x['total'], reverse=True),
+        'pendentes': pendentes,
+    }
+
+
 # ── Hub Bancário ─────────────────────────────────────────
 
 def hub_listar_bancos():
@@ -1585,11 +1792,12 @@ def listar_pendentes():
 
 def adicionar_pendente(dados, criado_por=''):
     conn = conectar()
+    tec = dados.get('tecnico', '')
     cur = conn.execute(
-        "INSERT INTO pendentes (tecnico,empresa,servico,banco,dt_solicita,dt_status,status,obs,criado_por) VALUES (?,?,?,?,?,?,?,?,?)",
-        (dados.get('tecnico',''), dados.get('empresa',''), dados.get('servico',''),
+        "INSERT INTO pendentes (tecnico,empresa,servico,banco,dt_solicita,dt_status,status,obs,criado_por,cadastrado_por_tec) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        (tec, dados.get('empresa',''), dados.get('servico',''),
          dados.get('banco',''), dados.get('dt_solicita',''), dados.get('dt_status',''),
-         dados.get('status',''), dados.get('obs',''), criado_por)
+         dados.get('status',''), dados.get('obs',''), criado_por, tec)
     )
     id_novo = cur.lastrowid
     conn.commit()

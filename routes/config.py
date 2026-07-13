@@ -44,6 +44,9 @@ def pagina_configuracoes():
         lista_status_escritural=banco.listar_status_escritural(),
         lista_servicos=banco.listar_servicos_completo(),
         lista_setores=banco.listar_setores(),
+        sla_config=banco.listar_sla_config(),
+        nomes_servicos=banco.listar_servicos(),
+        tecnico_padrao=banco.get_config('tecnico_padrao'),
         total_pendentes=contadores['pendentes'],
         total_hom_cobranca_db=contadores['cobranca'],
         total_hom_pagamentos_db=contadores['pagamentos'],
@@ -300,6 +303,106 @@ def api_remover_banco_cadastro(id_banco):
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.remover_banco_cadastro(id_banco)
     _log('Configurações', 'DELETOU', f'Removeu banco #{id_banco}')
+    return jsonify({'sucesso': True})
+
+
+# ── API Config Geral ─────────────────────────────────────
+
+@config_bp.route('/api/config-geral', methods=['GET'])
+def api_get_config_geral():
+    if not usuario_logado() or session.get('nivel_acesso') not in ('admin', 'master'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    chave = request.args.get('chave', '')
+    if not chave:
+        return jsonify({'erro': 'Chave obrigatória'}), 400
+    return jsonify({'valor': banco.get_config(chave)})
+
+
+@config_bp.route('/api/config-geral', methods=['POST'])
+def api_set_config_geral():
+    if not usuario_logado() or session.get('nivel_acesso') not in ('admin', 'master'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    d = request.get_json() or {}
+    chave = (d.get('chave') or '').strip()
+    valor = str(d.get('valor', ''))
+    if not chave:
+        return jsonify({'erro': 'Chave obrigatória'}), 400
+    banco.set_config(chave, valor)
+    _log('Configurações', 'EDITOU', f'Config geral: {chave}={valor}')
+    return jsonify({'sucesso': True})
+
+
+# ── API SLA Config ────────────────────────────────────────
+
+@config_bp.route('/api/sla-config', methods=['GET'])
+def api_listar_sla_config():
+    if not usuario_logado() or session.get('nivel_acesso') not in ('admin', 'master'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    return jsonify(banco.listar_sla_config())
+
+
+@config_bp.route('/api/sla-config', methods=['POST'])
+def api_salvar_sla_servico():
+    if not usuario_logado() or session.get('nivel_acesso') not in ('admin', 'master'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    d = request.get_json() or {}
+    servico = (d.get('servico') or '').strip()
+    if not servico:
+        return jsonify({'erro': 'Serviço obrigatório'}), 400
+    try:
+        banco.salvar_sla_servico(
+            servico,
+            int(d.get('dias_atencao', 15)),
+            int(d.get('dias_atrasado', 25)),
+            int(d.get('dias_critico', 40)),
+        )
+    except (ValueError, TypeError):
+        return jsonify({'erro': 'Dias inválidos'}), 400
+    _log('Configurações', 'EDITOU', f'SLA config salvo: {servico}')
+    return jsonify({'sucesso': True})
+
+
+@config_bp.route('/api/sla-config/<int:id_sla>', methods=['DELETE'])
+def api_remover_sla_servico(id_sla):
+    if not usuario_logado() or session.get('nivel_acesso') not in ('admin', 'master'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    banco.remover_sla_servico(id_sla)
+    _log('Configurações', 'DELETOU', f'SLA config removido: #{id_sla}')
+    return jsonify({'sucesso': True})
+
+
+# ── API SLA Avisos ────────────────────────────────────────
+
+@config_bp.route('/api/sla-avisos', methods=['GET'])
+def api_listar_sla_avisos():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    apenas_ativos = request.args.get('ativos') == '1'
+    return jsonify(banco.listar_sla_avisos(apenas_ativos=apenas_ativos))
+
+
+@config_bp.route('/api/sla-avisos', methods=['POST'])
+def api_adicionar_sla_aviso():
+    if not usuario_logado() or session.get('nivel_acesso') not in ('admin', 'master'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    d = request.get_json() or {}
+    texto = (d.get('texto') or '').strip()
+    if not texto:
+        return jsonify({'erro': 'Texto obrigatório'}), 400
+    banco.adicionar_sla_aviso(
+        texto, d.get('tipo', 'info'), d.get('expira_em', ''),
+        session.get('nome', '')
+    )
+    _log('Configurações', 'INSERIU', f'Aviso SLA criado: {texto[:60]}')
+    return jsonify({'sucesso': True})
+
+
+@config_bp.route('/api/sla-avisos/<int:id_aviso>', methods=['DELETE'])
+def api_remover_sla_aviso(id_aviso):
+    if not usuario_logado() or session.get('nivel_acesso') not in ('admin', 'master'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    banco.remover_sla_aviso(id_aviso)
+    _log('Configurações', 'DELETOU', f'Aviso SLA removido: #{id_aviso}')
     return jsonify({'sucesso': True})
 
 

@@ -1,0 +1,589 @@
+{% extends "base.html" %}
+{% set aba_ativa = 'sla_dashboard' %}
+
+{% block titulo %}Dashboard SLA{% endblock %}
+
+{% block conteudo %}
+<style>
+  /* ── Layout ── */
+  .sla-wrap { padding: 24px 28px; }
+  .sla-grid-kpi { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+
+  /* ── KPI Cards ── */
+  .kpi-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px 22px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    display: flex; flex-direction: column; gap: 6px;
+    position: relative; overflow: hidden;
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; right: -20px; top: -20px;
+    width: 80px; height: 80px; border-radius: 50%;
+    opacity: 0.08;
+  }
+  .kpi-card.ok::before    { background: #16a34a; }
+  .kpi-card.atencao::before { background: #d97706; }
+  .kpi-card.atrasado::before { background: #ea580c; }
+  .kpi-card.critico::before { background: #dc2626; }
+  .kpi-card.total::before   { background: #2563eb; }
+
+  .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; }
+  .kpi-valor { font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+  .kpi-valor.ok      { color: #16a34a; }
+  .kpi-valor.atencao { color: #d97706; }
+  .kpi-valor.atrasado{ color: #ea580c; }
+  .kpi-valor.critico { color: #dc2626; }
+  .kpi-valor.total   { color: #2563eb; }
+  .kpi-sub { font-size: 12px; color: #94a3b8; }
+  .kpi-icon { position: absolute; right: 18px; top: 18px; opacity: 0.18; }
+  .kpi-icon svg { width: 32px; height: 32px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+  /* ── Charts row ── */
+  .sla-charts-row { display: grid; grid-template-columns: 280px 1fr; gap: 20px; margin-bottom: 28px; }
+  @media (max-width: 900px) { .sla-charts-row { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 16px; padding: 20px 22px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .chart-titulo { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 18px; display:flex;align-items:center;gap:8px; }
+  .chart-titulo svg { width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2; }
+
+  /* ── Donut ── */
+  .donut-wrap { display: flex; align-items: center; gap: 20px; }
+  .donut-svg { flex-shrink: 0; }
+  .donut-legenda { display: flex; flex-direction: column; gap: 8px; }
+  .leg-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .leg-dot  { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .leg-nome { color: #475569; }
+  .leg-val  { font-weight: 700; color: #0f172a; margin-left: auto; padding-left: 12px; }
+
+  /* ── Barras ── */
+  .bar-list { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row  { display: flex; flex-direction: column; gap: 4px; }
+  .bar-info { display: flex; justify-content: space-between; font-size: 12px; }
+  .bar-nome { color: #475569; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  .bar-dias { font-weight: 700; color: #0f172a; }
+  .bar-track{ background: #f1f5f9; border-radius: 99px; height: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; transform-origin: left; transform: scaleX(0); transition: transform 0.8s cubic-bezier(.4,0,.2,1); }
+
+  /* ── Tabela de risco ── */
+  .tabela-sla { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tabela-sla th { background: #f8fafc; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; padding: 10px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+  .tabela-sla td { padding: 11px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  .tabela-sla tbody tr:hover td { background: #f8fafc; }
+  .tabela-sla tbody tr:last-child td { border-bottom: none; }
+
+  .chip-faixa { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+  .chip-ok       { background: #dcfce7; color: #15803d; }
+  .chip-atencao  { background: #fef9c3; color: #92400e; }
+  .chip-atrasado { background: #ffedd5; color: #c2410c; }
+  .chip-critico  { background: #fee2e2; color: #991b1b; }
+
+  .pulse-critico { animation: pulse-red 1.8s ease-in-out infinite; }
+  @keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.35); }
+    50%       { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
+  }
+
+  /* ── Avisos ── */
+  .avisos-section { margin-bottom: 28px; }
+  .aviso-card { border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px; border: 1px solid; }
+  .aviso-card.info    { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+  .aviso-card.aviso   { background: #fefce8; border-color: #fde68a; color: #92400e; }
+  .aviso-card.critico { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+  .aviso-card.sucesso { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+  .aviso-ico { flex-shrink: 0; margin-top: 1px; }
+  .aviso-ico svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .aviso-corpo { flex: 1; }
+  .aviso-texto { font-size: 13px; font-weight: 500; }
+  .aviso-meta  { font-size: 11px; margin-top: 3px; opacity: 0.7; }
+  .aviso-del { background: none; border: none; cursor: pointer; opacity: 0.5; transition: opacity 0.15s; padding: 2px; }
+  .aviso-del:hover { opacity: 1; }
+  .aviso-del svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; display: block; }
+
+  /* ── Form Aviso ── */
+  .form-aviso { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; display: none; }
+  .form-aviso.aberto { display: block; }
+  .form-aviso-grid { display: grid; grid-template-columns: 1fr 140px 160px auto; gap: 10px; align-items: end; }
+  @media (max-width: 768px) { .form-aviso-grid { grid-template-columns: 1fr 1fr; } }
+
+  /* ── Pulsação de KPI crítico ── */
+  @keyframes kpi-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
+  }
+  .kpi-critico-blink { animation: kpi-blink 2s ease-in-out infinite; }
+
+  /* ── Count-up ── */
+  .count-up { display: inline-block; }
+
+  /* ── Taxa SLA badge ── */
+  .taxa-sla { font-size: 22px; font-weight: 800; }
+  .taxa-sla.boa  { color: #16a34a; }
+  .taxa-sla.media{ color: #d97706; }
+  .taxa-sla.ruim { color: #dc2626; }
+
+  /* ── Dark mode overrides ── */
+  [data-tema="dark"] .kpi-card  { background: var(--z-surface); border-color: var(--z-border-s); }
+  [data-tema="dark"] .kpi-valor.ok      { color: #4ade80; }
+  [data-tema="dark"] .kpi-valor.atencao { color: #fbbf24; }
+  [data-tema="dark"] .kpi-valor.atrasado{ color: #fb923c; }
+  [data-tema="dark"] .kpi-valor.critico { color: #f87171; }
+  [data-tema="dark"] .kpi-valor.total   { color: #818cf8; }
+  [data-tema="dark"] .kpi-label  { color: var(--z-text-3); }
+  [data-tema="dark"] .kpi-sub    { color: var(--z-text-3); }
+  [data-tema="dark"] .chart-card { background: var(--z-surface); border-color: var(--z-border-s); }
+  [data-tema="dark"] .chart-titulo { color: var(--z-text-1); }
+  [data-tema="dark"] .leg-nome   { color: var(--z-text-2); }
+  [data-tema="dark"] .leg-val    { color: var(--z-text-1); }
+  [data-tema="dark"] .bar-nome   { color: var(--z-text-2); }
+  [data-tema="dark"] .bar-dias   { color: var(--z-text-1); }
+  [data-tema="dark"] .bar-track  { background: var(--z-elevated); }
+  [data-tema="dark"] .tabela-sla th { background: var(--z-elevated); color: var(--z-text-3); border-color: var(--z-border-s); }
+  [data-tema="dark"] .tabela-sla td { border-color: var(--z-border-s); color: var(--z-text-1); }
+  [data-tema="dark"] .tabela-sla tbody tr:hover td { background: var(--z-elevated); }
+  [data-tema="dark"] .chip-ok       { background: rgba(22,163,74,0.15); color: #4ade80; }
+  [data-tema="dark"] .chip-atencao  { background: rgba(217,119,6,0.15); color: #fbbf24; }
+  [data-tema="dark"] .chip-atrasado { background: rgba(234,88,12,0.15); color: #fb923c; }
+  [data-tema="dark"] .chip-critico  { background: rgba(220,38,38,0.15); color: #f87171; }
+  [data-tema="dark"] .form-aviso    { background: var(--z-elevated); border-color: var(--z-border-s); }
+  [data-tema="dark"] .aviso-card.info    { background: rgba(29,78,216,0.12); border-color: rgba(99,102,241,0.3); color: #818cf8; }
+  [data-tema="dark"] .aviso-card.aviso   { background: rgba(217,119,6,0.12); border-color: rgba(251,191,36,0.3); color: #fbbf24; }
+  [data-tema="dark"] .aviso-card.critico { background: rgba(220,38,38,0.12); border-color: rgba(248,113,113,0.3); color: #f87171; }
+  [data-tema="dark"] .aviso-card.sucesso { background: rgba(22,163,74,0.12); border-color: rgba(74,222,128,0.3); color: #4ade80; }
+
+  /* ── Seção separador ── */
+  .sla-section-titulo {
+    font-size: 13px; font-weight: 700; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .sla-section-titulo::after { content:''; flex:1; height:1px; background:#e2e8f0; }
+  [data-tema="dark"] .sla-section-titulo { color: var(--z-text-3); }
+  [data-tema="dark"] .sla-section-titulo::after { background: var(--z-border-s); }
+</style>
+
+<!-- Header -->
+<div class="header-pagina">
+  <div>
+    <div class="titulo-pagina">Dashboard SLA</div>
+    <div class="breadcrumb">Controle de prazos e atrasos</div>
+  </div>
+  <div class="acoes-header">
+    <button class="btn-header-action" onclick="recarregar()" title="Atualizar dados" style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;background:none;border:1px solid #e2e8f0;border-radius:8px;padding:7px 12px;cursor:pointer;color:#475569;">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+      Atualizar
+    </button>
+    {% if nivel_acesso in ('admin', 'master') %}
+    <button class="btn-header-action" id="btn-abrir-aviso" onclick="toggleFormAviso()" title="Novo Aviso" style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;background:#2563eb;border:none;border-radius:8px;padding:7px 12px;cursor:pointer;color:#fff;">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Novo Aviso
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="sla-wrap">
+
+  <!-- ── Avisos ── -->
+  <div class="avisos-section" id="secao-avisos" style="display:none;">
+    <div class="sla-section-titulo">
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Avisos Ativos
+    </div>
+
+    {% if nivel_acesso in ('admin', 'master') %}
+    <div class="form-aviso" id="form-aviso">
+      <div class="form-aviso-grid">
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Mensagem</label>
+          <input type="text" id="aviso-texto" class="input-config" placeholder="Ex: Banco X está com instabilidade…" style="width:100%;">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Tipo</label>
+          <select id="aviso-tipo" class="input-config" style="width:100%;">
+            <option value="info">Informação</option>
+            <option value="aviso">Atenção</option>
+            <option value="critico">Crítico</option>
+            <option value="sucesso">Sucesso</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Expira em</label>
+          <input type="date" id="aviso-expira" class="input-config" style="width:100%;">
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-primario-config" onclick="criarAviso()">Publicar</button>
+          <button class="btn-cancelar-modal" onclick="toggleFormAviso()" style="font-size:12px;padding:6px 10px;">✕</button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div id="lista-avisos"></div>
+  </div>
+
+  <!-- ── KPI Cards ── -->
+  <div class="sla-section-titulo">
+    <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Visão Geral
+  </div>
+  <div class="sla-grid-kpi" id="kpi-grid">
+    <div class="kpi-card total">
+      <div class="kpi-icon" style="color:#2563eb;"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14.5"/></svg></div>
+      <div class="kpi-label">Total em aberto</div>
+      <div class="kpi-valor total count-up" id="kpi-total">—</div>
+      <div class="kpi-sub" id="kpi-taxa">carregando…</div>
+    </div>
+    <div class="kpi-card ok">
+      <div class="kpi-icon" style="color:#16a34a;"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="kpi-label">No prazo</div>
+      <div class="kpi-valor ok count-up" id="kpi-ok">—</div>
+      <div class="kpi-sub">dentro do SLA</div>
+    </div>
+    <div class="kpi-card atencao">
+      <div class="kpi-icon" style="color:#d97706;"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div class="kpi-label">Atenção</div>
+      <div class="kpi-valor atencao count-up" id="kpi-atencao">—</div>
+      <div class="kpi-sub">próximos do prazo</div>
+    </div>
+    <div class="kpi-card atrasado">
+      <div class="kpi-icon" style="color:#ea580c;"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div class="kpi-label">Atrasados</div>
+      <div class="kpi-valor atrasado count-up" id="kpi-atrasado">—</div>
+      <div class="kpi-sub">acima do prazo</div>
+    </div>
+    <div class="kpi-card critico">
+      <div class="kpi-icon" style="color:#dc2626;"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div class="kpi-label">Críticos</div>
+      <div class="kpi-valor critico count-up kpi-critico-blink" id="kpi-critico">—</div>
+      <div class="kpi-sub">nível crítico</div>
+    </div>
+  </div>
+
+  <!-- ── Charts row ── -->
+  <div class="sla-charts-row">
+
+    <!-- Donut -->
+    <div class="chart-card">
+      <div class="chart-titulo">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+        Distribuição SLA
+      </div>
+      <div class="donut-wrap">
+        <svg class="donut-svg" width="130" height="130" viewBox="0 0 130 130" id="donut-svg">
+          <circle cx="65" cy="65" r="50" fill="none" stroke="#f1f5f9" stroke-width="18"/>
+          <!-- arcos gerados por JS -->
+        </svg>
+        <div class="donut-legenda" id="donut-legenda"></div>
+      </div>
+    </div>
+
+    <!-- Barras — top bancos por média dias -->
+    <div class="chart-card">
+      <div class="chart-titulo">
+        <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="9" width="4" height="12"/><rect x="15" y="5" width="4" height="16"/></svg>
+        Top Bancos por Atraso Médio
+      </div>
+      <div class="bar-list" id="bar-bancos"></div>
+    </div>
+
+  </div>
+
+  <!-- ── Tabela de risco ── -->
+  <div class="sla-section-titulo">
+    <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+    Pendentes em Risco
+  </div>
+  <div class="chart-card" style="margin-bottom:28px;overflow-x:auto;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <input type="text" id="filtro-risco" placeholder="Filtrar por empresa, banco, serviço…" class="input-config" style="max-width:320px;width:100%;" oninput="filtrarRisco()">
+      <select id="filtro-faixa" class="input-config" style="max-width:160px;" onchange="filtrarRisco()">
+        <option value="">Todas as faixas</option>
+        <option value="critico">Crítico</option>
+        <option value="atrasado">Atrasado</option>
+        <option value="atencao">Atenção</option>
+        <option value="ok">No prazo</option>
+      </select>
+    </div>
+    <table class="tabela-sla">
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Banco</th>
+          <th>Serviço</th>
+          <th>Técnico</th>
+          <th>Dt. Solicita</th>
+          <th>Dias em aberto</th>
+          <th>Status SLA</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-risco">
+        <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:28px;">Carregando…</td></tr>
+      </tbody>
+    </table>
+    <div id="risco-rodape" style="font-size:12px;color:#94a3b8;padding:10px 0 0;"></div>
+  </div>
+
+</div>
+
+<script>
+  const _isMaster = {{ (nivel_acesso == 'master') | tojson }};
+  const _isAdmin  = {{ (nivel_acesso in ('admin','master')) | tojson }};
+  let   _resumo   = null;
+
+  // ─── Paleta SLA ────────────────────────────────────────
+  const CORES = {
+    ok:       '#16a34a',
+    atencao:  '#d97706',
+    atrasado: '#ea580c',
+    critico:  '#dc2626',
+  };
+  const CORES_DARK = {
+    ok:       '#4ade80',
+    atencao:  '#fbbf24',
+    atrasado: '#fb923c',
+    critico:  '#f87171',
+  };
+  function _cor(faixa) {
+    const dark = document.documentElement.dataset.tema === 'dark';
+    return (dark ? CORES_DARK : CORES)[faixa] || '#94a3b8';
+  }
+
+  // ─── Count-up ──────────────────────────────────────────
+  function countUp(el, fim, dur = 700) {
+    const inicio = Date.now();
+    const tick = () => {
+      const p = Math.min(1, (Date.now() - inicio) / dur);
+      el.textContent = Math.round(fim * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  // ─── Donut ─────────────────────────────────────────────
+  function desenharDonut(totais) {
+    const R = 50, CX = 65, CY = 65;
+    const circ  = 2 * Math.PI * R;
+    const total = totais.ok + totais.atencao + totais.atrasado + totais.critico || 1;
+    const ordens = ['critico','atrasado','atencao','ok'];
+    const nomes  = {ok:'No prazo', atencao:'Atenção', atrasado:'Atrasado', critico:'Crítico'};
+    const svg  = document.getElementById('donut-svg');
+    const leg  = document.getElementById('donut-legenda');
+
+    // remove arcos antigos
+    svg.querySelectorAll('.donut-arco').forEach(e => e.remove());
+    leg.innerHTML = '';
+
+    let offset = 0;
+    ordens.forEach(f => {
+      const val  = totais[f] || 0;
+      const frac = val / total;
+      const dash = frac * circ;
+      const gap  = circ - dash;
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', CX); c.setAttribute('cy', CY); c.setAttribute('r', R);
+      c.setAttribute('fill', 'none');
+      c.setAttribute('stroke', CORES[f]);
+      c.setAttribute('stroke-width', '18');
+      c.setAttribute('stroke-dasharray', `${dash} ${gap}`);
+      c.setAttribute('stroke-dashoffset', -offset * circ);
+      c.setAttribute('transform', `rotate(-90 ${CX} ${CY})`);
+      c.classList.add('donut-arco');
+      c.style.transition = 'stroke-dasharray 0.8s cubic-bezier(.4,0,.2,1)';
+      svg.appendChild(c);
+
+      const li = document.createElement('div');
+      li.className = 'leg-item';
+      li.innerHTML = `<span class="leg-dot" style="background:${CORES[f]}"></span>
+        <span class="leg-nome">${nomes[f]}</span>
+        <span class="leg-val">${val}</span>`;
+      leg.appendChild(li);
+
+      offset += frac;
+    });
+  }
+
+  // ─── Barras ────────────────────────────────────────────
+  function desenharBarras(bancos) {
+    const el = document.getElementById('bar-bancos');
+    el.innerHTML = '';
+    if (!bancos || !bancos.length) {
+      el.innerHTML = '<p style="color:#94a3b8;font-size:13px;">Sem dados.</p>';
+      return;
+    }
+    const max = bancos[0].media_dias || 1;
+    bancos.slice(0, 8).forEach(b => {
+      const pct = b.media_dias / max;
+      const cor = b.media_dias >= 40 ? '#dc2626' : b.media_dias >= 25 ? '#ea580c' : b.media_dias >= 15 ? '#d97706' : '#16a34a';
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `
+        <div class="bar-info">
+          <span class="bar-nome" title="${b.banco}">${b.banco}</span>
+          <span class="bar-dias">${b.media_dias}d médio (${b.total})</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="background:${cor};width:${(pct*100).toFixed(1)}%;" data-w="${pct}"></div>
+        </div>`;
+      el.appendChild(row);
+    });
+    // animar
+    setTimeout(() => {
+      el.querySelectorAll('.bar-fill').forEach(f => f.style.transform = 'scaleX(1)');
+    }, 80);
+  }
+
+  // ─── Tabela risco ──────────────────────────────────────
+  let _pendentes = [];
+  function renderTabela(lista) {
+    const tbody = document.getElementById('tbody-risco');
+    if (!lista || !lista.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:28px;">Nenhum pendente em risco.</td></tr>';
+      document.getElementById('risco-rodape').textContent = '';
+      return;
+    }
+    tbody.innerHTML = lista.map(p => {
+      const faixa = p.sla_faixa;
+      const chip  = `<span class="chip-faixa chip-${faixa}${faixa==='critico' ? ' pulse-critico':''}">${{ok:'OK',atencao:'Atenção',atrasado:'Atrasado',critico:'Crítico'}[faixa]||faixa}</span>`;
+      return `<tr data-faixa="${faixa}" data-busca="${[p.empresa,p.banco,p.servico,p.tecnico].join(' ').toLowerCase()}">
+        <td style="font-weight:600;">${p.empresa||'—'}</td>
+        <td>${p.banco||'—'}</td>
+        <td>${p.servico||'—'}</td>
+        <td>${p.tecnico||'—'}</td>
+        <td>${p.dt_solicita||'—'}</td>
+        <td style="font-weight:700;color:${{ok:'#16a34a',atencao:'#d97706',atrasado:'#ea580c',critico:'#dc2626'}[faixa]||'inherit'};">${p.dias_em_aberto}d</td>
+        <td>${chip}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('risco-rodape').textContent = `${lista.length} registro(s) exibidos`;
+  }
+
+  function filtrarRisco() {
+    const busca = document.getElementById('filtro-risco').value.toLowerCase();
+    const faixa = document.getElementById('filtro-faixa').value;
+    const filtrado = _pendentes.filter(p => {
+      const matchFaixa = !faixa || p.sla_faixa === faixa;
+      const matchBusca = !busca || [p.empresa,p.banco,p.servico,p.tecnico].join(' ').toLowerCase().includes(busca);
+      return matchFaixa && matchBusca;
+    });
+    renderTabela(filtrado);
+  }
+
+  // ─── Avisos ────────────────────────────────────────────
+  const AVISO_ICONS = {
+    info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    aviso:   '<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    critico: '<svg viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    sucesso: '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
+  };
+
+  function renderAvisos(lista) {
+    const el = document.getElementById('lista-avisos');
+    const sec = document.getElementById('secao-avisos');
+    if (!lista || !lista.length) {
+      if (!_isAdmin) sec.style.display = 'none';
+      el.innerHTML = '';
+      return;
+    }
+    sec.style.display = '';
+    el.innerHTML = lista.map(a => `
+      <div class="aviso-card ${a.tipo}" id="aviso-${a.id}">
+        <div class="aviso-ico">${AVISO_ICONS[a.tipo] || AVISO_ICONS.info}</div>
+        <div class="aviso-corpo">
+          <div class="aviso-texto">${a.texto}</div>
+          <div class="aviso-meta">Por ${a.criado_por||'?'}${a.expira_em ? ` · expira em ${a.expira_em}` : ''}</div>
+        </div>
+        ${_isAdmin ? `<button class="aviso-del" onclick="deletarAviso(${a.id})" title="Remover">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>` : ''}
+      </div>`).join('');
+  }
+
+  async function carregarAvisos() {
+    const r = await fetch('/api/sla-avisos?ativos=1');
+    const lista = await r.json();
+    renderAvisos(lista);
+    if (_isAdmin && lista.length) document.getElementById('secao-avisos').style.display = '';
+  }
+
+  function toggleFormAviso() {
+    const f = document.getElementById('form-aviso');
+    if (!f) return;
+    f.classList.toggle('aberto');
+    document.getElementById('secao-avisos').style.display = '';
+  }
+
+  async function criarAviso() {
+    const texto    = document.getElementById('aviso-texto').value.trim();
+    const tipo     = document.getElementById('aviso-tipo').value;
+    const expira   = document.getElementById('aviso-expira').value;
+    if (!texto) return alert('Informe o texto do aviso.');
+    const r = await fetch('/api/sla-avisos', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({texto, tipo, expira_em: expira})
+    });
+    const d = await r.json();
+    if (d.sucesso) { document.getElementById('aviso-texto').value = ''; await carregarAvisos(); }
+  }
+
+  async function deletarAviso(id) {
+    if (!confirm('Remover este aviso?')) return;
+    await fetch(`/api/sla-avisos/${id}`, {method: 'DELETE'});
+    document.getElementById(`aviso-${id}`)?.remove();
+  }
+
+  // ─── Carga principal ───────────────────────────────────
+  async function carregarDados() {
+    try {
+      const r = await fetch('/api/sla/resumo');
+      _resumo = await r.json();
+      const t = _resumo.totais;
+      _pendentes = _resumo.pendentes || [];
+
+      // KPIs com count-up
+      countUp(document.getElementById('kpi-total'),    t.total);
+      countUp(document.getElementById('kpi-ok'),       t.ok);
+      countUp(document.getElementById('kpi-atencao'),  t.atencao);
+      countUp(document.getElementById('kpi-atrasado'), t.atrasado);
+      countUp(document.getElementById('kpi-critico'),  t.critico);
+
+      const taxa = _resumo.taxa_sla ?? 0;
+      const el = document.getElementById('kpi-taxa');
+      el.innerHTML = `<span class="taxa-sla ${taxa>=80?'boa':taxa>=50?'media':'ruim'}">${taxa}%</span> taxa de SLA`;
+
+      // Donut
+      desenharDonut(t);
+
+      // Barras
+      desenharBarras(_resumo.bancos || []);
+
+      // Tabela
+      renderTabela(_pendentes);
+
+    } catch(e) {
+      document.getElementById('tbody-risco').innerHTML =
+        '<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:28px;">Erro ao carregar dados.</td></tr>';
+    }
+  }
+
+  function recarregar() {
+    _pendentes = [];
+    document.getElementById('tbody-risco').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:28px;">Carregando…</td></tr>';
+    carregarDados();
+    carregarAvisos();
+  }
+
+  // ─── Init ──────────────────────────────────────────────
+  carregarDados();
+  carregarAvisos();
+  if (_isAdmin) document.getElementById('secao-avisos').style.display = '';
+</script>
+{% endblock %}

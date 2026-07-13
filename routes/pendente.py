@@ -69,6 +69,7 @@ def aba_pendente():
         lista_servicos=banco.listar_servicos(),
         lista_servicos_mapa={s['texto']: s['destino_homologado'] for s in banco.listar_servicos_completo()},
         cores_tecnicos=cores_tecnicos,
+        tecnico_padrao=banco.get_config('tecnico_padrao'),
     )
 
 
@@ -89,6 +90,9 @@ def adicionar_pendente():
     err = _sem_permissao()
     if err: return err
     dados = request.get_json() or {}
+    dados['status'] = 'FALTA CADASTRAR'
+    if not dados.get('tecnico'):
+        dados['tecnico'] = banco.get_config('tecnico_padrao')
     id_novo = banco.adicionar_pendente(dados, criado_por=session.get('usuario', ''))
     _log('INSERIU', f'Inseriu pendente #{id_novo} — {dados.get("empresa","?")} ({dados.get("banco","?")} · {dados.get("servico","?")})')
     return jsonify({'sucesso': True, 'id': id_novo})

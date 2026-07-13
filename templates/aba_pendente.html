@@ -840,7 +840,7 @@
       <div class="grade-form">
 
         <div class="grupo-form">
-          <label for="campo-tecnico">Técnico</label>
+          <label for="campo-tecnico" id="label-campo-tecnico">Técnico</label>
           <select class="select-form" id="campo-tecnico" name="tecnico">
             <option value="">Selecionar...</option>
             {% for t in lista_tecnicos %}
@@ -1037,14 +1037,22 @@
     return `${dia}/${mes}/${d.getFullYear()}`;
   }
 
+  function _travarTecnico(travar) {
+    const sel = document.getElementById('campo-tecnico');
+    const lbl = document.getElementById('label-campo-tecnico');
+    sel.disabled = travar;
+    sel.style.opacity = travar ? '0.6' : '';
+    sel.style.cursor  = travar ? 'not-allowed' : '';
+    if (lbl) lbl.textContent = travar ? 'Técnico (padrão — editável após salvar)' : 'Técnico';
+  }
+
   function abrirModalAdicionar() {
     modoEdicao = false;
     document.getElementById('titulo-modal').textContent = 'Novo Registro';
     document.getElementById('botao-salvar-texto').textContent = 'Adicionar';
     document.getElementById('form-registro').reset();
     document.getElementById('campo-id').value          = '';
-    // Valores padrão para novo registro
-    document.getElementById('campo-tecnico').value     = 'SEM TEC.';
+    document.getElementById('campo-tecnico').value     = _tecnicoPadrao || 'SEM TEC.';
     document.getElementById('campo-empresa').value     = '';
     document.getElementById('campo-servico').value     = 'COBRANÇA';
     document.getElementById('campo-banco').value       = '';
@@ -1052,6 +1060,7 @@
     document.getElementById('campo-dt-status').value   = dataDeHoje();
     document.getElementById('campo-status').value      = 'FALTA CADASTRAR';
     document.getElementById('campo-obs').value         = 'DADOS NO E-MAIL:';
+    _travarTecnico(true);
     document.getElementById('overlay-modal').classList.add('aberto');
     document.getElementById('campo-empresa').focus();
   }
@@ -1064,6 +1073,7 @@
 
   function abrirModalEditar(registro) {
     modoEdicao = true;
+    _travarTecnico(false);
     document.getElementById('titulo-modal').textContent = 'Editar Registro';
     document.getElementById('botao-salvar-texto').textContent = 'Salvar Alterações';
     document.getElementById('campo-id').value         = registro.id;
@@ -1083,7 +1093,8 @@
     document.getElementById('titulo-modal').textContent = 'Duplicar Registro';
     document.getElementById('botao-salvar-texto').textContent = 'Adicionar';
     document.getElementById('campo-id').value            = '';
-    document.getElementById('campo-tecnico').value       = registro.tecnico  || 'SEM TEC.';
+    document.getElementById('campo-tecnico').value       = _tecnicoPadrao || 'SEM TEC.';
+    _travarTecnico(true);
     document.getElementById('campo-empresa').value       = registro.empresa  || '';
     document.getElementById('campo-servico').value       = registro.servico  || '';
     document.getElementById('campo-banco').value         = registro.banco    || '';
@@ -1324,6 +1335,7 @@
   }
 
   // ─── Assumir registro ───────────────────────────────────────
+  const _tecnicoPadrao    = {{ tecnico_padrao | tojson }};
   const _tecnicoVinculado = {{ session.get("tecnico_vinculado", "") | tojson }};
   let _idAssumirAtual = null;
 

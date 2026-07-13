@@ -578,6 +578,12 @@
     Status Escriturais
   </button>
   {% endif %}
+  {% if nivel_acesso in ('admin', 'master') %}
+  <button class="tab-btn" onclick="trocarTab('sla', this)">
+    <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 4-8"/></svg>
+    SLA
+  </button>
+  {% endif %}
 </div>
 
 <!-- ════════════════════════════════════════════ -->
@@ -980,6 +986,136 @@
     </div>
   </div>
 </div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- TAB: SLA                                    -->
+<!-- ════════════════════════════════════════════ -->
+{% if nivel_acesso in ('admin', 'master') %}
+<div id="tab-sla" class="painel-tab">
+
+  <!-- Técnico Padrão -->
+  <div class="card-config" style="max-width:460px;margin-bottom:24px;">
+    <div class="card-config-header">
+      <span class="card-config-titulo">
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Técnico Padrão para Novos Cadastros
+      </span>
+    </div>
+    <div class="card-config-body">
+      <p style="font-size:13px;color:#64748b;margin-bottom:12px;">Ao criar um novo pendente, o campo técnico será pré-preenchido com este técnico e bloqueado. Após salvar, o campo fica liberado para redistribuição.</p>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <select class="input-config" id="select-tecnico-padrao" style="flex:1;">
+          <option value="">— Nenhum —</option>
+          {% for t in tecnicos %}
+          <option value="{{ t.nome }}" {% if t.nome == tecnico_padrao %}selected{% endif %}>{{ t.nome }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn-primario-config" onclick="salvarTecnicoPadrao()">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLA por Serviço -->
+  <div class="card-config">
+    <div class="card-config-header" style="display:flex;align-items:center;justify-content:space-between;">
+      <span class="card-config-titulo">
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 4-8"/></svg>
+        Prazos SLA por Serviço
+      </span>
+      <button class="btn-primario-config" onclick="abrirFormSla()">
+        <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo
+      </button>
+    </div>
+    <div class="card-config-body" style="padding:0;">
+
+      <!-- Formulário inline (oculto por padrão) -->
+      <div id="form-sla-novo" style="display:none;padding:16px;border-bottom:1px solid #f1f5f9;background:#f8fafc;">
+        <div style="display:grid;grid-template-columns:1fr repeat(3,90px) auto;gap:10px;align-items:end;">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Serviço</label>
+            <select class="input-config" id="sla-form-servico" style="width:100%;">
+              <option value="__default__">⚙ Padrão Global</option>
+              {% for s in nomes_servicos %}
+              <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#f59e0b;display:block;margin-bottom:4px;">Atenção (dias)</label>
+            <input class="input-config" type="number" id="sla-form-atencao" value="15" min="1" max="365">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#f97316;display:block;margin-bottom:4px;">Atrasado (dias)</label>
+            <input class="input-config" type="number" id="sla-form-atrasado" value="25" min="1" max="365">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#dc2626;display:block;margin-bottom:4px;">Crítico (dias)</label>
+            <input class="input-config" type="number" id="sla-form-critico" value="40" min="1" max="365">
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-primario-config" onclick="salvarSlaConfig()">Salvar</button>
+            <button class="btn-cancelar-modal" onclick="fecharFormSla()" style="font-size:12px;padding:6px 10px;">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela existente -->
+      <table class="tabela-config" id="tabela-sla">
+        <thead>
+          <tr>
+            <th>Serviço</th>
+            <th style="text-align:center;color:#f59e0b;">Atenção</th>
+            <th style="text-align:center;color:#f97316;">Atrasado</th>
+            <th style="text-align:center;color:#dc2626;">Crítico</th>
+            <th style="width:60px;"></th>
+          </tr>
+        </thead>
+        <tbody id="corpo-tabela-sla">
+          {% for s in sla_config %}
+          <tr data-sla-id="{{ s.id }}">
+            <td>
+              {% if s.servico == '__default__' %}
+              <span style="font-style:italic;color:#64748b;">⚙ Padrão Global</span>
+              {% else %}
+              {{ s.servico }}
+              {% endif %}
+            </td>
+            <td style="text-align:center;"><span class="badge-sla-atencao">{{ s.dias_atencao }}d</span></td>
+            <td style="text-align:center;"><span class="badge-sla-atrasado">{{ s.dias_atrasado }}d</span></td>
+            <td style="text-align:center;"><span class="badge-sla-critico">{{ s.dias_critico }}d</span></td>
+            <td>
+              {% if s.servico != '__default__' %}
+              <button class="btn-deletar-mini" onclick="removerSlaConfig({{ s.id }}, this)" title="Remover">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr id="sla-linha-vazia"><td colspan="5" style="text-align:center;color:#94a3b8;padding:24px;">Nenhuma configuração ainda. Clique em "Novo" para adicionar.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+<style>
+.badge-sla-atencao  { background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600; }
+.badge-sla-atrasado { background:#ffedd5;color:#c2410c;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600; }
+.badge-sla-critico  { background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600; }
+[data-tema="dark"] .badge-sla-atencao  { background:rgba(234,179,8,0.15);color:#fbbf24; }
+[data-tema="dark"] .badge-sla-atrasado { background:rgba(249,115,22,0.15);color:#fb923c; }
+[data-tema="dark"] .badge-sla-critico  { background:rgba(220,38,38,0.15);color:#f87171; }
+[data-tema="dark"] #form-sla-novo { background:var(--z-elevated) !important; border-color:var(--z-border-s) !important; }
+</style>
 
 <!-- ════════════════════════════════════════════ -->
 <!-- MODAIS                                      -->
@@ -1911,5 +2047,59 @@
   if (_tabBancosBtn) _tabBancosBtn.addEventListener('click', function() {
     if (!_bancosData.length) carregarBancos();
   });
+
+  // ─── SLA Config ────────────────────────────────────────
+  function salvarTecnicoPadrao() {
+    const valor = document.getElementById('select-tecnico-padrao').value;
+    fetch('/api/config-geral', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({chave: 'tecnico_padrao', valor})
+    }).then(r => r.json()).then(d => {
+      if (d.sucesso) mostrarToast('Técnico padrão atualizado!', 'sucesso');
+      else mostrarToast(d.erro || 'Erro ao salvar.', 'erro');
+    });
+  }
+
+  function abrirFormSla() {
+    document.getElementById('form-sla-novo').style.display = '';
+    document.getElementById('sla-form-atencao').value  = 15;
+    document.getElementById('sla-form-atrasado').value = 25;
+    document.getElementById('sla-form-critico').value  = 40;
+  }
+
+  function fecharFormSla() {
+    document.getElementById('form-sla-novo').style.display = 'none';
+  }
+
+  function salvarSlaConfig() {
+    const servico      = document.getElementById('sla-form-servico').value.trim();
+    const dias_atencao  = parseInt(document.getElementById('sla-form-atencao').value);
+    const dias_atrasado = parseInt(document.getElementById('sla-form-atrasado').value);
+    const dias_critico  = parseInt(document.getElementById('sla-form-critico').value);
+    if (!servico || isNaN(dias_atencao) || isNaN(dias_atrasado) || isNaN(dias_critico)) {
+      return mostrarToast('Preencha todos os campos.', 'erro');
+    }
+    if (!(dias_atencao < dias_atrasado && dias_atrasado < dias_critico)) {
+      return mostrarToast('Atenção < Atrasado < Crítico é obrigatório.', 'erro');
+    }
+    fetch('/api/sla-config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({servico, dias_atencao, dias_atrasado, dias_critico})
+    }).then(r => r.json()).then(d => {
+      if (d.sucesso) { fecharFormSla(); location.reload(); }
+      else mostrarToast(d.erro || 'Erro ao salvar.', 'erro');
+    });
+  }
+
+  function removerSlaConfig(id, btn) {
+    if (!confirm('Remover esta configuração SLA?')) return;
+    fetch(`/api/sla-config/${id}`, {method: 'DELETE'})
+      .then(r => r.json()).then(d => {
+        if (d.sucesso) btn.closest('tr').remove();
+        else mostrarToast(d.erro || 'Erro ao remover.', 'erro');
+      });
+  }
 </script>
 {% endblock %}
