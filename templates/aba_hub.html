@@ -316,6 +316,7 @@
       </div>
 
       <div class="hub-card-body">
+        {% set _tem_cobranca = b.categorias | selectattr('nome', 'equalto', 'Cobrança') | list | length > 0 %}
         {% for cat in b.categorias %}
         <div class="hub-secao">
           <div class="hub-secao-titulo">{{ cat.nome }}</div>
@@ -324,10 +325,54 @@
             <span class="hub-chip" data-sid="{{ s.id }}" style="background:{{ s.cor_bg }};color:{{ s.cor_texto }}">{{ s.nome }}</span>
             {% endfor %}
           </div>
+
+          {% if cat.nome == 'Cobrança' %}
+            {% if b.instrucoes %}
+            <div class="hub-instrucoes-wrap">
+              <button class="hub-instrucoes-toggle" onclick="toggleInstrucoes(this)" data-banco="{{ b.id }}">
+                <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                {{ b.instrucoes | length }} {{ 'instrução' if b.instrucoes | length == 1 else 'instruções' }} disponíve{{ 'l' if b.instrucoes | length == 1 else 'is' }}
+              </button>
+              <table class="hub-instrucoes-tabela" id="instr-{{ b.id }}">
+                <thead><tr><th>Cód.</th><th>Descrição</th>{% if pode_editar %}<th></th>{% endif %}</tr></thead>
+                <tbody>
+                  {% for instr in b.instrucoes %}
+                  <tr id="instr-row-{{ instr.id }}">
+                    <td><span class="cod-badge">{{ instr.codigo }}</span></td>
+                    <td>{{ instr.descricao }}</td>
+                    {% if pode_editar %}
+                    <td style="text-align:right;white-space:nowrap">
+                      <button class="hbtn-icon del" onclick="removerInstrucao({{ instr.id }})">
+                        <svg viewBox="0 0 24 24" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </td>
+                    {% endif %}
+                  </tr>
+                  {% endfor %}
+                  {% if pode_editar %}
+                  <tr><td colspan="3" style="padding:6px 8px">
+                    <div class="instr-add-row">
+                      <input class="inp-cod" type="text" placeholder="Cód." id="inp-cod-{{ b.id }}" maxlength="4">
+                      <input type="text" placeholder="Descrição da instrução" id="inp-desc-{{ b.id }}">
+                      <button class="instr-btn-add" onclick="adicionarInstrucao({{ b.id }})">+ Add</button>
+                    </div>
+                  </td></tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+            {% elif pode_editar %}
+            <div class="instr-add-row" style="margin-top:4px">
+              <input class="inp-cod" type="text" placeholder="Cód." id="inp-cod-{{ b.id }}" maxlength="4">
+              <input type="text" placeholder="Descrição da instrução" id="inp-desc-{{ b.id }}">
+              <button class="instr-btn-add" onclick="adicionarInstrucao({{ b.id }})">+ Instrução</button>
+            </div>
+            {% endif %}
+          {% endif %}
         </div>
         {% endfor %}
 
-        {% if b.instrucoes %}
+        {% if not _tem_cobranca and b.instrucoes %}
         <div class="hub-instrucoes-wrap">
           <button class="hub-instrucoes-toggle" onclick="toggleInstrucoes(this)" data-banco="{{ b.id }}">
             <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -349,23 +394,8 @@
                 {% endif %}
               </tr>
               {% endfor %}
-              {% if pode_editar %}
-              <tr><td colspan="3" style="padding:6px 8px">
-                <div class="instr-add-row">
-                  <input class="inp-cod" type="text" placeholder="Cód." id="inp-cod-{{ b.id }}" maxlength="4">
-                  <input type="text" placeholder="Descrição da instrução" id="inp-desc-{{ b.id }}">
-                  <button class="instr-btn-add" onclick="adicionarInstrucao({{ b.id }})">+ Add</button>
-                </div>
-              </td></tr>
-              {% endif %}
             </tbody>
           </table>
-        </div>
-        {% elif pode_editar %}
-        <div class="instr-add-row">
-          <input class="inp-cod" type="text" placeholder="Cód." id="inp-cod-{{ b.id }}" maxlength="4">
-          <input type="text" placeholder="Descrição da instrução" id="inp-desc-{{ b.id }}">
-          <button class="instr-btn-add" onclick="adicionarInstrucao({{ b.id }})">+ Instrução</button>
         </div>
         {% endif %}
 
