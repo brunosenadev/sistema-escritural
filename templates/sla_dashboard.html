@@ -337,6 +337,9 @@
   const _isAdmin  = {{ (nivel_acesso in ('admin','master')) | tojson }};
   let   _resumo   = null;
 
+  const _CHIP_NOMES = {ok:'OK', atencao:'Atenção', atrasado:'Atrasado', critico:'Crítico'};
+  const _FAIXA_CORES_TD = {ok:'#16a34a', atencao:'#d97706', atrasado:'#ea580c', critico:'#dc2626'};
+
   // ─── Paleta SLA ────────────────────────────────────────
   const CORES = {
     ok:       '#16a34a',
@@ -450,14 +453,14 @@
     }
     tbody.innerHTML = lista.map(p => {
       const faixa = p.sla_faixa;
-      const chip  = `<span class="chip-faixa chip-${faixa}${faixa==='critico' ? ' pulse-critico':''}">${{ok:'OK',atencao:'Atenção',atrasado:'Atrasado',critico:'Crítico'}[faixa]||faixa}</span>`;
+      const chip  = `<span class="chip-faixa chip-${faixa}${faixa==='critico' ? ' pulse-critico':''}">${_CHIP_NOMES[faixa]||faixa}</span>`;
       return `<tr data-faixa="${faixa}" data-busca="${[p.empresa,p.banco,p.servico,p.tecnico].join(' ').toLowerCase()}">
         <td style="font-weight:600;">${p.empresa||'—'}</td>
         <td>${p.banco||'—'}</td>
         <td>${p.servico||'—'}</td>
         <td>${p.tecnico||'—'}</td>
         <td>${p.dt_solicita||'—'}</td>
-        <td style="font-weight:700;color:${{ok:'#16a34a',atencao:'#d97706',atrasado:'#ea580c',critico:'#dc2626'}[faixa]||'inherit'};">${p.dias_em_aberto}d</td>
+        <td style="font-weight:700;color:${_FAIXA_CORES_TD[faixa]||'inherit'};">${p.dias_em_aberto}d</td>
         <td>${chip}</td>
       </tr>`;
     }).join('');

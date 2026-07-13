@@ -2056,9 +2056,9 @@
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({chave: 'tecnico_padrao', valor})
     }).then(r => r.json()).then(d => {
-      if (d.sucesso) mostrarToast('Técnico padrão atualizado!', 'sucesso');
-      else mostrarToast(d.erro || 'Erro ao salvar.', 'erro');
-    });
+      if (d.sucesso) mostrarToast('sucesso', 'Técnico padrão atualizado!');
+      else mostrarToast('erro', d.erro || 'Erro ao salvar.');
+    }).catch(() => mostrarToast('erro', 'Falha de comunicação com o servidor.'));
   }
 
   function abrirFormSla() {
@@ -2078,10 +2078,10 @@
     const dias_atrasado = parseInt(document.getElementById('sla-form-atrasado').value);
     const dias_critico  = parseInt(document.getElementById('sla-form-critico').value);
     if (!servico || isNaN(dias_atencao) || isNaN(dias_atrasado) || isNaN(dias_critico)) {
-      return mostrarToast('Preencha todos os campos.', 'erro');
+      return mostrarToast('erro', 'Preencha todos os campos.');
     }
-    if (!(dias_atencao < dias_atrasado && dias_atrasado < dias_critico)) {
-      return mostrarToast('Atenção < Atrasado < Crítico é obrigatório.', 'erro');
+    if (dias_atencao <= 0 || dias_atrasado <= 0 || dias_critico <= 0) {
+      return mostrarToast('erro', 'Os dias devem ser maiores que zero.');
     }
     fetch('/api/sla-config', {
       method: 'POST',
@@ -2089,8 +2089,8 @@
       body: JSON.stringify({servico, dias_atencao, dias_atrasado, dias_critico})
     }).then(r => r.json()).then(d => {
       if (d.sucesso) { fecharFormSla(); location.reload(); }
-      else mostrarToast(d.erro || 'Erro ao salvar.', 'erro');
-    });
+      else mostrarToast('erro', d.erro || 'Erro ao salvar.');
+    }).catch(() => mostrarToast('erro', 'Falha de comunicação com o servidor.'));
   }
 
   function removerSlaConfig(id, btn) {
@@ -2098,8 +2098,8 @@
     fetch(`/api/sla-config/${id}`, {method: 'DELETE'})
       .then(r => r.json()).then(d => {
         if (d.sucesso) btn.closest('tr').remove();
-        else mostrarToast(d.erro || 'Erro ao remover.', 'erro');
-      });
+        else mostrarToast('erro', d.erro || 'Erro ao remover.');
+      }).catch(() => mostrarToast('erro', 'Falha de comunicação com o servidor.'));
   }
 </script>
 {% endblock %}
