@@ -326,9 +326,39 @@
 
   .botao-acao.editar { color: #3b82f6; }
   .botao-acao.editar:hover { background: #eff6ff; }
-  .botao-acao.assumir { color: #16a34a; }
-  .botao-acao.assumir:hover { background: #f0fdf4; }
   .botao-acao.duplicar { color: #8b5cf6; }
+
+  /* ── Chip SLA na linha ── */
+  .sla-chip-linha {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 7px; border-radius: 99px; font-size: 10px; font-weight: 700;
+    letter-spacing: .04em; white-space: nowrap; flex-shrink: 0;
+  }
+  .sla-chip-ok       { background: #dcfce7; color: #15803d; }
+  .sla-chip-atencao  { background: #fef3c7; color: #92400e; }
+  .sla-chip-atrasado { background: #ffedd5; color: #c2410c; }
+  .sla-chip-critico  { background: #fee2e2; color: #991b1b; animation: sla-pulse 1.6s ease-in-out infinite; }
+  @keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+  /* ── Modal detalhe ── */
+  .modal-detalhe-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: .7rem 1.2rem; margin-bottom: 1rem;
+  }
+  .modal-detalhe-campo { display: flex; flex-direction: column; gap: .2rem; }
+  .modal-detalhe-campo label { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; }
+  .modal-detalhe-campo span  { font-size: .88rem; font-weight: 500; }
+  .modal-detalhe-campo.campo-completo { grid-column: 1/-1; }
+  .obs-interna-wrap { grid-column: 1/-1; margin-top: .3rem; }
+  .obs-interna-wrap label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #6366f1; display: block; margin-bottom: .35rem; }
+  .obs-interna-wrap textarea {
+    width: 100%; min-height: 72px; resize: vertical; padding: .5rem .7rem;
+    border: 1.5px solid var(--border-color, #e2e8f0); border-radius: 8px;
+    font-family: inherit; font-size: .85rem; background: var(--bg-card, #fff); color: inherit;
+    transition: border-color .15s;
+  }
+  .obs-interna-wrap textarea:focus { outline: none; border-color: #6366f1; }
+  .modal-detalhe-sla { display: flex; align-items: center; gap: .6rem; margin-bottom: .9rem; padding: .6rem .8rem; border-radius: 8px; background: var(--bg-inset, #f8fafc); }
+  .modal-detalhe-sla .sla-dias { font-size: .82rem; color: var(--text-muted, #888); }
   .botao-acao.duplicar:hover { background: #f5f3ff; }
   .botao-acao.deletar { color: #ef4444; }
   .botao-acao.deletar:hover { background: #fef2f2; }
@@ -687,6 +717,10 @@
               data-status="{{ reg.status | lower }}"
               data-servico="{{ reg.servico | upper }}"
               data-busca="{{ (reg.empresa ~ ' ' ~ reg.banco ~ ' ' ~ reg.obs ~ ' ' ~ reg.tecnico) | lower }}"
+              data-dt-solicita="{{ reg.dt_solicita or '' }}"
+              data-obs-interna="{{ reg.obs_interna or '' }}"
+              ondblclick="_abrirDetalhe(this)"
+              style="cursor:pointer"
             >
               <td class="celula-tecnico" style="color: {{ cores_tecnicos.get(reg.tecnico, '#64748b') }};">
                 {{ reg.tecnico or '—' }}
@@ -714,6 +748,7 @@
               <td class="celula-obs" title="{{ reg.obs }}">{{ reg.obs or '' }}</td>
               <td>
                 <div class="celula-acoes">
+                  <span class="sla-chip-linha" id="sla-chip-{{ reg.id }}"></span>
                   {% if pode_editar %}
                   <button
                     class="botao-acao editar"
@@ -735,19 +770,6 @@
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                     </svg>
                   </button>
-                  {% if not reg.tecnico or reg.tecnico.upper().strip() in ('', 'SEM TEC.') %}
-                  <button
-                    class="botao-acao assumir"
-                    title="Assumir este registro"
-                    onclick="assumirRegistro({{ reg.id }})"
-                  >
-                    <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                      <circle cx="9" cy="7" r="4"/>
-                      <line x1="19" y1="8" x2="19" y2="14"/>
-                      <line x1="22" y1="11" x2="16" y2="11"/>
-                    </svg>
-                  </button>
-                  {% endif %}
                   <button
                     class="botao-acao deletar"
                     title="Deletar"
@@ -912,27 +934,55 @@
   </div>
 </div>
 
-<!-- Modal: escolher técnico (para admin) -->
-<div class="overlay-modal" id="overlay-assumir" onclick="if(event.target===this)fecharModalAssumirTec()">
-  <div class="modal" style="max-width:360px;">
+<!-- Modal: Detalhe do pendente (duplo clique) -->
+<div class="overlay-modal" id="overlay-detalhe" onclick="if(event.target===this)_fecharDetalhe()">
+  <div class="modal" id="modal-detalhe" style="max-width:560px;">
     <div class="modal-titulo">
-      <span>Escolher Técnico</span>
-      <button class="botao-fechar-modal" onclick="fecharModalAssumirTec()">
+      <span id="detalhe-titulo">Detalhes do Pendente</span>
+      <button class="botao-fechar-modal" onclick="_fecharDetalhe()">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div class="grupo-form" style="margin-bottom:20px;">
-      <label for="select-tecnico-assumir">Técnico que vai assumir</label>
-      <select class="select-form" id="select-tecnico-assumir">
-        <option value="">Selecionar...</option>
-        {% for t in lista_tecnicos %}{% if t.nome != 'SEM TEC.' %}
-        <option value="{{ t.nome }}">{{ t.nome }}</option>
-        {% endif %}{% endfor %}
-      </select>
+
+    <div class="modal-detalhe-sla" id="detalhe-sla-bar">
+      <span id="detalhe-sla-chip" class="sla-chip-linha"></span>
+      <span class="sla-dias" id="detalhe-sla-dias"></span>
     </div>
-    <div class="rodape-modal">
-      <button type="button" class="botao-cancelar" onclick="fecharModalAssumirTec()">Cancelar</button>
-      <button type="button" class="botao-salvar" onclick="confirmarAssumirTec()">Assumir</button>
+
+    <div class="modal-detalhe-grid">
+      <div class="modal-detalhe-campo">
+        <label>Técnico</label><span id="d-tecnico"></span>
+      </div>
+      <div class="modal-detalhe-campo">
+        <label>Empresa</label><span id="d-empresa"></span>
+      </div>
+      <div class="modal-detalhe-campo">
+        <label>Serviço</label><span id="d-servico"></span>
+      </div>
+      <div class="modal-detalhe-campo">
+        <label>Banco</label><span id="d-banco"></span>
+      </div>
+      <div class="modal-detalhe-campo">
+        <label>Dt. Solicitação</label><span id="d-dt-solicita"></span>
+      </div>
+      <div class="modal-detalhe-campo">
+        <label>Dt. Status</label><span id="d-dt-status"></span>
+      </div>
+      <div class="modal-detalhe-campo campo-completo">
+        <label>Status</label><span id="d-status"></span>
+      </div>
+      <div class="modal-detalhe-campo campo-completo">
+        <label>Observação</label><span id="d-obs"></span>
+      </div>
+
+      <div class="obs-interna-wrap">
+        <label>📝 Obs. Interna — Justificativa de Atraso</label>
+        <textarea id="detalhe-obs-interna" placeholder="Registre aqui o motivo do atraso, pendência interna, ou qualquer observação que não aparece para o cliente..."></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:.5rem;gap:.5rem">
+          <button type="button" class="botao-cancelar" onclick="_fecharDetalhe()">Fechar</button>
+          <button type="button" class="botao-salvar" onclick="_salvarObsInterna()">Salvar Obs.</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -983,6 +1033,7 @@
           atual.innerHTML = novo.innerHTML;
           filtrarTabela();
           atualizarContadorLinhas();
+          _initSlaChips();
         }
       })
       .catch(() => {});
@@ -1341,46 +1392,112 @@
     .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
   }
 
-  // ─── Assumir registro ───────────────────────────────────────
-  const _tecnicoPadrao    = {{ tecnico_padrao | tojson }};
-  const _tecnicoVinculado = {{ session.get("tecnico_vinculado", "") | tojson }};
-  let _idAssumirAtual = null;
+  const _tecnicoPadrao = {{ tecnico_padrao | tojson }};
 
-  function assumirRegistro(id) {
-    if (_tecnicoVinculado) {
-      _chamarAssumir(id, _tecnicoVinculado);
+  // ─── SLA Chips nas linhas ────────────────────────────────────
+  const _SLA_CONF = {{ sla_conf | tojson }};
+
+  function _slaFaixa(servico, dtSolicita) {
+    if (!dtSolicita) return null;
+    const p = dtSolicita.split('/');
+    if (p.length !== 3) return null;
+    const dt = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+    if (isNaN(dt)) return null;
+    const dias = Math.floor((Date.now() - dt) / 86400000);
+    const srv  = (servico || '').toUpperCase().trim();
+    const conf = _SLA_CONF.find(c => c.servico.toUpperCase() === srv)
+              || _SLA_CONF.find(c => c.servico === '__default__');
+    if (!conf) return { faixa: 'ok', dias };
+    if (dias >= conf.dias_critico)  return { faixa: 'critico',  dias };
+    if (dias >= conf.dias_atrasado) return { faixa: 'atrasado', dias };
+    if (dias >= conf.dias_atencao)  return { faixa: 'atencao',  dias };
+    return { faixa: 'ok', dias };
+  }
+
+  const _SLA_CHIP_LABEL = { ok: '✔ No Prazo', atencao: '⚠ Atenção', atrasado: '⏰ Atrasado', critico: '🔴 Crítico' };
+  const _SLA_CHIP_CLASS = { ok: 'sla-chip-ok', atencao: 'sla-chip-atencao', atrasado: 'sla-chip-atrasado', critico: 'sla-chip-critico' };
+
+  function _initSlaChips() {
+    document.querySelectorAll('#corpo-tabela tr[data-id]').forEach(tr => {
+      const id  = tr.dataset.id;
+      const srv = tr.dataset.servico || '';
+      const dt  = tr.dataset.dtSolicita || tr.getAttribute('data-dt-solicita') || '';
+      const chip = document.getElementById('sla-chip-' + id);
+      if (!chip) return;
+      const res = _slaFaixa(srv, dt);
+      if (!res) { chip.style.display = 'none'; return; }
+      chip.className = 'sla-chip-linha ' + (_SLA_CHIP_CLASS[res.faixa] || '');
+      chip.textContent = _SLA_CHIP_LABEL[res.faixa] || res.faixa;
+      chip.title = res.dias + ' dia(s) em aberto';
+    });
+  }
+  _initSlaChips();
+
+  // ─── Modal detalhe (duplo clique) ───────────────────────────
+  let _detalheIdAtual = null;
+
+  function _abrirDetalhe(tr) {
+    _detalheIdAtual = tr.dataset.id;
+    const cells = tr.querySelectorAll('td');
+    // cells: 0=técnico, 1=empresa, 2=serviço, 3=banco, 4=dt_solicita, 5=dt_status, 6=status(select), 7=obs, 8=ações
+    const get = (i) => (cells[i] ? cells[i].textContent.trim() : '—');
+
+    document.getElementById('detalhe-titulo').textContent = 'Pendente #' + _detalheIdAtual + ' — ' + get(1);
+    document.getElementById('d-tecnico').textContent      = get(0) || '—';
+    document.getElementById('d-empresa').textContent      = get(1) || '—';
+    document.getElementById('d-servico').textContent      = get(2) || '—';
+    document.getElementById('d-banco').textContent        = get(3) || '—';
+    document.getElementById('d-dt-solicita').textContent  = get(4) || '—';
+    document.getElementById('d-dt-status').textContent    = get(5) || '—';
+
+    const sel = tr.querySelector('select.select-status-inline');
+    document.getElementById('d-status').textContent = sel ? sel.value : get(6);
+
+    document.getElementById('d-obs').textContent = tr.querySelector('.celula-obs')
+      ? tr.querySelector('.celula-obs').textContent.trim() : get(7);
+
+    document.getElementById('detalhe-obs-interna').value = tr.getAttribute('data-obs-interna') || '';
+
+    // SLA bar
+    const srv = tr.dataset.servico || '';
+    const dt  = tr.getAttribute('data-dt-solicita') || '';
+    const res = _slaFaixa(srv, dt);
+    const slaChip = document.getElementById('detalhe-sla-chip');
+    const slaDias = document.getElementById('detalhe-sla-dias');
+    if (res) {
+      slaChip.className = 'sla-chip-linha ' + (_SLA_CHIP_CLASS[res.faixa] || '');
+      slaChip.textContent = _SLA_CHIP_LABEL[res.faixa] || res.faixa;
+      slaDias.textContent = res.dias + ' dia(s) em aberto desde ' + dt;
+      document.getElementById('detalhe-sla-bar').style.display = 'flex';
     } else {
-      _idAssumirAtual = id;
-      document.getElementById('select-tecnico-assumir').value = '';
-      document.getElementById('overlay-assumir').classList.add('aberto');
+      document.getElementById('detalhe-sla-bar').style.display = 'none';
     }
+
+    document.getElementById('overlay-detalhe').classList.add('aberto');
   }
 
-  function confirmarAssumirTec() {
-    const tecnico = document.getElementById('select-tecnico-assumir').value;
-    if (!tecnico) { mostrarToast('erro', 'Selecione um técnico.'); return; }
-    fecharModalAssumirTec();
-    _chamarAssumir(_idAssumirAtual, tecnico);
+  function _fecharDetalhe() {
+    document.getElementById('overlay-detalhe').classList.remove('aberto');
+    _detalheIdAtual = null;
   }
 
-  function fecharModalAssumirTec() {
-    document.getElementById('overlay-assumir').classList.remove('aberto');
-    _idAssumirAtual = null;
-  }
-
-  function _chamarAssumir(id, tecnico) {
-    fetch(`/pendente/assumir/${id}`, {
-      method: 'POST',
+  function _salvarObsInterna() {
+    if (!_detalheIdAtual) return;
+    const texto = document.getElementById('detalhe-obs-interna').value;
+    fetch('/pendente/obs-interna/' + _detalheIdAtual, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tecnico }),
+      body: JSON.stringify({ obs_interna: texto }),
     })
     .then(r => r.json())
     .then(d => {
       if (d.sucesso) {
-        mostrarToast('sucesso', `Registro assumido por ${d.tecnico}!`);
-        setTimeout(() => location.reload(), 700);
+        mostrarToast('sucesso', 'Observação interna salva!');
+        const tr = document.querySelector('tr[data-id="' + _detalheIdAtual + '"]');
+        if (tr) tr.setAttribute('data-obs-interna', texto);
+        _fecharDetalhe();
       } else {
-        mostrarToast('erro', d.erro || 'Erro ao assumir.');
+        mostrarToast('erro', d.erro || 'Erro ao salvar.');
       }
     })
     .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
@@ -1416,9 +1533,12 @@
     document.getElementById('contador-linhas').textContent = `${total} registros`;
   }
 
-  // Fechar modal com Esc
+  // Fechar modais com Esc
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') fecharModal();
+    if (e.key === 'Escape') {
+      fecharModal();
+      _fecharDetalhe();
+    }
   });
 
   // ─── Polling de atualizações (Opção B) ───────────────────

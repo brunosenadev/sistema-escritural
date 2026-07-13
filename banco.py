@@ -1329,12 +1329,19 @@ def remover_sla_aviso(id_aviso):
 
 def migrar_sla():
     conn = conectar()
-    for col in ('cadastrado_por_tec',):
+    for col in ('cadastrado_por_tec', 'obs_interna'):
         try:
             conn.execute(f"ALTER TABLE pendentes ADD COLUMN {col} TEXT DEFAULT ''")
             conn.commit()
         except Exception:
             pass
+    conn.close()
+
+
+def salvar_obs_interna(id_reg, texto):
+    conn = conectar()
+    conn.execute("UPDATE pendentes SET obs_interna=? WHERE id=?", ((texto or '').strip(), id_reg))
+    conn.commit()
     conn.close()
 
 

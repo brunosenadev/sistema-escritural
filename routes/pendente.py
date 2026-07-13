@@ -70,6 +70,7 @@ def aba_pendente():
         lista_servicos_mapa={s['texto']: s['destino_homologado'] for s in banco.listar_servicos_completo()},
         cores_tecnicos=cores_tecnicos,
         tecnico_padrao=banco.get_config('tecnico_padrao'),
+        sla_conf=banco.listar_sla_config(),
     )
 
 
@@ -171,6 +172,16 @@ def assumir_pendente(id_registro):
                 )
         return jsonify({'sucesso': True, 'tecnico': tecnico})
     return jsonify({'erro': 'Registro não encontrado ou já possui técnico.'}), 404
+
+
+@pendente_bp.route('/pendente/obs-interna/<int:id_registro>', methods=['PATCH'])
+def atualizar_obs_interna(id_registro):
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    texto = (request.get_json() or {}).get('obs_interna', '')
+    banco.salvar_obs_interna(id_registro, texto)
+    _log('OBS', f'Obs. interna atualizada no pendente #{id_registro}')
+    return jsonify({'sucesso': True})
 
 
 @pendente_bp.route('/pendente/homologar/<int:id_registro>', methods=['POST'])
