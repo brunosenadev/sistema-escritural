@@ -126,11 +126,14 @@
     padding: 14px 20px;
     border-bottom: 1px solid #f8fafc;
     transition: background 0.15s;
+    cursor: pointer;
   }
   .notif-row:last-child { border-bottom: none; }
   .notif-row.nao-lida { background: #f0f7ff; }
   .notif-row:hover { background: #f8fafc; }
   .notif-row.nao-lida:hover { background: #e0effe; }
+  .notif-row.expandida { background: #f8fafc !important; border-left: 3px solid #2563eb; }
+  .notif-row.nao-lida.expandida { background: #e0effe !important; }
 
   .notif-row-dot {
     width: 9px;
@@ -148,10 +151,49 @@
     font-weight: 600;
     color: #0f172a;
     margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
   .notif-row.lida .notif-row-titulo { color: #64748b; font-weight: 500; }
-  .notif-row-msg { font-size: 12px; color: #64748b; margin-bottom: 4px; }
-  .notif-row-meta { font-size: 11px; color: #94a3b8; display:flex;gap:8px;align-items:center; }
+
+  /* Mensagem truncada por padrão */
+  .notif-row-msg {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+  /* Mensagem expandida */
+  .notif-row.expandida .notif-row-msg {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Texto completo oculto por padrão */
+  .notif-msg-completa {
+    display: none;
+    font-size: 13px;
+    color: #334155;
+    line-height: 1.65;
+    background: #f1f5f9;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-left: 3px solid #2563eb;
+  }
+  .notif-row.expandida .notif-msg-completa { display: block; }
+
+  .notif-row-meta { font-size: 11px; color: #94a3b8; display:flex;gap:8px;align-items:center;margin-top:4px; }
   .notif-tipo-badge {
     padding: 1px 7px;
     border-radius: 99px;
@@ -164,6 +206,20 @@
   .notif-tipo-badge.sucesso { background:#f0fdf4;color:#15803d; }
   .notif-tipo-badge.aviso   { background:#fefce8;color:#a16207; }
   .notif-tipo-badge.erro    { background:#fef2f2;color:#dc2626; }
+  .notif-tipo-badge.alerta  { background:#fef2f2;color:#dc2626; }
+
+  /* Ícone de expandir */
+  .notif-chevron {
+    margin-left: auto;
+    width: 14px;
+    height: 14px;
+    stroke: #94a3b8;
+    fill: none;
+    stroke-width: 2;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+  .notif-row.expandida .notif-chevron { transform: rotate(180deg); stroke: #2563eb; }
 
   .notif-row-btns {
     display: flex;
@@ -173,6 +229,7 @@
     transition: opacity 0.15s;
   }
   .notif-row:hover .notif-row-btns { opacity: 1; }
+  .notif-row.expandida .notif-row-btns { opacity: 1; }
   .notif-row-btn {
     width: 28px;
     height: 28px;
@@ -208,9 +265,12 @@
   [data-tema="dark"] .notif-row:hover { background: var(--z-elevated); }
   [data-tema="dark"] .notif-row.nao-lida { background: rgba(37,99,235,0.12); }
   [data-tema="dark"] .notif-row.nao-lida:hover { background: rgba(37,99,235,0.22); }
+  [data-tema="dark"] .notif-row.expandida { background: var(--z-elevated) !important; }
+  [data-tema="dark"] .notif-row.nao-lida.expandida { background: rgba(37,99,235,0.22) !important; }
   [data-tema="dark"] .notif-row-titulo { color: var(--z-text-1); }
   [data-tema="dark"] .notif-row.lida .notif-row-titulo { color: var(--z-text-2); }
   [data-tema="dark"] .notif-row-msg { color: var(--z-text-2); }
+  [data-tema="dark"] .notif-msg-completa { background: var(--z-border-s); color: var(--z-text-1); border-color: var(--z-accent,#3b82f6); }
   [data-tema="dark"] .notif-row-meta { color: var(--z-text-3); }
   [data-tema="dark"] .notif-row-dot.lida { background: var(--z-border); }
   [data-tema="dark"] .notif-row-btn { background: var(--z-elevated); color: var(--z-text-2); }
@@ -290,19 +350,26 @@
       </div>
       {% else %}
       {% for n in notificacoes %}
-      <div class="notif-row {{ 'nao-lida' if not n.lida else 'lida' }}" id="nrow-{{ n.id }}">
+      <div class="notif-row {{ 'nao-lida' if not n.lida else 'lida' }}" id="nrow-{{ n.id }}"
+           onclick="_expandirNotif({{ n.id }}, {{ (not n.lida) | tojson }})">
         <div class="notif-row-dot {{ 'nao-lida' if not n.lida else 'lida' }}"></div>
         <div class="notif-row-corpo">
-          <div class="notif-row-titulo">{{ n.titulo }}</div>
+          <div class="notif-row-titulo">
+            {{ n.titulo }}
+            {% if n.mensagem %}
+            <svg class="notif-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            {% endif %}
+          </div>
           {% if n.mensagem %}
           <div class="notif-row-msg">{{ n.mensagem }}</div>
+          <div class="notif-msg-completa">{{ n.mensagem }}</div>
           {% endif %}
           <div class="notif-row-meta">
             <span class="notif-tipo-badge {{ n.tipo }}">{{ n.tipo }}</span>
             <span>{{ n.criado_em }}</span>
           </div>
         </div>
-        <div class="notif-row-btns">
+        <div class="notif-row-btns" onclick="event.stopPropagation()">
           {% if not n.lida %}
           <button class="notif-row-btn" title="Marcar como lida" onclick="_lerNotif({{ n.id }})">
             <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -353,6 +420,16 @@
         mostrarToast('erro', d.erro || 'Erro ao enviar.');
       }
     });
+  }
+
+  function _expandirNotif(id, naoLida) {
+    const row = document.getElementById('nrow-' + id);
+    if (!row) return;
+    const expandida = row.classList.toggle('expandida');
+    // Marca como lida automaticamente ao expandir
+    if (expandida && naoLida) {
+      _lerNotif(id);
+    }
   }
 
   function _lerNotif(id) {

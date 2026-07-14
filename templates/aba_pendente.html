@@ -702,8 +702,8 @@
             <th class="ordenavel">Empresa</th>
             <th>Serviço</th>
             <th>Banco</th>
-            <th class="ordenavel">Dt. Solicita</th>
-            <th class="ordenavel">Dt. Status</th>
+            <th class="ordenavel">Dt. Cadastro</th>
+            <th class="ordenavel">Dt. Vencimento</th>
             <th class="th-status">Status</th>
             <th>Obs</th>
             <th></th>
@@ -893,13 +893,13 @@
         </div>
 
         <div class="grupo-form">
-          <label for="campo-dt-solicita">Dt. Solicitação</label>
+          <label for="campo-dt-solicita">Data de Cadastro</label>
           <input class="input-form" type="text" id="campo-dt-solicita" name="dt_solicita" placeholder="dd/mm/aaaa">
         </div>
 
         <div class="grupo-form">
-          <label for="campo-dt-status">Dt. Status</label>
-          <input class="input-form" type="text" id="campo-dt-status" name="dt_status" placeholder="dd/mm/aaaa">
+          <label for="campo-dt-status">Data de Vencimento</label>
+          <input class="input-form" type="text" id="campo-dt-status" name="dt_status" placeholder="dd/mm/aaaa" title="Calculado automaticamente: Data de Cadastro + prazo SLA do serviço">
         </div>
 
         <div class="grupo-form">
@@ -914,15 +914,15 @@
 
         <div class="grupo-form campo-completo">
           <label for="campo-obs">Observação</label>
-          <input
+          <textarea
             class="input-form"
-            type="text"
             id="campo-obs"
             name="obs"
             placeholder="DADOS NO E-MAIL:"
-            style="text-transform: uppercase;"
-            oninput="this.value = this.value.toUpperCase()"
-          >
+            rows="4"
+            style="text-transform:uppercase;resize:vertical;min-height:90px;line-height:1.55;font-family:inherit;"
+            oninput="this.value = this.value.toUpperCase(); _autoResizeObs(this);"
+          ></textarea>
         </div>
 
       </div><!-- /grade-form -->
@@ -964,10 +964,10 @@
         <label>Banco</label><span id="d-banco"></span>
       </div>
       <div class="modal-detalhe-campo">
-        <label>Dt. Solicitação</label><span id="d-dt-solicita"></span>
+        <label>Data de Cadastro</label><span id="d-dt-solicita"></span>
       </div>
       <div class="modal-detalhe-campo">
-        <label>Dt. Status</label><span id="d-dt-status"></span>
+        <label>Data de Vencimento</label><span id="d-dt-status"></span>
       </div>
       <div class="modal-detalhe-campo campo-completo">
         <label>Status</label><span id="d-status"></span>
@@ -1109,9 +1109,9 @@
     document.getElementById('campo-servico').value     = 'COBRANÇA';
     document.getElementById('campo-banco').value       = '';
     document.getElementById('campo-dt-solicita').value = dataDeHoje();
-    document.getElementById('campo-dt-status').value   = dataDeHoje();
+    document.getElementById('campo-dt-status').value   = _calcVencimento('COBRANÇA', dataDeHoje()) || dataDeHoje();
     document.getElementById('campo-status').value      = 'FALTA CADASTRAR';
-    document.getElementById('campo-obs').value         = 'DADOS NO E-MAIL:';
+    _setObs('DADOS NO E-MAIL:');
     _travarTecnico(true);
     document.getElementById('overlay-modal').classList.add('aberto');
     document.getElementById('campo-empresa').focus();
@@ -1136,7 +1136,7 @@
     document.getElementById('campo-dt-solicita').value = registro.dt_solicita;
     document.getElementById('campo-dt-status').value  = registro.dt_status;
     document.getElementById('campo-status').value     = registro.status;
-    document.getElementById('campo-obs').value        = registro.obs;
+    _setObs(registro.obs || '');
     document.getElementById('overlay-modal').classList.add('aberto');
   }
 
@@ -1151,9 +1151,9 @@
     document.getElementById('campo-servico').value       = registro.servico  || '';
     document.getElementById('campo-banco').value         = registro.banco    || '';
     document.getElementById('campo-dt-solicita').value   = dataDeHoje();
-    document.getElementById('campo-dt-status').value     = dataDeHoje();
+    document.getElementById('campo-dt-status').value     = _calcVencimento(registro.servico, dataDeHoje()) || dataDeHoje();
     document.getElementById('campo-status').value        = registro.status   || '';
-    document.getElementById('campo-obs').value           = registro.obs      || '';
+    _setObs(registro.obs || '');
     document.getElementById('overlay-modal').classList.add('aberto');
     document.getElementById('campo-empresa').focus();
   }
@@ -1398,6 +1398,31 @@
   // ─── SLA Chips nas linhas ────────────────────────────────────
   const _SLA_CONF = {{ sla_conf | tojson }};
 
+  // Calcula Data de Vencimento = dt_solicita + prazo SLA do serviço
+  function _calcVencimento(servico, dtSolicita) {
+    if (!dtSolicita) return '';
+    const p = dtSolicita.split('/');
+    if (p.length !== 3) return '';
+    const dt = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+    if (isNaN(dt.getTime())) return '';
+    const srv  = (servico || '').toUpperCase().trim();
+    const conf = _SLA_CONF.find(c => c.servico.toUpperCase() === srv)
+              || _SLA_CONF.find(c => c.servico === '__default__');
+    const prazo = (conf && conf.prazo_total) || 30;
+    dt.setDate(dt.getDate() + prazo);
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    return dd + '/' + mm + '/' + dt.getFullYear();
+  }
+
+  function _atualizarVencimentoAuto() {
+    const srv = document.getElementById('campo-servico').value;
+    const dtC = document.getElementById('campo-dt-solicita').value;
+    const campoV = document.getElementById('campo-dt-status');
+    const v = _calcVencimento(srv, dtC);
+    if (v) campoV.value = v;
+  }
+
   function _slaFaixa(servico, dtSolicita) {
     if (!dtSolicita) return null;
     const p = dtSolicita.split('/');
@@ -1544,6 +1569,23 @@
     const total = document.querySelectorAll('#corpo-tabela tr[data-linha]').length;
     document.getElementById('contador-linhas').textContent = `${total} registros`;
   }
+
+  // Auto-resize do textarea de observação
+  function _autoResizeObs(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.max(90, el.scrollHeight) + 'px';
+  }
+
+  // Dispara resize ao preencher obs programaticamente
+  function _setObs(val) {
+    const el = document.getElementById('campo-obs');
+    el.value = val;
+    _autoResizeObs(el);
+  }
+
+  // Auto-recalcular Data de Vencimento ao mudar serviço ou data de cadastro
+  document.getElementById('campo-servico').addEventListener('change', _atualizarVencimentoAuto);
+  document.getElementById('campo-dt-solicita').addEventListener('change', _atualizarVencimentoAuto);
 
   // Fechar modais com Esc
   document.addEventListener('keydown', e => {

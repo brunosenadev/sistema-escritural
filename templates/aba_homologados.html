@@ -174,7 +174,7 @@
           <thead>
             <tr>
               <th>Técnico</th><th>Empresa</th><th>Serviço</th><th>Banco</th>
-              <th>Dt. Solicita</th><th>Dt. Homologação</th><th class="th-status">Status</th><th>Obs</th><th></th>
+              <th>Dt. Cadastro</th><th>Dt. Homologação</th><th class="th-status">Status</th><th>Obs</th><th></th>
             </tr>
           </thead>
           <tbody id="corpo-tabela">
@@ -187,7 +187,7 @@
                 <td>{{ reg.servico or '—' }}</td>
                 <td>{{ reg.banco or '—' }}</td>
                 <td>{{ reg.dt_solicita or '—' }}</td>
-                <td>{{ reg.dt_status or '—' }}</td>
+                <td>{{ reg.dt_status if (reg.dt_status and '/' in reg.dt_status) else '—' }}</td>
                 <td class="celula-status">
                   <select class="select-status-inline" data-id="{{ reg.id }}" onchange="alterarStatusHom(this)"
                     {% if not pode_editar %}disabled style="pointer-events:none;opacity:0.7;"{% endif %}>
@@ -294,21 +294,22 @@
           </select>
         </div>
         <div class="grupo-form">
-          <label>Dt. Solicita</label>
-          <input class="input-form" type="text" id="campo-banco" placeholder="dd/mm/aaaa">
+          <label>Banco</label>
+          <input class="input-form" type="text" id="campo-banco" placeholder="Ex: 341 - Itaú">
         </div>
         <div class="grupo-form">
-          <label>Dt. Solicitação</label>
+          <label>Data de Cadastro</label>
           <input class="input-form" type="text" id="campo-dt-solicita" placeholder="dd/mm/aaaa">
         </div>
         <div class="grupo-form">
-          <label>Dt. Status</label>
+          <label>Data de Vencimento</label>
           <input class="input-form" type="text" id="campo-dt-status" placeholder="dd/mm/aaaa">
         </div>
         <div class="grupo-form campo-completo">
           <label>Observação</label>
-          <input class="input-form" type="text" id="campo-obs" placeholder="DADOS NO E-MAIL:"
-            style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+          <textarea class="input-form" id="campo-obs" placeholder="DADOS NO E-MAIL:"
+            rows="4" style="text-transform:uppercase;resize:vertical;min-height:90px;line-height:1.55;font-family:inherit;"
+            oninput="this.value=this.value.toUpperCase();_autoResizeObs(this);"></textarea>
         </div>
       </div>
       <div class="rodape-modal">
@@ -325,6 +326,16 @@
 <script>
   const _TIPO_ABA = '{{ tipo }}';
   const _BASE_URL = `/homologados-${_TIPO_ABA}`;
+
+  function _autoResizeObs(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.max(90, el.scrollHeight) + 'px';
+  }
+  function _setObs(val) {
+    const el = document.getElementById('campo-obs');
+    el.value = val;
+    _autoResizeObs(el);
+  }
 
   function filtrarTabela() {
     const termo   = document.getElementById('campo-busca-texto').value.toLowerCase();
@@ -359,9 +370,10 @@
     document.getElementById('campo-id').value          = '';
     document.getElementById('campo-tecnico').value     = '';
     document.getElementById('campo-servico').value     = 'COBRANÇA';
+    document.getElementById('campo-banco').value       = '';
     document.getElementById('campo-dt-solicita').value = dataDeHoje();
     document.getElementById('campo-dt-status').value   = dataDeHoje();
-    document.getElementById('campo-obs').value         = 'DADOS NO E-MAIL:';
+    _setObs('DADOS NO E-MAIL:');
     document.getElementById('overlay-modal').classList.add('aberto');
     document.getElementById('campo-empresa').focus();
   }
@@ -377,7 +389,7 @@
     document.getElementById('campo-banco').value       = reg.banco || '';
     document.getElementById('campo-dt-solicita').value = reg.dt_solicita || '';
     document.getElementById('campo-dt-status').value   = reg.dt_status || '';
-    document.getElementById('campo-obs').value         = reg.obs || '';
+    _setObs(reg.obs || '');
     document.getElementById('overlay-modal').classList.add('aberto');
   }
 

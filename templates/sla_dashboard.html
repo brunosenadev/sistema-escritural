@@ -471,15 +471,17 @@
 
 <!-- MODAL ALERTAS -->
 <div class="modal-overlay" id="modal-notif" onclick="_fecharModalNotif(event)">
-  <div class="modal-box" onclick="event.stopPropagation()">
-    <h2>🔔 Preferências de Alerta SLA</h2>
-    <p class="modal-sub">Receba notificações automáticas quando pendentes atingirem os limiares abaixo.</p>
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:520px">
+    <h2>🔔 Configurações de Alerta SLA</h2>
+    <p class="modal-sub">Notificações por nível de urgência e por setor da equipe.</p>
+
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted,#888);margin:0 0 .5rem">Minhas alertas pessoais</p>
 
     <div class="notif-faixa-row" id="nfrow-critico">
       <div class="nf-dot" style="background:#dc2626"></div>
       <div style="flex:1">
         <div class="nf-label">Nível Crítico</div>
-        <div class="nf-sub">Mais de 15 dias além do prazo — exige intervenção imediata</div>
+        <div class="nf-sub">Mais de 15 dias além do prazo</div>
       </div>
       <div class="nf-freq">a cada <input type="number" id="nf-freq-critico" min="1" max="30" value="1"> dia(s)</div>
       <label class="nf-toggle"><input type="checkbox" id="nf-ativo-critico" onchange="_toggleFaixaRow('critico')"><span class="slider"></span></label>
@@ -489,7 +491,7 @@
       <div class="nf-dot" style="background:#ea580c"></div>
       <div style="flex:1">
         <div class="nf-label">Nível Atrasado</div>
-        <div class="nf-sub">7 a 15 dias além do prazo — monitorar de perto</div>
+        <div class="nf-sub">7 a 15 dias além do prazo</div>
       </div>
       <div class="nf-freq">a cada <input type="number" id="nf-freq-atrasado" min="1" max="30" value="3"> dia(s)</div>
       <label class="nf-toggle"><input type="checkbox" id="nf-ativo-atrasado" onchange="_toggleFaixaRow('atrasado')"><span class="slider"></span></label>
@@ -499,15 +501,21 @@
       <div class="nf-dot" style="background:#d97706"></div>
       <div style="flex:1">
         <div class="nf-label">Nível Atenção</div>
-        <div class="nf-sub">Dentro dos últimos 7 dias do prazo — agir com antecedência</div>
+        <div class="nf-sub">Últimos 7 dias do prazo</div>
       </div>
       <div class="nf-freq">a cada <input type="number" id="nf-freq-atencao" min="1" max="30" value="7"> dia(s)</div>
       <label class="nf-toggle"><input type="checkbox" id="nf-ativo-atencao" onchange="_toggleFaixaRow('atencao')"><span class="slider"></span></label>
     </div>
 
+    <div style="margin:.9rem 0 .5rem;border-top:1px solid var(--border-color,#e5e7eb);padding-top:.9rem;">
+      <p style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted,#888);margin:0 0 .4rem">Alertas por setor</p>
+      <p style="font-size:.71rem;color:var(--text-muted,#aaa);margin:0 0 .65rem">Todos os usuários desses setores recebem alertas quando há pendentes fora do prazo.</p>
+      <div id="setor-lista" style="display:flex;flex-direction:column;gap:.4rem;max-height:160px;overflow-y:auto;padding-right:.15rem"></div>
+    </div>
+
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="_fecharModalNotif()">Cancelar</button>
-      <button class="btn btn-primary" onclick="_salvarNotifPref()">Salvar Preferências</button>
+      <button class="btn btn-primary" onclick="_salvarTudo()">Salvar</button>
     </div>
   </div>
 </div>
@@ -519,6 +527,9 @@ const _FAIXA_NOMES = {critico:'Crítico', atrasado:'Atrasado', vencido:'Vencido'
 const _FAIXA_CORES = {critico:'#dc2626', atrasado:'#ea580c', vencido:'#7c3aed', atencao:'#d97706', ok:'#16a34a'};
 const _CHIP_CLASS  = {critico:'chip-critico', atrasado:'chip-atrasado', vencido:'chip-vencido', atencao:'chip-atencao', ok:'chip-ok'};
 const _NOTIF_INIT  = {{ notif_pref | tojson }};
+const _SETORES_DISP = {{ setores | tojson }};
+const _SETORES_NOTIF_INIT = {{ setores_notif | tojson }};
+let _setoresAtivos = [..._SETORES_NOTIF_INIT];
 
 let _dados = null;
 let _filtroAtivo = 'todos';
@@ -944,6 +955,27 @@ function _renderTabela(pendentes, filtro) {
 }
 
 /* ════════════════ MODAL NOTIF ════════════════ */
+function _renderSetorLista() {
+  const wrap = document.getElementById('setor-lista');
+  if (!_SETORES_DISP.length) {
+    wrap.innerHTML = '<p style="font-size:.8rem;color:var(--text-muted,#aaa);text-align:center;padding:.5rem">Nenhum setor cadastrado.</p>';
+    return;
+  }
+  wrap.innerHTML = _SETORES_DISP.map(s => {
+    const ativo = _setoresAtivos.includes(s);
+    return '<div style="display:flex;align-items:center;gap:.65rem;padding:.5rem .75rem;border-radius:9px;background:var(--bg-inset,#f9fafb);border:1.5px solid '+(ativo?'#6366f1':'var(--border-color,#e5e7eb)')+'">' +
+      '<input type="checkbox" id="setor-chk-'+s.replace(/\s/g,'_')+'" '+(ativo?'checked':'')+' style="width:14px;height:14px;cursor:pointer;accent-color:#6366f1;flex-shrink:0" onchange="_toggleSetor(\''+s+'\',this.checked)">' +
+      '<label for="setor-chk-'+s.replace(/\s/g,'_')+'" style="flex:1;font-size:.8rem;font-weight:500;cursor:pointer">'+s+'</label>' +
+    '</div>';
+  }).join('');
+}
+
+function _toggleSetor(setor, on) {
+  if (on && !_setoresAtivos.includes(setor)) _setoresAtivos.push(setor);
+  if (!on) _setoresAtivos = _setoresAtivos.filter(s => s !== setor);
+  _renderSetorLista();
+}
+
 function _abrirModalNotif() {
   const p = _NOTIF_INIT;
   ['critico','atrasado','atencao'].forEach(f => {
@@ -952,6 +984,8 @@ function _abrirModalNotif() {
     document.getElementById('nf-freq-'+f).value    = pref.freq_dias || 1;
     _toggleFaixaRow(f);
   });
+  _setoresAtivos = [..._SETORES_NOTIF_INIT];
+  _renderSetorLista();
   document.getElementById('modal-notif').classList.add('open');
 }
 
@@ -965,7 +999,7 @@ function _toggleFaixaRow(faixa) {
   document.getElementById('nfrow-'+faixa).classList.toggle('ativo', ativo);
 }
 
-async function _salvarNotifPref() {
+async function _salvarTudo() {
   const payload = {};
   ['critico','atrasado','atencao'].forEach(f => {
     payload[f] = {
@@ -974,10 +1008,14 @@ async function _salvarNotifPref() {
     };
   });
   try {
-    const r = await fetch('/api/sla-notif-pref', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-    if (!r.ok) throw new Error(await r.text());
+    const [r1, r2] = await Promise.all([
+      fetch('/api/sla-notif-pref',    {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}),
+      fetch('/api/sla-notif-setores', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({setores: _setoresAtivos})}),
+    ]);
+    if (!r1.ok) throw new Error(await r1.text());
+    if (!r2.ok) throw new Error(await r2.text());
     document.getElementById('modal-notif').classList.remove('open');
-    mostrarToast('sucesso', 'Preferências de alerta salvas!');
+    mostrarToast('sucesso', 'Configurações de alerta salvas!');
   } catch(e) {
     mostrarToast('erro', 'Erro ao salvar: ' + e.message);
   }

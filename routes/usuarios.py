@@ -25,6 +25,13 @@ def _eh_master():
     return session.get('nivel_acesso') == 'master'
 
 
+def _pode_gerir():
+    """Master sempre pode. Admin com tela 'usuarios' também pode (exceto ações sobre masters)."""
+    if session.get('nivel_acesso') == 'master':
+        return True
+    return session.get('nivel_acesso') == 'admin' and tem_acesso_tela('usuarios')
+
+
 @usuarios_bp.route('/usuarios')
 def pagina_usuarios():
     bloqueio = checar_login()
@@ -44,9 +51,12 @@ def pagina_usuarios():
 
 @usuarios_bp.route('/api/usuarios', methods=['POST'])
 def api_adicionar_usuario():
-    if not _eh_master():
+    if not _pode_gerir():
         return jsonify({'erro': 'Sem permissão'}), 403
     d  = request.get_json()
+    # Admins (não-master) não podem criar usuários master
+    if not _eh_master() and (d.get('nivel') or '') == 'master':
+        d['nivel'] = 'admin'
     ok = banco.adicionar_usuario(d)
     if ok:
         _log('INSERIU', f'Criou usuário: {d.get("usuario","")} ({d.get("nome","")})')
@@ -55,12 +65,18 @@ def api_adicionar_usuario():
 
 @usuarios_bp.route('/api/usuarios/<int:id_usuario>', methods=['PUT'])
 def api_atualizar_usuario(id_usuario):
-    if not _eh_master():
+    if not _pode_gerir():
         return jsonify({'erro': 'Sem permissão'}), 403
     alvo  = banco.buscar_usuario_por_id(id_usuario)
+    # Admins (não-master) não podem editar usuários master
+    if not _eh_master() and alvo and alvo.get('nivel') == 'master':
+        return jsonify({'erro': 'Sem permissão para editar usuário master'}), 403
     dados = request.get_json()
     if alvo and alvo.get('nivel') == 'master':
         dados['nivel'] = 'master'
+    # Admins não podem elevar nível para master
+    if not _eh_master() and (dados.get('nivel') or '') == 'master':
+        dados['nivel'] = 'admin'
     banco.atualizar_usuario(id_usuario, dados)
     _log('EDITOU', f'Editou usuário #{id_usuario} — {alvo.get("nome","") if alvo else "?"}')
     if id_usuario == session.get('id_usuario'):
@@ -80,9 +96,11 @@ def api_atualizar_usuario(id_usuario):
 
 @usuarios_bp.route('/api/usuarios/<int:id_usuario>/resetar-senha', methods=['POST'])
 def api_resetar_senha(id_usuario):
-    if not _eh_master():
+    if not _pode_gerir():
         return jsonify({'erro': 'Sem permissão'}), 403
     alvo = banco.buscar_usuario_por_id(id_usuario)
+    if not _eh_master() and alvo and alvo.get('nivel') == 'master':
+        return jsonify({'erro': 'Sem permissão'}), 403
     banco.resetar_senha_usuario(id_usuario)
     _log('SENHA', f'Resetou senha do usuário #{id_usuario} — {alvo.get("nome","") if alvo else "?"}')
     return jsonify({'sucesso': True})
@@ -90,7 +108,7 @@ def api_resetar_senha(id_usuario):
 
 @usuarios_bp.route('/api/usuarios/<int:id_usuario>/limpar-troca', methods=['POST'])
 def api_limpar_troca(id_usuario):
-    if not _eh_master():
+    if not _pode_gerir():
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.limpar_mudar_senha(id_usuario)
     return jsonify({'sucesso': True})
@@ -98,7 +116,7 @@ def api_limpar_troca(id_usuario):
 
 @usuarios_bp.route('/api/usuarios/<int:id_usuario>', methods=['DELETE'])
 def api_remover_usuario(id_usuario):
-    if not _eh_master():
+    if not _pode_gerir():
         return jsonify({'erro': 'Sem permissão'}), 403
     alvo = banco.buscar_usuario_por_id(id_usuario)
     if alvo and alvo.get('nivel') == 'master':
@@ -111,7 +129,7 @@ def api_remover_usuario(id_usuario):
 
 @usuarios_bp.route('/api/upload-assinatura', methods=['POST'])
 def api_upload_assinatura():
-    if not _eh_master():
+    if not _pode_gerir():
         return jsonify({'erro': 'Sem permissão'}), 403
     arquivo    = request.files.get('imagem')
     usuario_id = request.form.get('usuario_id', '').strip()

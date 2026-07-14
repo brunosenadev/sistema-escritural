@@ -1485,6 +1485,31 @@ def salvar_notif_pref(usuario_id, faixa, ativo, freq_dias):
     conn.close()
 
 
+def listar_usuarios_por_setor(setor):
+    """Retorna IDs de usuários ativos no setor informado."""
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT id FROM usuarios WHERE setor=? AND id IS NOT NULL", (setor,)
+    ).fetchall()
+    conn.close()
+    return [r['id'] for r in rows]
+
+
+def get_sla_setores_notif():
+    """Retorna lista de setores configurados para receber alertas SLA."""
+    import json
+    val = get_config('sla_setores_notif', '[]')
+    try:
+        return json.loads(val)
+    except Exception:
+        return []
+
+
+def set_sla_setores_notif(setores):
+    import json
+    set_config('sla_setores_notif', json.dumps(setores))
+
+
 def verificar_e_notificar_sla(usuario_id):
     from datetime import datetime as _dt
     if not usuario_id:
@@ -1533,6 +1558,29 @@ def verificar_e_notificar_sla(usuario_id):
         conn.commit()
 
     conn.close()
+
+    # Notificar usuários dos setores configurados (independente de quem acessou)
+    setores_alvo = get_sla_setores_notif()
+    if not setores_alvo:
+        return
+    criticos  = [p for p in pendentes if p['sla_faixa'] == 'critico']
+    atrasados = [p for p in pendentes if p['sla_faixa'] in ('critico', 'atrasado', 'vencido')]
+    if not atrasados:
+        return
+    titulo_s = f'SLA: {len(atrasados)} pendente(s) fora do prazo'
+    primeiro  = atrasados[0]
+    msg_s     = f"{primeiro.get('empresa','?')} — {primeiro.get('dias_em_aberto',0)} dias"
+    if len(atrasados) > 1:
+        msg_s += f' e +{len(atrasados)-1}'
+    tipo_s = 'alerta' if criticos else 'aviso'
+
+    notificados = {usuario_id}
+    for setor in setores_alvo:
+        for uid in listar_usuarios_por_setor(setor):
+            if uid in notificados:
+                continue
+            notificados.add(uid)
+            criar_notificacao(uid, titulo_s, msg_s, tipo_s)
 
 
 # ── Hub Bancário ─────────────────────────────────────────
@@ -2256,10 +2304,11 @@ def mover_pendente_para_homologado(id_pendente):
     d      = dict(row)
     aba    = _aba_homologado(d['servico'])
     tabela = _TABELA_HOMOLOGADO[aba]
+    hoje = datetime.now().strftime('%d/%m/%Y')
     cur = conn.execute(
         f"INSERT INTO {tabela} (tecnico,empresa,servico,banco,dt_solicita,dt_status,status,obs,criado_por) VALUES (?,?,?,?,?,?,?,?,?)",
         (d['tecnico'], d['empresa'], d['servico'], d['banco'],
-         d['dt_solicita'], d['dt_status'], 'HOMOLOGADO', d['obs'], d.get('criado_por',''))
+         d['dt_solicita'], hoje, 'HOMOLOGADO', d['obs'], d.get('criado_por',''))
     )
     conn.execute("DELETE FROM pendentes WHERE id=?", (id_pendente,))
     conn.commit()
