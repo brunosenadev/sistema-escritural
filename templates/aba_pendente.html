@@ -336,8 +336,9 @@
   }
   .sla-chip-ok       { background: #dcfce7; color: #15803d; }
   .sla-chip-atencao  { background: #fef3c7; color: #92400e; }
-  .sla-chip-atrasado { background: #ffedd5; color: #c2410c; }
-  .sla-chip-critico  { background: #fee2e2; color: #991b1b; animation: sla-pulse 1.6s ease-in-out infinite; }
+  .sla-chip-vencido  { background: #ede9fe; color: #5b21b6; animation: sla-pulse 1.6s ease-in-out infinite; }
+  .sla-chip-atrasado { background: #ffedd5; color: #c2410c; animation: sla-pulse 1.6s ease-in-out infinite; }
+  .sla-chip-critico  { background: #fee2e2; color: #991b1b; animation: sla-pulse 1s ease-in-out infinite; }
   @keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
 
   /* ── Modal detalhe ── */
@@ -1407,15 +1408,22 @@
     const srv  = (servico || '').toUpperCase().trim();
     const conf = _SLA_CONF.find(c => c.servico.toUpperCase() === srv)
               || _SLA_CONF.find(c => c.servico === '__default__');
-    if (!conf) return { faixa: 'ok', dias };
-    if (dias >= conf.dias_critico)  return { faixa: 'critico',  dias };
-    if (dias >= conf.dias_atrasado) return { faixa: 'atrasado', dias };
-    if (dias >= conf.dias_atencao)  return { faixa: 'atencao',  dias };
-    return { faixa: 'ok', dias };
+    const prazo   = (conf && conf.prazo_total)   || 30;
+    const aviso   = (conf && conf.aviso_dias)    || 7;
+    const atras   = (conf && conf.atrasado_dias) || 7;
+    const critico = (conf && conf.critico_dias)  || 15;
+    const diasRestantes = prazo - dias;
+    let faixa;
+    if      (dias < prazo - aviso)   faixa = 'ok';
+    else if (dias < prazo)           faixa = 'atencao';
+    else if (dias < prazo + atras)   faixa = 'vencido';
+    else if (dias < prazo + critico) faixa = 'atrasado';
+    else                             faixa = 'critico';
+    return { faixa, dias, diasRestantes };
   }
 
-  const _SLA_CHIP_LABEL = { ok: '✔ No Prazo', atencao: '⚠ Atenção', atrasado: '⏰ Atrasado', critico: '🔴 Crítico' };
-  const _SLA_CHIP_CLASS = { ok: 'sla-chip-ok', atencao: 'sla-chip-atencao', atrasado: 'sla-chip-atrasado', critico: 'sla-chip-critico' };
+  const _SLA_CHIP_LABEL = { ok: '✔ No Prazo', atencao: '⚠ Atenção', vencido: '📅 Vencido', atrasado: '⏰ Atrasado', critico: '🔴 Crítico' };
+  const _SLA_CHIP_CLASS = { ok: 'sla-chip-ok', atencao: 'sla-chip-atencao', vencido: 'sla-chip-vencido', atrasado: 'sla-chip-atrasado', critico: 'sla-chip-critico' };
 
   function _initSlaChips() {
     document.querySelectorAll('#corpo-tabela tr[data-id]').forEach(tr => {
@@ -1428,7 +1436,9 @@
       if (!res) { chip.style.display = 'none'; return; }
       chip.className = 'sla-chip-linha ' + (_SLA_CHIP_CLASS[res.faixa] || '');
       chip.textContent = _SLA_CHIP_LABEL[res.faixa] || res.faixa;
-      chip.title = res.dias + ' dia(s) em aberto';
+      chip.title = res.diasRestantes > 0
+        ? res.diasRestantes + ' dia(s) para o prazo'
+        : 'Prazo esgotado há ' + Math.abs(res.diasRestantes) + ' dia(s)';
     });
   }
   _initSlaChips();
@@ -1467,7 +1477,9 @@
     if (res) {
       slaChip.className = 'sla-chip-linha ' + (_SLA_CHIP_CLASS[res.faixa] || '');
       slaChip.textContent = _SLA_CHIP_LABEL[res.faixa] || res.faixa;
-      slaDias.textContent = res.dias + ' dia(s) em aberto desde ' + dt;
+      slaDias.textContent = res.diasRestantes > 0
+        ? res.diasRestantes + ' dia(s) para o prazo (sol. ' + dt + ')'
+        : 'Prazo esgotado há ' + Math.abs(res.diasRestantes) + ' dia(s) (sol. ' + dt + ')';
       document.getElementById('detalhe-sla-bar').style.display = 'flex';
     } else {
       document.getElementById('detalhe-sla-bar').style.display = 'none';

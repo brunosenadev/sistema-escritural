@@ -173,7 +173,7 @@ def api_minha_cor():
         return jsonify({'erro': 'Sessão inválida'}), 401
     d   = request.get_json() or {}
     cor = d.get('cor', '').strip()
-    banco.atualizar_usuario(id_usuario, {'cor': cor})
+    banco.atualizar_cor_usuario(id_usuario, cor)
     session['cor'] = cor
     return jsonify({'sucesso': True})
 

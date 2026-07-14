@@ -937,7 +937,7 @@
 
       <!-- Formulário inline (oculto por padrão) -->
       <div id="form-sla-novo" style="display:none;padding:16px;border-bottom:1px solid #f1f5f9;background:#f8fafc;">
-        <div style="display:grid;grid-template-columns:1fr repeat(3,90px) auto;gap:10px;align-items:end;">
+        <div style="display:grid;grid-template-columns:1fr repeat(4,90px) auto;gap:10px;align-items:end;">
           <div>
             <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Serviço</label>
             <select class="input-config" id="sla-form-servico" style="width:100%;">
@@ -948,16 +948,20 @@
             </select>
           </div>
           <div>
-            <label style="font-size:11px;font-weight:600;color:#f59e0b;display:block;margin-bottom:4px;">Atenção (dias)</label>
-            <input class="input-config" type="number" id="sla-form-atencao" value="15" min="1" max="365">
+            <label style="font-size:11px;font-weight:600;color:#6366f1;display:block;margin-bottom:4px;">Prazo (dias)</label>
+            <input class="input-config" type="number" id="sla-form-prazo" value="30" min="1" max="365">
           </div>
           <div>
-            <label style="font-size:11px;font-weight:600;color:#f97316;display:block;margin-bottom:4px;">Atrasado (dias)</label>
-            <input class="input-config" type="number" id="sla-form-atrasado" value="25" min="1" max="365">
+            <label style="font-size:11px;font-weight:600;color:#f59e0b;display:block;margin-bottom:4px;">Aviso antes</label>
+            <input class="input-config" type="number" id="sla-form-aviso" value="7" min="1" max="365">
           </div>
           <div>
-            <label style="font-size:11px;font-weight:600;color:#dc2626;display:block;margin-bottom:4px;">Crítico (dias)</label>
-            <input class="input-config" type="number" id="sla-form-critico" value="40" min="1" max="365">
+            <label style="font-size:11px;font-weight:600;color:#f97316;display:block;margin-bottom:4px;">Atrasado após</label>
+            <input class="input-config" type="number" id="sla-form-atrasado" value="7" min="1" max="365">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#dc2626;display:block;margin-bottom:4px;">Crítico após</label>
+            <input class="input-config" type="number" id="sla-form-critico" value="15" min="1" max="365">
           </div>
           <div style="display:flex;gap:6px;">
             <button class="btn-primario-config" onclick="salvarSlaConfig()">Salvar</button>
@@ -971,9 +975,10 @@
         <thead>
           <tr>
             <th>Serviço</th>
-            <th style="text-align:center;color:#f59e0b;">Atenção</th>
-            <th style="text-align:center;color:#f97316;">Atrasado</th>
-            <th style="text-align:center;color:#dc2626;">Crítico</th>
+            <th style="text-align:center;color:#6366f1;">Prazo</th>
+            <th style="text-align:center;color:#f59e0b;">Aviso antes</th>
+            <th style="text-align:center;color:#f97316;">Atrasado após</th>
+            <th style="text-align:center;color:#dc2626;">Crítico após</th>
             <th style="width:60px;"></th>
           </tr>
         </thead>
@@ -987,9 +992,10 @@
               {{ s.servico }}
               {% endif %}
             </td>
-            <td style="text-align:center;"><span class="badge-sla-atencao">{{ s.dias_atencao }}d</span></td>
-            <td style="text-align:center;"><span class="badge-sla-atrasado">{{ s.dias_atrasado }}d</span></td>
-            <td style="text-align:center;"><span class="badge-sla-critico">{{ s.dias_critico }}d</span></td>
+            <td style="text-align:center;"><span class="badge-sla-prazo">{{ s.prazo_total or 30 }}d</span></td>
+            <td style="text-align:center;"><span class="badge-sla-aviso">{{ s.aviso_dias or 7 }}d antes</span></td>
+            <td style="text-align:center;"><span class="badge-sla-atrasado">{{ s.atrasado_dias or 7 }}d após</span></td>
+            <td style="text-align:center;"><span class="badge-sla-critico">{{ s.critico_dias or 15 }}d após</span></td>
             <td>
               {% if s.servico != '__default__' %}
               <button class="btn-deletar-mini" onclick="removerSlaConfig({{ s.id }}, this)" title="Remover">
@@ -1011,10 +1017,12 @@
 {% endif %}
 
 <style>
-.badge-sla-atencao  { background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600; }
+.badge-sla-prazo    { background:#ede9fe;color:#4f46e5;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600; }
+.badge-sla-aviso    { background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600; }
 .badge-sla-atrasado { background:#ffedd5;color:#c2410c;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600; }
 .badge-sla-critico  { background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600; }
-[data-tema="dark"] .badge-sla-atencao  { background:rgba(234,179,8,0.15);color:#fbbf24; }
+[data-tema="dark"] .badge-sla-prazo    { background:rgba(99,102,241,0.15);color:#a5b4fc; }
+[data-tema="dark"] .badge-sla-aviso    { background:rgba(234,179,8,0.15);color:#fbbf24; }
 [data-tema="dark"] .badge-sla-atrasado { background:rgba(249,115,22,0.15);color:#fb923c; }
 [data-tema="dark"] .badge-sla-critico  { background:rgba(220,38,38,0.15);color:#f87171; }
 [data-tema="dark"] #form-sla-novo { background:var(--z-elevated) !important; border-color:var(--z-border-s) !important; }
@@ -1457,9 +1465,10 @@
 
   function abrirFormSla() {
     document.getElementById('form-sla-novo').style.display = '';
-    document.getElementById('sla-form-atencao').value  = 15;
-    document.getElementById('sla-form-atrasado').value = 25;
-    document.getElementById('sla-form-critico').value  = 40;
+    document.getElementById('sla-form-prazo').value    = 30;
+    document.getElementById('sla-form-aviso').value    = 7;
+    document.getElementById('sla-form-atrasado').value = 7;
+    document.getElementById('sla-form-critico').value  = 15;
   }
 
   function fecharFormSla() {
@@ -1467,20 +1476,24 @@
   }
 
   function salvarSlaConfig() {
-    const servico      = document.getElementById('sla-form-servico').value.trim();
-    const dias_atencao  = parseInt(document.getElementById('sla-form-atencao').value);
-    const dias_atrasado = parseInt(document.getElementById('sla-form-atrasado').value);
-    const dias_critico  = parseInt(document.getElementById('sla-form-critico').value);
-    if (!servico || isNaN(dias_atencao) || isNaN(dias_atrasado) || isNaN(dias_critico)) {
+    const servico       = document.getElementById('sla-form-servico').value.trim();
+    const prazo_total   = parseInt(document.getElementById('sla-form-prazo').value);
+    const aviso_dias    = parseInt(document.getElementById('sla-form-aviso').value);
+    const atrasado_dias = parseInt(document.getElementById('sla-form-atrasado').value);
+    const critico_dias  = parseInt(document.getElementById('sla-form-critico').value);
+    if (!servico || isNaN(prazo_total) || isNaN(aviso_dias) || isNaN(atrasado_dias) || isNaN(critico_dias)) {
       return mostrarToast('erro', 'Preencha todos os campos.');
     }
-    if (dias_atencao <= 0 || dias_atrasado <= 0 || dias_critico <= 0) {
+    if (prazo_total <= 0 || aviso_dias <= 0 || atrasado_dias <= 0 || critico_dias <= 0) {
       return mostrarToast('erro', 'Os dias devem ser maiores que zero.');
+    }
+    if (aviso_dias >= prazo_total) {
+      return mostrarToast('erro', 'O aviso deve ser menor que o prazo total.');
     }
     fetch('/api/sla-config', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({servico, dias_atencao, dias_atrasado, dias_critico})
+      body: JSON.stringify({servico, prazo_total, aviso_dias, atrasado_dias, critico_dias})
     }).then(r => r.json()).then(d => {
       if (d.sucesso) { fecharFormSla(); location.reload(); }
       else mostrarToast('erro', d.erro || 'Erro ao salvar.');

@@ -277,9 +277,10 @@ def api_salvar_sla_servico():
     try:
         banco.salvar_sla_servico(
             servico,
-            int(d.get('dias_atencao', 15)),
-            int(d.get('dias_atrasado', 25)),
-            int(d.get('dias_critico', 40)),
+            int(d.get('prazo_total',   30)),
+            int(d.get('aviso_dias',     7)),
+            int(d.get('atrasado_dias',  7)),
+            int(d.get('critico_dias',  15)),
         )
     except (ValueError, TypeError):
         return jsonify({'erro': 'Dias inválidos'}), 400

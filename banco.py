@@ -276,9 +276,10 @@ def inicializar_banco():
         CREATE TABLE IF NOT EXISTS sla_config (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             servico         TEXT UNIQUE NOT NULL,
-            dias_atencao    INTEGER DEFAULT 15,
-            dias_atrasado   INTEGER DEFAULT 25,
-            dias_critico    INTEGER DEFAULT 40
+            prazo_total     INTEGER DEFAULT 30,
+            aviso_dias      INTEGER DEFAULT 7,
+            atrasado_dias   INTEGER DEFAULT 7,
+            critico_dias    INTEGER DEFAULT 15
         );
         CREATE TABLE IF NOT EXISTS sla_avisos (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -849,6 +850,13 @@ def atualizar_usuario(id_usuario, campos):
     conn.close()
 
 
+def atualizar_cor_usuario(id_usuario, cor):
+    conn = conectar()
+    conn.execute("UPDATE usuarios SET cor=? WHERE id=?", (cor, id_usuario))
+    conn.commit()
+    conn.close()
+
+
 def buscar_usuario_por_tecnico(nome_tecnico):
     """Retorna o dict do usuário cujo tecnico_vinculado == nome_tecnico, ou None."""
     if not nome_tecnico:
@@ -1270,16 +1278,17 @@ def listar_sla_config():
     return [dict(r) for r in rows]
 
 
-def salvar_sla_servico(servico, dias_atencao, dias_atrasado, dias_critico):
+def salvar_sla_servico(servico, prazo_total, aviso_dias, atrasado_dias, critico_dias):
     conn = conectar()
     conn.execute(
-        """INSERT INTO sla_config(servico, dias_atencao, dias_atrasado, dias_critico)
-           VALUES(?,?,?,?)
+        """INSERT INTO sla_config(servico, prazo_total, aviso_dias, atrasado_dias, critico_dias)
+           VALUES(?,?,?,?,?)
            ON CONFLICT(servico) DO UPDATE SET
-               dias_atencao=excluded.dias_atencao,
-               dias_atrasado=excluded.dias_atrasado,
-               dias_critico=excluded.dias_critico""",
-        (servico, int(dias_atencao), int(dias_atrasado), int(dias_critico))
+               prazo_total=excluded.prazo_total,
+               aviso_dias=excluded.aviso_dias,
+               atrasado_dias=excluded.atrasado_dias,
+               critico_dias=excluded.critico_dias""",
+        (servico, int(prazo_total), int(aviso_dias), int(atrasado_dias), int(critico_dias))
     )
     conn.commit()
     conn.close()
@@ -1336,6 +1345,17 @@ def migrar_sla():
             conn.commit()
         except Exception:
             pass
+    for col_def in (
+        'prazo_total   INTEGER DEFAULT 30',
+        'aviso_dias    INTEGER DEFAULT 7',
+        'atrasado_dias INTEGER DEFAULT 7',
+        'critico_dias  INTEGER DEFAULT 15',
+    ):
+        try:
+            conn.execute(f"ALTER TABLE sla_config ADD COLUMN {col_def}")
+            conn.commit()
+        except Exception:
+            pass
     conn.close()
 
 
@@ -1355,10 +1375,11 @@ def calcular_sla_pendentes():
     sla_rows = conn.execute("SELECT * FROM sla_config").fetchall()
     conn.close()
 
-    sla_map  = {r['servico']: dict(r) for r in sla_rows}
-    default  = sla_map.get('__default__', {'dias_atencao': 15, 'dias_atrasado': 25, 'dias_critico': 40})
-    hoje     = _date.today()
-    result   = []
+    sla_map = {r['servico']: dict(r) for r in sla_rows}
+    _DEF    = {'prazo_total': 30, 'aviso_dias': 7, 'atrasado_dias': 7, 'critico_dias': 15}
+    default = sla_map.get('__default__', _DEF)
+    hoje    = _date.today()
+    result  = []
 
     for p in pendentes:
         pd = dict(p)
@@ -1369,14 +1390,21 @@ def calcular_sla_pendentes():
             dias = 0
 
         servico = (pd.get('servico') or '').strip()
-        sla = sla_map.get(servico, default)
+        sla     = sla_map.get(servico, default)
 
-        if   dias >= sla.get('dias_critico',  40): faixa = 'critico'
-        elif dias >= sla.get('dias_atrasado', 25): faixa = 'atrasado'
-        elif dias >= sla.get('dias_atencao',  15): faixa = 'atencao'
-        else:                                       faixa = 'ok'
+        prazo   = sla.get('prazo_total',   default.get('prazo_total',   30))
+        aviso   = sla.get('aviso_dias',    default.get('aviso_dias',     7))
+        atras   = sla.get('atrasado_dias', default.get('atrasado_dias',  7))
+        critico = sla.get('critico_dias',  default.get('critico_dias',  15))
+
+        if   dias < prazo - aviso:     faixa = 'ok'
+        elif dias < prazo:             faixa = 'atencao'
+        elif dias < prazo + atras:     faixa = 'vencido'
+        elif dias < prazo + critico:   faixa = 'atrasado'
+        else:                          faixa = 'critico'
 
         pd['dias_em_aberto'] = dias
+        pd['dias_restantes'] = prazo - dias
         pd['sla_faixa']      = faixa
         pd['sla_prazo']      = sla
         result.append(pd)
@@ -1386,7 +1414,7 @@ def calcular_sla_pendentes():
 
 def resumo_sla():
     pendentes = calcular_sla_pendentes()
-    totais = {'total': len(pendentes), 'ok': 0, 'atencao': 0, 'atrasado': 0, 'critico': 0}
+    totais = {'total': len(pendentes), 'ok': 0, 'atencao': 0, 'vencido': 0, 'atrasado': 0, 'critico': 0}
     por_tecnico = {}
     por_servico = {}
 
@@ -1398,7 +1426,7 @@ def resumo_sla():
         tec = (p.get('tecnico') or '—').strip() or '—'
         if tec not in por_tecnico:
             por_tecnico[tec] = {'tecnico': tec, 'total': 0, 'soma_dias': 0,
-                                'ok': 0, 'atencao': 0, 'atrasado': 0, 'critico': 0}
+                                'ok': 0, 'atencao': 0, 'vencido': 0, 'atrasado': 0, 'critico': 0}
         por_tecnico[tec]['total']     += 1
         por_tecnico[tec]['soma_dias'] += dias
         por_tecnico[tec][faixa]       += 1
@@ -1406,7 +1434,7 @@ def resumo_sla():
         srv = (p.get('servico') or '—').strip() or '—'
         if srv not in por_servico:
             por_servico[srv] = {'servico': srv, 'total': 0,
-                                'ok': 0, 'atencao': 0, 'atrasado': 0, 'critico': 0}
+                                'ok': 0, 'atencao': 0, 'vencido': 0, 'atrasado': 0, 'critico': 0}
         por_servico[srv]['total'] += 1
         por_servico[srv][faixa]   += 1
 
@@ -1415,9 +1443,10 @@ def resumo_sla():
 
     tecnicos_rank = sorted(
         [{'tecnico': k, 'total': v['total'], 'media_dias': _media(v),
-          'ok': v['ok'], 'atencao': v['atencao'], 'atrasado': v['atrasado'], 'critico': v['critico']}
+          'ok': v['ok'], 'atencao': v['atencao'], 'vencido': v['vencido'],
+          'atrasado': v['atrasado'], 'critico': v['critico']}
          for k, v in por_tecnico.items()],
-        key=lambda x: (x['critico'] * 1000 + x['atrasado'] * 100 + x['media_dias']),
+        key=lambda x: (x['critico'] * 1000 + x['atrasado'] * 100 + x['vencido'] * 10 + x['media_dias']),
         reverse=True
     )
 
@@ -1427,7 +1456,7 @@ def resumo_sla():
         'totais':    totais,
         'taxa_ok':   taxa,
         'tecnicos':  tecnicos_rank,
-        'servicos':  sorted(por_servico.values(), key=lambda x: x['critico'] * 100 + x['atrasado'], reverse=True),
+        'servicos':  sorted(por_servico.values(), key=lambda x: x['critico'] * 100 + x['atrasado'] * 10 + x['vencido'], reverse=True),
         'pendentes': pendentes,
     }
 
