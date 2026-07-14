@@ -497,8 +497,6 @@
   [data-tema="dark"] .btn-cancelar-modal { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
   [data-tema="dark"] .btn-cancelar-modal:hover { background: var(--z-border-s); }
   [data-tema="dark"] .rodape-modal       { border-top-color: var(--z-border-s); }
-  [data-tema="dark"] #modal-banco .grupo-modal { background: var(--z-elevated) !important; border-color: var(--z-border) !important; }
-  [data-tema="dark"] #modal-banco .grupo-modal span { color: var(--z-text-1) !important; }
   [data-tema="dark"] .preview-cor-nome   { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
   [data-tema="dark"] input[type="color"] { background: var(--z-elevated); border-color: var(--z-border); }
   [data-tema="dark"] .wrapper-cor label  { color: var(--z-text-3); }
@@ -862,8 +860,54 @@
 </div>
 
 <!-- Modal banco -->
+<style>
+  .bm-field { display:flex; flex-direction:column; gap:5px; }
+  .bm-label {
+    font-size:12px; font-weight:600; color:#64748b; letter-spacing:0.01em;
+  }
+  .bm-label span { color:#ef4444; margin-left:2px; }
+  .bm-input {
+    padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:8px;
+    font-size:13.5px; font-family:inherit; color:#1e293b; background:#f8fafc;
+    outline:none; transition:border-color .18s, box-shadow .18s, background .18s;
+    width:100%;
+  }
+  .bm-input:focus { border-color:#3b82f6; background:#fff; box-shadow:0 0 0 3px rgba(59,130,246,.12); }
+  .bm-toggle-row {
+    display:flex; align-items:center; gap:12px; padding:11px 14px;
+    border-radius:10px; border:1.5px solid #e2e8f0; background:#f8fafc;
+    cursor:pointer; user-select:none; transition:border-color .15s, background .15s;
+  }
+  .bm-toggle-row:hover { border-color:#cbd5e1; background:#f1f5f9; }
+  /* toggle switch */
+  .bm-switch { position:relative; width:36px; height:20px; flex-shrink:0; }
+  .bm-switch input { opacity:0; width:0; height:0; position:absolute; }
+  .bm-slider {
+    position:absolute; inset:0; border-radius:20px; background:#cbd5e1;
+    transition:background .2s;
+  }
+  .bm-slider::before {
+    content:''; position:absolute; height:14px; width:14px; left:3px; top:3px;
+    border-radius:50%; background:#fff; transition:transform .2s;
+    box-shadow:0 1px 3px rgba(0,0,0,.2);
+  }
+  .bm-switch input:checked + .bm-slider { background:#2563eb; }
+  .bm-switch input:checked + .bm-slider::before { transform:translateX(16px); }
+  .bm-toggle-label { font-size:13px; font-weight:500; color:#374151; line-height:1.3; }
+  .bm-toggle-sub   { font-size:11px; color:#94a3b8; margin-top:1px; }
+
+  /* dark */
+  [data-tema="dark"] .bm-label     { color:#94a3b8; }
+  [data-tema="dark"] .bm-input     { background:#1e2535; border-color:#2d3748; color:#e2e8f0; }
+  [data-tema="dark"] .bm-input:focus { background:#252f45; border-color:#3b82f6; }
+  [data-tema="dark"] .bm-toggle-row { background:#1e2535; border-color:#2d3748; }
+  [data-tema="dark"] .bm-toggle-row:hover { background:#252f45; border-color:#3b4a6b; }
+  [data-tema="dark"] .bm-toggle-label { color:#e2e8f0; }
+  [data-tema="dark"] .bm-slider    { background:#3d4f6e; }
+</style>
+
 <div class="overlay-modal" id="modal-banco" onclick="fecharModalSeClicarFora(event,'modal-banco')">
-  <div class="modal-config" style="max-width:420px;">
+  <div class="modal-config" style="max-width:400px;">
     <div class="modal-titulo">
       <span id="modal-banco-titulo">Novo banco</span>
       <button class="btn-fechar-modal" onclick="fecharModalBanco()">
@@ -871,32 +915,44 @@
       </button>
     </div>
 
-    <div style="display:grid;grid-template-columns:110px 1fr;gap:12px;padding:0 0 4px;">
-      <div class="grupo-modal">
-        <label>Código <span style="color:#ef4444">*</span></label>
-        <input class="input-modal" id="banco-modal-codigo" placeholder="Ex: 341" maxlength="10"
+    <div style="display:grid;grid-template-columns:100px 1fr;gap:12px;margin-bottom:14px;">
+      <div class="bm-field">
+        <label class="bm-label" for="banco-modal-codigo">Código<span>*</span></label>
+        <input class="bm-input" id="banco-modal-codigo" placeholder="341" maxlength="10"
           onkeydown="if(event.key==='Enter'){document.getElementById('banco-modal-nome').focus();}">
       </div>
-      <div class="grupo-modal">
-        <label>Nome do Banco <span style="color:#ef4444">*</span></label>
-        <input class="input-modal" id="banco-modal-nome" placeholder="Ex: Itaú Unibanco" maxlength="100"
+      <div class="bm-field">
+        <label class="bm-label" for="banco-modal-nome">Nome do banco<span>*</span></label>
+        <input class="bm-input" id="banco-modal-nome" placeholder="Ex: Itaú Unibanco" maxlength="100"
           onkeydown="if(event.key==='Enter'){salvarBanco();}">
       </div>
     </div>
 
-    <label class="grupo-modal" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:0;">
-      <input type="checkbox" id="banco-modal-api" style="width:15px;height:15px;cursor:pointer;flex-shrink:0;accent-color:#2563eb;">
-      <span style="font-size:13px;font-weight:500;color:#374151;">Possui integração via API (boleto)</span>
+    <label class="bm-toggle-row" style="margin-bottom:10px;">
+      <span class="bm-switch">
+        <input type="checkbox" id="banco-modal-api">
+        <span class="bm-slider"></span>
+      </span>
+      <span>
+        <div class="bm-toggle-label">Integração via API</div>
+        <div class="bm-toggle-sub">Suporte a boleto via API bancária</div>
+      </span>
     </label>
 
-    <label class="grupo-modal" id="grupo-banco-ativo" style="display:none;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:0;">
-      <input type="checkbox" id="banco-modal-ativo" checked style="width:15px;height:15px;cursor:pointer;flex-shrink:0;accent-color:#2563eb;">
-      <span style="font-size:13px;font-weight:500;color:#374151;">Ativo — aparece nas listas de seleção</span>
+    <label class="bm-toggle-row" id="grupo-banco-ativo" style="display:none;margin-bottom:0;">
+      <span class="bm-switch">
+        <input type="checkbox" id="banco-modal-ativo" checked>
+        <span class="bm-slider"></span>
+      </span>
+      <span>
+        <div class="bm-toggle-label">Banco ativo</div>
+        <div class="bm-toggle-sub">Aparece nas listas de seleção</div>
+      </span>
     </label>
 
     <div class="rodape-modal">
       <button class="btn-cancelar-modal" onclick="fecharModalBanco()">Cancelar</button>
-      <button class="btn-salvar-modal" onclick="salvarBanco()">Salvar Banco</button>
+      <button class="btn-salvar-modal" onclick="salvarBanco()">Salvar banco</button>
     </div>
   </div>
 </div>

@@ -157,37 +157,26 @@
   }
   .notif-row.lida .notif-row-titulo { color: #64748b; font-weight: 500; }
 
-  /* Mensagem truncada por padrão */
-  .notif-row-msg {
-    font-size: 12px;
-    color: #64748b;
-    margin-bottom: 4px;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
-  /* Mensagem expandida */
-  .notif-row.expandida .notif-row-msg {
-    display: none;
-  }
+  /* Subtítulo — oculto por padrão, clique revela a mensagem completa */
+  .notif-row-msg { display: none; }
 
-  /* Texto completo oculto por padrão */
+  /* Mensagem completa: oculta colapsada, destaque ao expandir */
   .notif-msg-completa {
     display: none;
-    font-size: 13px;
-    color: #334155;
-    line-height: 1.65;
-    background: #f1f5f9;
-    border-radius: 8px;
-    padding: 10px 12px;
+    font-size: 13.5px;
+    color: #1e293b;
+    line-height: 1.7;
     margin-top: 8px;
     white-space: pre-wrap;
     word-break: break-word;
-    border-left: 3px solid #2563eb;
   }
   .notif-row.expandida .notif-msg-completa { display: block; }
+  .notif-row.expandida .notif-row-titulo {
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
+    margin-bottom: 4px;
+  }
 
   .notif-row-meta { font-size: 11px; color: #94a3b8; display:flex;gap:8px;align-items:center;margin-top:4px; }
   .notif-tipo-badge {
@@ -308,7 +297,16 @@
         <label>Destino</label>
         <select id="nenv-destino" onchange="_notifToggleUsuario()">
           <option value="todos">Todos os usuários</option>
+          <option value="setor">Por setor</option>
           <option value="usuario">Usuário específico</option>
+        </select>
+      </div>
+      <div class="notif-campo campo-full" id="nenv-setor-wrap" style="display:none">
+        <label>Setor</label>
+        <select id="nenv-setor">
+          {% for s in lista_setores %}
+          <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
         </select>
       </div>
       <div class="notif-campo campo-full" id="nenv-usuario-wrap" style="display:none">
@@ -389,17 +387,20 @@
   function _notifToggleUsuario() {
     const dest = document.getElementById('nenv-destino').value;
     document.getElementById('nenv-usuario-wrap').style.display = dest === 'usuario' ? '' : 'none';
+    document.getElementById('nenv-setor-wrap').style.display   = dest === 'setor'   ? '' : 'none';
   }
 
   function _enviarNotificacao() {
     const titulo = document.getElementById('nenv-titulo').value.trim();
     if (!titulo) { mostrarToast('erro', 'Informe o título.'); return; }
+    const destino = document.getElementById('nenv-destino').value;
     const body = {
       titulo,
       mensagem: document.getElementById('nenv-mensagem').value.trim(),
       tipo: document.getElementById('nenv-tipo').value,
-      destino: document.getElementById('nenv-destino').value,
-      usuario_id: document.getElementById('nenv-usuario')?.value || null,
+      destino,
+      usuario_id: destino === 'usuario' ? (document.getElementById('nenv-usuario')?.value || null) : null,
+      setor:      destino === 'setor'   ? (document.getElementById('nenv-setor')?.value   || null) : null,
     };
     fetch('/api/notificacoes/enviar', {
       method: 'POST',

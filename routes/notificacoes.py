@@ -29,11 +29,13 @@ def pagina_notificacoes():
     u = banco.buscar_usuario_por_id(uid) or {}
     pode_enviar = bool(u.get('pode_enviar_notificacao'))
     usuarios = banco.listar_usuarios() if pode_enviar else []
+    setores  = banco.listar_setores() if pode_enviar else []
     return render_template(
         'aba_notificacoes.html',
         notificacoes=notifs,
         aba_ativa='notificacoes',
         usuarios_lista=usuarios,
+        lista_setores=setores,
         pode_enviar=pode_enviar,
     )
 
@@ -111,6 +113,16 @@ def api_enviar():
     if destino == 'todos':
         banco.criar_notificacao_todos(titulo, mensagem, tipo)
         _log('ENVIOU', f'Notificação para todos — "{titulo}"')
+    elif destino == 'setor':
+        setor = (d.get('setor') or '').strip()
+        if not setor:
+            return jsonify({'erro': 'Setor não informado'}), 400
+        ids = banco.listar_usuarios_por_setor(setor)
+        if not ids:
+            return jsonify({'erro': f'Nenhum usuário encontrado no setor "{setor}"'}), 400
+        for uid in ids:
+            banco.criar_notificacao(uid, titulo, mensagem, tipo)
+        _log('ENVIOU', f'Notificação para setor {setor} ({len(ids)} usuário(s)) — "{titulo}"')
     else:
         if not usuario_id:
             return jsonify({'erro': 'Usuário não informado'}), 400

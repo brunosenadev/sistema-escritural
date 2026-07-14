@@ -3,6 +3,7 @@ app.py — Ponto de entrada do Sisplan.
 """
 
 import os
+import datetime
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -32,6 +33,7 @@ from routes.usuarios            import usuarios_bp
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(days=30)
 
 banco.inicializar_banco()
 banco.migrar_pendentes_legados()
@@ -98,6 +100,14 @@ def _jwt_guard():
             payload = dict(payload)
             payload['mp'] = info.get('mudar_senha', payload.get('mp', 0))
         _preencher_sessao(payload)
+        # telas não está no JWT — restaura do banco só quando a session foi perdida
+        if not session.get('telas'):
+            niv = payload.get('niv', '')
+            try:
+                uid = int(payload.get('sub', 0))
+                session['telas'] = '__all__' if niv == 'master' else banco.listar_telas_usuario(uid)
+            except (ValueError, TypeError):
+                pass
         return
 
     # 2. Access expirado — tentar refresh token

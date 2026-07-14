@@ -53,6 +53,7 @@ def pagina_login():
             request.form.get('senha', '').strip(),
         )
         if usuario:
+            session.permanent            = True
             session['usuario']           = usuario['usuario']
             session['nome']              = usuario['nome']
             session['nivel_acesso']      = usuario['nivel']

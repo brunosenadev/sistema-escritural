@@ -245,8 +245,15 @@
 
   .tabela-pendente th.ordenavel {
     cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
   }
   .tabela-pendente th.ordenavel:hover { color: #2563eb; }
+  .tabela-pendente th.ordenavel::after { content: ' ⇅'; opacity: 0.25; font-size: 10px; }
+  .tabela-pendente th.sort-asc::after  { content: ' ▲'; opacity: 1; color: #2563eb; }
+  .tabela-pendente th.sort-desc::after { content: ' ▼'; opacity: 1; color: #2563eb; }
+  .tabela-pendente th.sort-asc,
+  .tabela-pendente th.sort-desc { color: #2563eb; }
 
   .tabela-pendente tbody tr {
     border-bottom: 1px solid #f1f5f9;
@@ -698,12 +705,12 @@
       <table class="tabela-pendente" id="tabela-pendente">
         <thead>
           <tr>
-            <th>Técnico</th>
-            <th class="ordenavel">Empresa</th>
-            <th>Serviço</th>
-            <th>Banco</th>
-            <th class="ordenavel">Dt. Cadastro</th>
-            <th class="ordenavel">Dt. Vencimento</th>
+            <th class="ordenavel" data-col="0" onclick="_sortTabela(0)">Técnico</th>
+            <th class="ordenavel" data-col="1" onclick="_sortTabela(1)">Empresa</th>
+            <th class="ordenavel" data-col="2" onclick="_sortTabela(2)">Serviço</th>
+            <th class="ordenavel" data-col="3" onclick="_sortTabela(3)">Banco</th>
+            <th class="ordenavel" data-col="4" onclick="_sortTabela(4)">Dt. Cadastro</th>
+            <th class="ordenavel" data-col="5" onclick="_sortTabela(5)">Dt. Vencimento</th>
             <th class="th-status">Status</th>
             <th>Obs</th>
             <th></th>
@@ -1468,15 +1475,69 @@
   }
   _initSlaChips();
 
-  // Preenche células DT. VENCIMENTO que estão "—" calculando dt_solicita + prazo SLA
-  (function _preencherVencimentosFaltantes() {
+  // Recalcula DT. VENCIMENTO de TODAS as linhas: data de cadastro + prazo SLA
+  (function _sincronizarVencimentos() {
     document.querySelectorAll('#corpo-tabela tr[data-id]').forEach(tr => {
       const cells = tr.querySelectorAll('td');
-      if (!cells[5] || cells[5].textContent.trim() !== '—') return;
+      if (!cells[5]) return;
       const v = _calcVencimento(tr.dataset.servico || '', tr.dataset.dtSolicita || '');
       if (v) cells[5].textContent = v;
     });
   })();
+
+  // ─── Ordenação de colunas ────────────────────────────────
+  let _sortState = { col: -1, dir: 0 };
+
+  function _parseDataBR(str) {
+    if (!str || str === '—') return null;
+    const p = str.split('/');
+    if (p.length !== 3) return null;
+    return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+  }
+
+  function _sortTabela(colIdx) {
+    const isDate       = colIdx === 4 || colIdx === 5;
+    const isVencimento = colIdx === 5;
+
+    if (_sortState.col === colIdx) {
+      _sortState.dir = _sortState.dir === 1 ? -1 : 1;
+    } else {
+      _sortState.col = colIdx;
+      // DT. Vencimento: 1º clique = mais atual → mais vencido (desc)
+      // Outros: 1º clique = A→Z / mais antigo primeiro (asc)
+      _sortState.dir = isVencimento ? -1 : 1;
+    }
+
+    const dir   = _sortState.dir;
+    const tbody = document.getElementById('corpo-tabela');
+    const rows  = Array.from(tbody.querySelectorAll('tr[data-id]'));
+
+    rows.sort((a, b) => {
+      const ca = a.querySelectorAll('td')[colIdx];
+      const cb = b.querySelectorAll('td')[colIdx];
+      const va = ca ? ca.textContent.trim() : '';
+      const vb = cb ? cb.textContent.trim() : '';
+
+      if (isDate) {
+        const da = _parseDataBR(va);
+        const db = _parseDataBR(vb);
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return dir * (da - db);
+      }
+      return dir * va.localeCompare(vb, 'pt-BR', { sensitivity: 'base' });
+    });
+
+    rows.forEach(r => tbody.appendChild(r));
+
+    // Atualiza indicadores visuais nos cabeçalhos
+    document.querySelectorAll('#tabela-pendente th.ordenavel').forEach(th => {
+      th.classList.remove('sort-asc', 'sort-desc');
+    });
+    const thAtivo = document.querySelector(`#tabela-pendente th[data-col="${colIdx}"]`);
+    if (thAtivo) thAtivo.classList.add(dir === 1 ? 'sort-asc' : 'sort-desc');
+  }
 
   // ─── Modal detalhe (duplo clique) ───────────────────────────
   let _detalheIdAtual = null;
