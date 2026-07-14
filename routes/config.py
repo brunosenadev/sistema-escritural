@@ -297,6 +297,15 @@ def api_remover_sla_servico(id_sla):
     return jsonify({'sucesso': True})
 
 
+@config_bp.route('/api/recalcular-vencimentos', methods=['POST'])
+def api_recalcular_vencimentos():
+    if not usuario_logado() or session.get('nivel_acesso') not in ('admin', 'master'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    n = banco.recalcular_vencimentos_pendentes()
+    _log('Configurações', 'EDITOU', f'Vencimentos recalculados: {n} pendentes atualizados')
+    return jsonify({'sucesso': True, 'atualizados': n})
+
+
 # ── API SLA Avisos ────────────────────────────────────────
 
 @config_bp.route('/api/sla-avisos', methods=['GET'])

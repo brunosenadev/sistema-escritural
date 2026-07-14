@@ -1301,6 +1301,41 @@ def remover_sla_servico(id_sla):
     conn.close()
 
 
+def recalcular_vencimentos_pendentes():
+    from datetime import timedelta
+    configs = listar_sla_config()
+    config_map = {}
+    default_prazo = 30
+    for c in configs:
+        if c['servico'] == '__default__':
+            default_prazo = c['prazo_total'] or 30
+        else:
+            config_map[(c['servico'] or '').upper().strip()] = c['prazo_total'] or 30
+
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT id, servico, dt_solicita FROM pendentes "
+        "WHERE (dt_status IS NULL OR TRIM(dt_status)='') "
+        "AND dt_solicita IS NOT NULL AND TRIM(dt_solicita) != ''"
+    ).fetchall()
+    updated = 0
+    for row in rows:
+        try:
+            parts = (row['dt_solicita'] or '').strip().split('/')
+            if len(parts) != 3:
+                continue
+            dt = datetime(int(parts[2]), int(parts[1]), int(parts[0]))
+            prazo = config_map.get((row['servico'] or '').upper().strip(), default_prazo)
+            dt_venc = (dt + timedelta(days=prazo)).strftime('%d/%m/%Y')
+            conn.execute("UPDATE pendentes SET dt_status=? WHERE id=?", (dt_venc, row['id']))
+            updated += 1
+        except Exception:
+            continue
+    conn.commit()
+    conn.close()
+    return updated
+
+
 # ── SLA Avisos ───────────────────────────────────────────
 
 def listar_sla_avisos(apenas_ativos=False):

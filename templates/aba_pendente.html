@@ -1134,7 +1134,7 @@
     document.getElementById('campo-servico').value    = registro.servico;
     document.getElementById('campo-banco').value      = registro.banco;
     document.getElementById('campo-dt-solicita').value = registro.dt_solicita;
-    document.getElementById('campo-dt-status').value  = registro.dt_status;
+    document.getElementById('campo-dt-status').value  = registro.dt_status || _calcVencimento(registro.servico, registro.dt_solicita) || '';
     document.getElementById('campo-status').value     = registro.status;
     _setObs(registro.obs || '');
     document.getElementById('overlay-modal').classList.add('aberto');
@@ -1467,6 +1467,16 @@
     });
   }
   _initSlaChips();
+
+  // Preenche células DT. VENCIMENTO que estão "—" calculando dt_solicita + prazo SLA
+  (function _preencherVencimentosFaltantes() {
+    document.querySelectorAll('#corpo-tabela tr[data-id]').forEach(tr => {
+      const cells = tr.querySelectorAll('td');
+      if (!cells[5] || cells[5].textContent.trim() !== '—') return;
+      const v = _calcVencimento(tr.dataset.servico || '', tr.dataset.dtSolicita || '');
+      if (v) cells[5].textContent = v;
+    });
+  })();
 
   // ─── Modal detalhe (duplo clique) ───────────────────────────
   let _detalheIdAtual = null;

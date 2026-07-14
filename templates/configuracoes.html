@@ -189,6 +189,23 @@
     stroke-width: 2.5; stroke-linecap: round;
   }
 
+  .btn-secundario-config {
+    padding: 7px 12px;
+    background: transparent;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .btn-secundario-config:hover { background: #f1f5f9; color: #334155; border-color: #94a3b8; }
+
   /* ── Pills de status/serviço ────────────────── */
   .lista-pills {
     display: flex;
@@ -480,6 +497,8 @@
   [data-tema="dark"] .btn-cancelar-modal { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
   [data-tema="dark"] .btn-cancelar-modal:hover { background: var(--z-border-s); }
   [data-tema="dark"] .rodape-modal       { border-top-color: var(--z-border-s); }
+  [data-tema="dark"] #modal-banco .grupo-modal { background: var(--z-elevated) !important; border-color: var(--z-border) !important; }
+  [data-tema="dark"] #modal-banco .grupo-modal span { color: var(--z-text-1) !important; }
   [data-tema="dark"] .preview-cor-nome   { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
   [data-tema="dark"] input[type="color"] { background: var(--z-elevated); border-color: var(--z-border); }
   [data-tema="dark"] .wrapper-cor label  { color: var(--z-text-3); }
@@ -564,14 +583,6 @@
   </button>
   {% endif %}
   {% endif %}
-  {% if nivel_acesso in ('admin', 'master') or 'escritural' in telas_acesso %}
-  <button class="tab-btn{% if nivel_acesso not in ('admin', 'master') %} ativo{% endif %}" onclick="trocarTab('status-escritural', this)">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-    </svg>
-    Status Escriturais
-  </button>
-  {% endif %}
   {% if nivel_acesso in ('admin', 'master') %}
   <button class="tab-btn" onclick="trocarTab('sla', this)">
     <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 4-8"/></svg>
@@ -639,7 +650,7 @@
 <!-- TAB: Status & Serviços                     -->
 <!-- ════════════════════════════════════════════ -->
 <div id="tab-listas" class="painel-tab">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
 
     <!-- Status -->
     <div class="card-config">
@@ -734,6 +745,43 @@
       </div>
     </div>
 
+    <!-- Status Escriturais -->
+    <div class="card-config">
+      <div class="card-config-header">
+        <span class="card-config-titulo">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Status Escriturais
+        </span>
+      </div>
+      <div class="card-config-body">
+        <div class="lista-pills" id="lista-status-escritural-pills">
+          {% for status in lista_status_escritural %}
+          <div class="pill-item status-pill" id="pill-status-escritural-{{ loop.index }}">
+            {{ status }}
+            <button class="btn-remover-pill" onclick="removerStatusEscritural('{{ status }}')" title="Remover">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          {% else %}
+          <p style="color:#94a3b8;font-size:13px;">Nenhum status cadastrado.</p>
+          {% endfor %}
+        </div>
+        <div class="form-inline-adicionar">
+          <input class="input-config" type="text" id="input-novo-status-escritural" placeholder="Ex: EM ANÁLISE" oninput="this.value=this.value.toUpperCase()">
+          <button class="btn-primario-config" onclick="adicionarStatusEscritural()">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Adicionar
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -814,88 +862,45 @@
 </div>
 
 <!-- Modal banco -->
-<div class="modal-overlay" id="modal-banco" style="display:none;">
-  <div class="modal-box" style="max-width:420px;">
-    <div class="modal-header">
-      <span class="modal-titulo" id="modal-banco-titulo">Novo banco</span>
-      <button class="modal-fechar" onclick="fecharModalBanco()">
+<div class="overlay-modal" id="modal-banco" onclick="fecharModalSeClicarFora(event,'modal-banco')">
+  <div class="modal-config" style="max-width:420px;">
+    <div class="modal-titulo">
+      <span id="modal-banco-titulo">Novo banco</span>
+      <button class="btn-fechar-modal" onclick="fecharModalBanco()">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div class="modal-corpo">
-      <div style="display:grid;gap:14px;">
-        <div style="display:grid;grid-template-columns:120px 1fr;gap:12px;">
-          <div>
-            <label class="label-config" for="banco-modal-codigo">Código <span style="color:#ef4444">*</span></label>
-            <input class="input-config" id="banco-modal-codigo" placeholder="Ex: 341" maxlength="10"
-              onkeydown="if(event.key==='Enter'){document.getElementById('banco-modal-nome').focus();}">
-          </div>
-          <div>
-            <label class="label-config" for="banco-modal-nome">Nome do Banco <span style="color:#ef4444">*</span></label>
-            <input class="input-config" id="banco-modal-nome" placeholder="Ex: Itaú Unibanco" maxlength="100"
-              onkeydown="if(event.key==='Enter'){salvarBanco();}">
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;padding:.5rem .6rem;background:var(--bg-inset,#f8fafc);border-radius:8px;border:1px solid var(--border-color,#e2e8f0);">
-          <input type="checkbox" id="banco-modal-api" style="width:16px;height:16px;cursor:pointer;flex-shrink:0;">
-          <label for="banco-modal-api" class="label-config" style="margin:0;cursor:pointer;font-size:.8rem;text-transform:none;letter-spacing:0;font-weight:500;">Possui integração via API (boleto)</label>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;padding:.5rem .6rem;background:var(--bg-inset,#f8fafc);border-radius:8px;border:1px solid var(--border-color,#e2e8f0);" id="grupo-banco-ativo">
-          <input type="checkbox" id="banco-modal-ativo" checked style="width:16px;height:16px;cursor:pointer;flex-shrink:0;">
-          <label for="banco-modal-ativo" class="label-config" style="margin:0;cursor:pointer;font-size:.8rem;text-transform:none;letter-spacing:0;font-weight:500;">Ativo — aparece nas listas de seleção</label>
-        </div>
+
+    <div style="display:grid;grid-template-columns:110px 1fr;gap:12px;padding:0 0 4px;">
+      <div class="grupo-modal">
+        <label>Código <span style="color:#ef4444">*</span></label>
+        <input class="input-modal" id="banco-modal-codigo" placeholder="Ex: 341" maxlength="10"
+          onkeydown="if(event.key==='Enter'){document.getElementById('banco-modal-nome').focus();}">
+      </div>
+      <div class="grupo-modal">
+        <label>Nome do Banco <span style="color:#ef4444">*</span></label>
+        <input class="input-modal" id="banco-modal-nome" placeholder="Ex: Itaú Unibanco" maxlength="100"
+          onkeydown="if(event.key==='Enter'){salvarBanco();}">
       </div>
     </div>
-    <div class="modal-rodape">
-      <button class="btn-secundario-modal" onclick="fecharModalBanco()">Cancelar</button>
-      <button class="btn-primario-modal" onclick="salvarBanco()">
-        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><polyline points="20 6 9 17 4 12"/></svg>
-        Salvar Banco
-      </button>
+
+    <label class="grupo-modal" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:0;">
+      <input type="checkbox" id="banco-modal-api" style="width:15px;height:15px;cursor:pointer;flex-shrink:0;accent-color:#2563eb;">
+      <span style="font-size:13px;font-weight:500;color:#374151;">Possui integração via API (boleto)</span>
+    </label>
+
+    <label class="grupo-modal" id="grupo-banco-ativo" style="display:none;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:0;">
+      <input type="checkbox" id="banco-modal-ativo" checked style="width:15px;height:15px;cursor:pointer;flex-shrink:0;accent-color:#2563eb;">
+      <span style="font-size:13px;font-weight:500;color:#374151;">Ativo — aparece nas listas de seleção</span>
+    </label>
+
+    <div class="rodape-modal">
+      <button class="btn-cancelar-modal" onclick="fecharModalBanco()">Cancelar</button>
+      <button class="btn-salvar-modal" onclick="salvarBanco()">Salvar Banco</button>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════ -->
-<!-- TAB: Status Escriturais                     -->
-<!-- ════════════════════════════════════════════ -->
-<div id="tab-status-escritural" class="painel-tab{% if nivel_acesso not in ('admin', 'master') %} ativo{% endif %}">
-  <div class="card-config" style="max-width:500px;">
-    <div class="card-config-header">
-      <span class="card-config-titulo">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-        Status (Novos Escriturais)
-      </span>
-    </div>
-    <div class="card-config-body">
-      <div class="lista-pills" id="lista-status-escritural-pills">
-        {% for status in lista_status_escritural %}
-        <div class="pill-item status-pill" id="pill-status-escritural-{{ loop.index }}">
-          {{ status }}
-          <button class="btn-remover-pill" onclick="removerStatusEscritural('{{ status }}')" title="Remover">
-            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-        {% else %}
-        <p style="color:#94a3b8;font-size:13px;">Nenhum status cadastrado.</p>
-        {% endfor %}
-      </div>
-      <div class="form-inline-adicionar">
-        <input class="input-config" type="text" id="input-novo-status-escritural" placeholder="Ex: EM ANÁLISE" oninput="this.value=this.value.toUpperCase()">
-        <button class="btn-primario-config" onclick="adicionarStatusEscritural()">
-          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Adicionar
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- ════════════════════════════════════════════ -->
 <!-- TAB: SLA                                    -->
@@ -935,10 +940,16 @@
         <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 4-8"/></svg>
         Prazos SLA por Serviço
       </span>
-      <button class="btn-primario-config" onclick="abrirFormSla()">
-        <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Novo
-      </button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn-secundario-config" onclick="recalcularVencimentos()" title="Preenche Data de Vencimento nos pendentes que estão sem data">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+          Recalcular Vencimentos
+        </button>
+        <button class="btn-primario-config" onclick="abrirFormSla()">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo
+        </button>
+      </div>
     </div>
     <div class="card-config-body" style="padding:0;">
 
@@ -1003,7 +1014,10 @@
             <td style="text-align:center;"><span class="badge-sla-aviso">{{ s.aviso_dias or 7 }}d antes</span></td>
             <td style="text-align:center;"><span class="badge-sla-atrasado">{{ s.atrasado_dias or 7 }}d após</span></td>
             <td style="text-align:center;"><span class="badge-sla-critico">{{ s.critico_dias or 15 }}d após</span></td>
-            <td>
+            <td style="display:flex;gap:4px;justify-content:flex-end;">
+              <button class="btn-acao-mini btn-editar-mini" onclick="editarSlaConfig('{{ s.servico }}', {{ s.prazo_total or 30 }}, {{ s.aviso_dias or 7 }}, {{ s.atrasado_dias or 7 }}, {{ s.critico_dias or 15 }})" title="Editar">
+                <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
               {% if s.servico != '__default__' %}
               <button class="btn-deletar-mini" onclick="removerSlaConfig({{ s.id }}, this)" title="Remover">
                 <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
@@ -1400,7 +1414,7 @@
     document.getElementById('banco-modal-api').checked = false;
     document.getElementById('banco-modal-ativo').checked = true;
     document.getElementById('grupo-banco-ativo').style.display = 'none';
-    document.getElementById('modal-banco').style.display = 'flex';
+    document.getElementById('modal-banco').classList.add('aberto');
     document.getElementById('banco-modal-codigo').focus();
   }
 
@@ -1414,12 +1428,12 @@
     document.getElementById('banco-modal-api').checked = !!b.tem_api;
     document.getElementById('banco-modal-ativo').checked = !!b.ativo;
     document.getElementById('grupo-banco-ativo').style.display = 'flex';
-    document.getElementById('modal-banco').style.display = 'flex';
+    document.getElementById('modal-banco').classList.add('aberto');
     document.getElementById('banco-modal-nome').focus();
   }
 
   function fecharModalBanco() {
-    document.getElementById('modal-banco').style.display = 'none';
+    document.getElementById('modal-banco').classList.remove('aberto');
     _bancoEditandoId = null;
   }
 
@@ -1470,20 +1484,43 @@
     }).catch(() => mostrarToast('erro', 'Falha de comunicação com o servidor.'));
   }
 
+  let _slaEditandoServico = null;
+
   function abrirFormSla() {
-    document.getElementById('form-sla-novo').style.display = '';
+    _slaEditandoServico = null;
+    const sel = document.getElementById('sla-form-servico');
+    sel.disabled = false;
+    sel.value = '__default__';
     document.getElementById('sla-form-prazo').value    = 30;
     document.getElementById('sla-form-aviso').value    = 7;
     document.getElementById('sla-form-atrasado').value = 7;
     document.getElementById('sla-form-critico').value  = 15;
+    document.getElementById('form-sla-novo').style.display = '';
+    document.getElementById('sla-form-prazo').focus();
+  }
+
+  function editarSlaConfig(servico, prazo, aviso, atrasado, critico) {
+    _slaEditandoServico = servico;
+    const sel = document.getElementById('sla-form-servico');
+    sel.value    = servico;
+    sel.disabled = true;
+    document.getElementById('sla-form-prazo').value    = prazo;
+    document.getElementById('sla-form-aviso').value    = aviso;
+    document.getElementById('sla-form-atrasado').value = atrasado;
+    document.getElementById('sla-form-critico').value  = critico;
+    document.getElementById('form-sla-novo').style.display = '';
+    document.getElementById('sla-form-prazo').focus();
   }
 
   function fecharFormSla() {
     document.getElementById('form-sla-novo').style.display = 'none';
+    document.getElementById('sla-form-servico').disabled = false;
+    _slaEditandoServico = null;
   }
 
   function salvarSlaConfig() {
-    const servico       = document.getElementById('sla-form-servico').value.trim();
+    const sel           = document.getElementById('sla-form-servico');
+    const servico       = (_slaEditandoServico || sel.value || '').trim();
     const prazo_total   = parseInt(document.getElementById('sla-form-prazo').value);
     const aviso_dias    = parseInt(document.getElementById('sla-form-aviso').value);
     const atrasado_dias = parseInt(document.getElementById('sla-form-atrasado').value);
@@ -1513,6 +1550,15 @@
       .then(r => r.json()).then(d => {
         if (d.sucesso) btn.closest('tr').remove();
         else mostrarToast('erro', d.erro || 'Erro ao remover.');
+      }).catch(() => mostrarToast('erro', 'Falha de comunicação com o servidor.'));
+  }
+
+  function recalcularVencimentos() {
+    if (!confirm('Recalcular Data de Vencimento de todos os pendentes sem data?\n\nIsso vai preencher os campos vazios usando: Data de Cadastro + Prazo SLA do serviço.')) return;
+    fetch('/api/recalcular-vencimentos', {method: 'POST'})
+      .then(r => r.json()).then(d => {
+        if (d.sucesso) mostrarToast('sucesso', d.atualizados + ' pendente(s) atualizados com Data de Vencimento.');
+        else mostrarToast('erro', d.erro || 'Erro ao recalcular.');
       }).catch(() => mostrarToast('erro', 'Falha de comunicação com o servidor.'));
   }
 </script>

@@ -776,9 +776,19 @@
     .nd-dot { width:8px;height:8px;border-radius:50%;background:#2563eb;margin-top:5px;flex-shrink:0; }
     .nd-item.lida .nd-dot { background: transparent; }
     .nd-corpo { flex:1;min-width:0; }
-    .nd-titulo { font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .nd-titulo { font-size:13px;font-weight:600;color:#0f172a;display:flex;align-items:center;justify-content:space-between;gap:6px; }
+    .nd-titulo-txt { flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .nd-chevron { width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;flex-shrink:0;transition:transform 0.18s;opacity:0.5; }
+    .nd-item.expandido .nd-chevron { transform:rotate(180deg);opacity:1;stroke:#2563eb; }
     .nd-msg { font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px; }
-    .nd-hora { font-size:11px;color:#94a3b8;margin-top:2px; }
+    .nd-item.expandido .nd-msg { display:none; }
+    .nd-msg-full {
+      display:none; font-size:12px;color:#334155;line-height:1.55;
+      background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;
+      border-left:3px solid #2563eb;white-space:pre-wrap;word-break:break-word;
+    }
+    .nd-item.expandido .nd-msg-full { display:block; }
+    .nd-hora { font-size:11px;color:#94a3b8;margin-top:4px; }
     .nd-footer {
       padding: 9px 16px; border-top: 1px solid #f1f5f9;
       display: flex; justify-content: space-between; align-items: center;
@@ -827,6 +837,7 @@
     [data-tema="dark"] .nd-item.nao-lida:hover { background:rgba(37,99,235,0.25); }
     [data-tema="dark"] .nd-titulo { color:var(--z-text-1); }
     [data-tema="dark"] .nd-msg { color:var(--z-text-2); }
+    [data-tema="dark"] .nd-msg-full { background:var(--z-border-s);color:var(--z-text-1);border-left-color:var(--z-accent,#3b82f6); }
     [data-tema="dark"] .nd-footer { border-top-color:var(--z-border-s); }
     [data-tema="dark"] .nf-toast { background:var(--z-surface);border-color:var(--z-border);border-left-color:var(--z-accent); }
     [data-tema="dark"] .nf-toast-titulo { color:var(--z-text-1); }
@@ -1658,11 +1669,15 @@
         return;
       }
       lista.innerHTML = notifs.slice(0, 8).map(function(n) {
-        return '<div class="nd-item ' + (n.lida ? 'lida' : 'nao-lida') + '" onclick="_abrirNotif(' + n.id + ',' + (n.lida ? 1 : 0) + ')">' +
+        var chevron = n.mensagem
+          ? '<svg class="nd-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>'
+          : '';
+        return '<div class="nd-item ' + (n.lida ? 'lida' : 'nao-lida') + '" data-id="' + n.id + '" data-lida="' + (n.lida ? 1 : 0) + '" onclick="_abrirNotif(this)">' +
           '<div class="nd-dot"></div>' +
           '<div class="nd-corpo">' +
-            '<div class="nd-titulo">' + _esc(n.titulo) + '</div>' +
+            '<div class="nd-titulo"><span class="nd-titulo-txt">' + _esc(n.titulo) + '</span>' + chevron + '</div>' +
             (n.mensagem ? '<div class="nd-msg">' + _esc(n.mensagem) + '</div>' : '') +
+            (n.mensagem ? '<div class="nd-msg-full">' + _esc(n.mensagem) + '</div>' : '') +
             '<div class="nd-hora">' + _esc(n.criado_em || '') + '</div>' +
           '</div></div>';
       }).join('');
@@ -1700,15 +1715,22 @@
       }
     });
 
-    window._abrirNotif = function(id, jaLida) {
+    window._abrirNotif = function(el) {
+      var id     = el.dataset.id;
+      var jaLida = el.dataset.lida === '1';
+      el.classList.toggle('expandido');
       if (!jaLida) {
         fetch('/api/notificacoes/' + id + '/lida', { method: 'POST' })
           .then(function() {
+            el.classList.remove('nao-lida');
+            el.classList.add('lida');
+            var dot = el.querySelector('.nd-dot');
+            if (dot) dot.style.background = 'transparent';
+            el.dataset.lida = '1';
             _naoLidas = Math.max(0, _naoLidas - 1);
             _setBadge(_naoLidas);
           });
       }
-      window.location.href = '/notificacoes';
     };
 
     window.marcarTodasLidasNotif = function() {
