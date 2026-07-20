@@ -475,6 +475,10 @@
               <input type="checkbox" id="campo-pode-enviar-notif" style="accent-color:#7c3aed;">
               Pode enviar notificações pelo sistema
             </label>
+            <label class="aviso-label" style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer;">
+              <input type="checkbox" id="campo-pode-descriptografar" style="accent-color:#dc2626;">
+              Pode autorizar descriptografia de credenciais
+            </label>
           </div>
         </div>
       </div>
@@ -617,8 +621,9 @@
     document.getElementById('campo-usuario-setor').value   = usuario.setor || '';
     document.getElementById('campo-aviso-escritural').checked  = !!(usuario.recebe_aviso_escritural);
     document.getElementById('campo-aviso-melhorias').checked   = !!(usuario.recebe_aviso_melhorias);
-    document.getElementById('campo-aviso-credenciais').checked = !!(usuario.recebe_aviso_credenciais);
-    document.getElementById('campo-pode-enviar-notif').checked = !!(usuario.pode_enviar_notificacao);
+    document.getElementById('campo-aviso-credenciais').checked    = !!(usuario.recebe_aviso_credenciais);
+    document.getElementById('campo-pode-enviar-notif').checked    = !!(usuario.pode_enviar_notificacao);
+    document.getElementById('campo-pode-descriptografar').checked = !!(usuario.pode_descriptografar);
     document.getElementById('hint-login').style.display = 'inline';
     document.getElementById('dica-senha').textContent = 'Deixe em branco para manter a senha atual.';
     document.getElementById('tab-btn-email-usuario').style.display = '';
@@ -644,8 +649,9 @@
       nome, nivel, tecnico_vinculado: tecnico || null, setor: setor || '',
       recebe_aviso_escritural:  document.getElementById('campo-aviso-escritural').checked  ? 1 : 0,
       recebe_aviso_melhorias:   document.getElementById('campo-aviso-melhorias').checked   ? 1 : 0,
-      recebe_aviso_credenciais: document.getElementById('campo-aviso-credenciais').checked ? 1 : 0,
-      pode_enviar_notificacao:  document.getElementById('campo-pode-enviar-notif').checked ? 1 : 0,
+      recebe_aviso_credenciais: document.getElementById('campo-aviso-credenciais').checked    ? 1 : 0,
+      pode_enviar_notificacao:  document.getElementById('campo-pode-enviar-notif').checked    ? 1 : 0,
+      pode_descriptografar:     document.getElementById('campo-pode-descriptografar').checked ? 1 : 0,
     };
     if (senha) dados.senha = senha;
 

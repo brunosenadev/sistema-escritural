@@ -1,0 +1,677 @@
+{% extends "base.html" %}
+
+{% block titulo %}Descriptografar Credenciais{% endblock %}
+{% block titulo_pagina %}Descriptografar{% endblock %}
+{% block breadcrumb %}Controle de Escriturais / Credenciais / Descriptografar{% endblock %}
+
+{% set aba_ativa = 'descriptografar' %}
+
+{% block estilos_extras %}
+<style>
+  .dc-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    max-width: 900px;
+  }
+  .dc-layout.com-aprovador {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* ── Card base ── */
+  .dc-card {
+    background: var(--z-surface, #fff);
+    border: 1px solid var(--z-border, #e2e8f0);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .dc-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--z-border, #e2e8f0);
+    background: var(--z-elevated, #f8fafc);
+  }
+  .dc-card-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .dc-card-icon svg {
+    width: 16px; height: 16px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .dc-card-icon.azul  { background: #eff6ff; color: #2563eb; }
+  .dc-card-icon.roxo  { background: #f5f3ff; color: #7c3aed; }
+  .dc-card-icon.verde { background: #f0fdf4; color: #16a34a; }
+  .dc-card-titulo { font-size: 14px; font-weight: 700; color: var(--z-text-1, #0f172a); }
+  .dc-card-sub    { font-size: 12px; color: var(--z-text-2, #64748b); margin-top: 1px; }
+  .dc-card-body   { padding: 20px; }
+
+  /* ── Formulário ── */
+  .dc-form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .dc-form-group:last-of-type { margin-bottom: 0; }
+  .dc-label {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--z-text-2, #64748b);
+  }
+  .dc-input {
+    padding: 10px 12px;
+    border: 1.5px solid var(--z-border, #e2e8f0);
+    border-radius: 9px;
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+    outline: none;
+    color: var(--z-text-1, #1e293b);
+    background: var(--z-surface, #fff);
+    transition: border-color 0.15s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .dc-input:focus { border-color: #3b82f6; }
+  .dc-input::placeholder { font-family: inherit; color: var(--z-text-2, #94a3b8); }
+
+  .dc-btn {
+    width: 100%; padding: 11px 20px;
+    border-radius: 9px; border: none;
+    font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: background 0.15s, opacity 0.15s;
+    margin-top: 18px;
+  }
+  .dc-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; }
+  .dc-btn-primary { background: #1e3a8a; color: #fff; }
+  .dc-btn-primary:hover { background: #1d4ed8; }
+  .dc-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── Estado da solicitação ── */
+  .dc-status-box {
+    display: none;
+    margin-top: 16px;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+  .dc-status-box.pendente {
+    background: #fefce8;
+    border: 1px solid #fde047;
+    color: #713f12;
+  }
+  .dc-status-box.aprovado {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    color: #14532d;
+  }
+  .dc-status-box.negado {
+    background: #fff1f2;
+    border: 1px solid #fca5a5;
+    color: #7f1d1d;
+  }
+
+  [data-tema="dark"] .dc-status-box.pendente  { background: rgba(234,179,8,0.1);  border-color: rgba(234,179,8,0.3);  color: #fde68a; }
+  [data-tema="dark"] .dc-status-box.aprovado  { background: rgba(22,163,74,0.1);  border-color: rgba(22,163,74,0.3);  color: #86efac; }
+  [data-tema="dark"] .dc-status-box.negado    { background: rgba(239,68,68,0.1);  border-color: rgba(239,68,68,0.3);  color: #fca5a5; }
+
+  .dc-status-titulo {
+    font-weight: 700; font-size: 13px; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .dc-status-titulo svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+
+  /* ── Credenciais reveladas ── */
+  .dc-cred-reveal {
+    display: flex; flex-direction: column; gap: 10px; margin-top: 12px;
+  }
+  .dc-cred-item { display: flex; flex-direction: column; gap: 4px; }
+  .dc-cred-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; }
+  .dc-cred-value {
+    font-family: 'Courier New', monospace;
+    font-size: 12.5px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 6px;
+    padding: 7px 10px;
+    word-break: break-all;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  [data-tema="dark"] .dc-cred-value { background: rgba(255,255,255,0.08); }
+  .dc-copy-btn {
+    flex-shrink: 0; background: none; border: none; cursor: pointer;
+    color: inherit; opacity: 0.6; padding: 2px; border-radius: 4px;
+    transition: opacity 0.15s;
+  }
+  .dc-copy-btn:hover { opacity: 1; }
+  .dc-copy-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; display: block; }
+
+  .dc-timer {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; margin-top: 10px; opacity: 0.8;
+  }
+  .dc-timer svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .dc-timer-bar-wrap {
+    height: 4px; border-radius: 99px;
+    background: rgba(0,0,0,0.1); margin-top: 6px; overflow: hidden;
+  }
+  [data-tema="dark"] .dc-timer-bar-wrap { background: rgba(255,255,255,0.1); }
+  .dc-timer-bar {
+    height: 100%; border-radius: 99px;
+    background: currentColor; transition: width 1s linear;
+  }
+
+  /* ── Painel de aprovação ── */
+  .dc-solicitacoes { display: flex; flex-direction: column; gap: 0; }
+  .dc-sol-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--z-border, #e2e8f0);
+    animation: dc-fade-in 0.25s ease;
+  }
+  .dc-sol-item:last-child { border-bottom: none; }
+  @keyframes dc-fade-in { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+
+  .dc-sol-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .dc-sol-meta { font-size: 11px; color: var(--z-text-2, #64748b); margin-top: 4px; }
+  .dc-sol-nome { font-size: 13px; font-weight: 700; color: var(--z-text-1, #0f172a); }
+  .dc-sol-enc {
+    margin: 10px 0;
+    background: var(--z-elevated, #f8fafc);
+    border-radius: 8px; padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .dc-sol-enc-row { display: flex; flex-direction: column; gap: 2px; }
+  .dc-sol-enc-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--z-text-2, #94a3b8); }
+  .dc-sol-enc-val {
+    font-family: 'Courier New', monospace;
+    font-size: 11.5px;
+    color: var(--z-text-1, #334155);
+    word-break: break-all;
+    line-height: 1.4;
+  }
+
+  .dc-sol-acoes { display: flex; gap: 8px; margin-top: 12px; }
+  .dc-btn-aprovar, .dc-btn-negar {
+    flex: 1; padding: 8px 12px; border-radius: 8px; border: none;
+    font-size: 12px; font-weight: 600; font-family: inherit;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
+    transition: background 0.15s, opacity 0.15s;
+  }
+  .dc-btn-aprovar svg, .dc-btn-negar svg {
+    width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round;
+  }
+  .dc-btn-aprovar { background: #16a34a; color: #fff; }
+  .dc-btn-aprovar:hover { background: #15803d; }
+  .dc-btn-negar   { background: #ef4444; color: #fff; }
+  .dc-btn-negar:hover   { background: #dc2626; }
+  .dc-btn-aprovar:disabled, .dc-btn-negar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .dc-vazio {
+    padding: 36px 20px; text-align: center;
+    color: var(--z-text-2, #94a3b8); font-size: 13px;
+  }
+  .dc-vazio svg { width: 36px; height: 36px; stroke: var(--z-border, #cbd5e1); fill: none; stroke-width: 1.5; display: block; margin: 0 auto 10px; }
+
+  .dc-badge-pendente {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #fef9c3; color: #854d0e; border-radius: 99px;
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .dc-badge-pendente::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #ca8a04; display: inline-block; }
+  [data-tema="dark"] .dc-badge-pendente { background: rgba(202,138,4,0.15); color: #fde68a; }
+
+  @media (prefers-color-scheme: dark) {
+    .dc-status-box.pendente  { background: rgba(234,179,8,0.1);  border-color: rgba(234,179,8,0.3);  color: #fde68a; }
+    .dc-status-box.aprovado  { background: rgba(22,163,74,0.1);  border-color: rgba(22,163,74,0.3);  color: #86efac; }
+    .dc-status-box.negado    { background: rgba(239,68,68,0.1);  border-color: rgba(239,68,68,0.3);  color: #fca5a5; }
+    .dc-cred-value { background: rgba(255,255,255,0.08); }
+    .dc-timer-bar-wrap { background: rgba(255,255,255,0.1); }
+    .dc-badge-pendente { background: rgba(202,138,4,0.15); color: #fde68a; }
+    .dc-sol-enc { background: rgba(255,255,255,0.04); }
+  }
+</style>
+{% endblock %}
+
+{% block acoes_header %}{% endblock %}
+
+{% block conteudo %}
+<div class="dc-layout {% if pode_aprovar %}com-aprovador{% endif %}">
+
+  <!-- ══ COLUNA ESQUERDA: Solicitação ══ -->
+  <div>
+    <div class="dc-card">
+      <div class="dc-card-header">
+        <div class="dc-card-icon azul">
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div>
+          <div class="dc-card-titulo">Descriptografar Credencial</div>
+          <div class="dc-card-sub">Solicite a descriptografia para um autorizador</div>
+        </div>
+      </div>
+      <div class="dc-card-body">
+        <form id="form-decrypt" onsubmit="solicitarDecrypt(event)">
+          <div class="dc-form-group">
+            <label class="dc-label">Client ID (criptografado)</label>
+            <input class="dc-input" id="dc-client-id" type="text"
+                   placeholder="Cole o Client ID criptografado aqui..." autocomplete="off" spellcheck="false">
+          </div>
+          <div class="dc-form-group">
+            <label class="dc-label">Client Secret (criptografado)</label>
+            <input class="dc-input" id="dc-client-secret" type="text"
+                   placeholder="Cole o Client Secret criptografado aqui..." autocomplete="off" spellcheck="false">
+          </div>
+          <button type="submit" class="dc-btn dc-btn-primary" id="dc-btn-solicitar">
+            <svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+            Solicitar Descriptografia
+          </button>
+        </form>
+
+        <!-- Estado da solicitação -->
+        <div class="dc-status-box pendente" id="dc-estado-pendente">
+          <div class="dc-status-titulo">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Aguardando autorização…
+          </div>
+          <div style="font-size:12px;margin-top:4px;opacity:0.8;">
+            Sua solicitação foi enviada. Um autorizador precisa aprovar antes de revelar os dados.
+          </div>
+        </div>
+
+        <div class="dc-status-box aprovado" id="dc-estado-aprovado">
+          <div class="dc-status-titulo">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Credenciais disponíveis
+          </div>
+          <div style="font-size:11.5px;margin-top:2px;opacity:0.7;" id="dc-aprovado-por"></div>
+          <div class="dc-cred-reveal" id="dc-cred-reveal">
+            <div class="dc-cred-item">
+              <div class="dc-cred-label">Client ID</div>
+              <div class="dc-cred-value">
+                <span id="dc-val-client-id">—</span>
+                <button class="dc-copy-btn" title="Copiar" onclick="_copiar('dc-val-client-id',this)">
+                  <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="dc-cred-item">
+              <div class="dc-cred-label">Client Secret</div>
+              <div class="dc-cred-value">
+                <span id="dc-val-client-secret">—</span>
+                <button class="dc-copy-btn" title="Copiar" onclick="_copiar('dc-val-client-secret',this)">
+                  <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="dc-timer" id="dc-timer-txt">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span id="dc-timer-label">Expira em 3:00</span>
+          </div>
+          <div class="dc-timer-bar-wrap">
+            <div class="dc-timer-bar" id="dc-timer-bar" style="width:100%"></div>
+          </div>
+        </div>
+
+        <div class="dc-status-box negado" id="dc-estado-negado">
+          <div class="dc-status-titulo">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            Solicitação negada
+          </div>
+          <div style="font-size:12px;margin-top:4px;opacity:0.8;" id="dc-negado-por">
+            O autorizador negou esta solicitação. Tente novamente se necessário.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ COLUNA DIREITA: Aprovações (apenas para autorizadores) ══ -->
+  {% if pode_aprovar %}
+  <div>
+    <div class="dc-card">
+      <div class="dc-card-header">
+        <div class="dc-card-icon roxo">
+          <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12c-1 0-2-1-2-2s1-2 2-2 2 1 2 2-1 2-2 2"/><path d="M3 12c1 0 2-1 2-2s-1-2-2-2-2 1-2 2 1 2 2 2"/><path d="M12 3c0 1-1 2-2 2s-2-1-2-2 1-2 2-2 2 1 2 2"/><path d="M12 21c0-1-1-2-2-2s-2 1-2 2 1 2 2 2 2-1 2-2"/></svg>
+        </div>
+        <div>
+          <div class="dc-card-titulo">Solicitações Pendentes</div>
+          <div class="dc-card-sub">Autorize ou negue descriptografias</div>
+        </div>
+        <span id="dc-badge-count" style="margin-left:auto;background:#7c3aed;color:#fff;font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;display:none;"></span>
+      </div>
+      <div class="dc-solicitacoes" id="dc-lista-aprovacoes">
+        {% if pendentes %}
+          {% for sol in pendentes %}
+          <div class="dc-sol-item" id="sol-{{ sol.id }}">
+            <div class="dc-sol-header">
+              <div>
+                <div class="dc-sol-nome">{{ sol.solicitante_nome }}</div>
+                <div class="dc-sol-meta">{{ sol.criado_em }}</div>
+              </div>
+              <span class="dc-badge-pendente">Pendente</span>
+            </div>
+            <div class="dc-sol-enc">
+              <div class="dc-sol-enc-row">
+                <div class="dc-sol-enc-label">Client ID (enc.)</div>
+                <div class="dc-sol-enc-val">{{ sol.client_id_enc }}</div>
+              </div>
+              <div class="dc-sol-enc-row">
+                <div class="dc-sol-enc-label">Client Secret (enc.)</div>
+                <div class="dc-sol-enc-val">{{ sol.client_secret_enc }}</div>
+              </div>
+            </div>
+            <div class="dc-sol-acoes">
+              <button class="dc-btn-aprovar" onclick="_aprovar({{ sol.id }}, this)">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Autorizar
+              </button>
+              <button class="dc-btn-negar" onclick="_negar({{ sol.id }}, this)">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Negar
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="dc-vazio" id="dc-vazio-msg">
+            <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+            Nenhuma solicitação pendente
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+
+{% block scripts_extras %}
+<script>
+  // ── Estado inicial ──────────────────────────────────────────
+  let _pollTimer    = null;
+  let _countdownInt = null;
+  let _expiraEm     = null;
+  let _totalSeg     = 180;
+
+  // Verifica se já há solicitação ativa ao carregar
+  (function _init() {
+    const sol = {{ minha_sol | tojson }};
+    if (!sol) return;
+    if (sol.status === 'pendente') {
+      _mostrarEstado('pendente');
+      _iniciarPolling();
+    } else if (sol.status === 'aprovado' && sol.expira_em) {
+      const expira = new Date(sol.expira_em.replace(' ', 'T'));
+      const agora  = new Date();
+      if (expira > agora) {
+        _expiraEm = expira;
+        _mostrarAprovado(sol.client_id_dec, sol.client_secret_dec, sol.aprovado_por, expira);
+        _iniciarContagem();
+        _mostrarEstado('aprovado');
+        return;
+      }
+    } else if (sol.status === 'negado') {
+      _mostrarEstado('negado', sol.aprovado_por);
+    }
+  })();
+
+  // ── Submissão ───────────────────────────────────────────────
+  function solicitarDecrypt(e) {
+    e.preventDefault();
+    const cid = document.getElementById('dc-client-id').value.trim();
+    const csec = document.getElementById('dc-client-secret').value.trim();
+    if (!cid || !csec) {
+      mostrarToast('erro', 'Preencha os dois campos.');
+      return;
+    }
+    const btn = document.getElementById('dc-btn-solicitar');
+    btn.disabled = true;
+    btn.textContent = 'Enviando…';
+
+    fetch('/api/descriptografar/solicitar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id_enc: cid, client_secret_enc: csec }),
+    })
+    .then(r => r.json())
+    .then(resp => {
+      if (resp.sucesso) {
+        mostrarToast('sucesso', 'Solicitação enviada! Aguardando autorização.');
+        _mostrarEstado('pendente');
+        _iniciarPolling();
+      } else {
+        mostrarToast('erro', resp.erro || 'Erro ao solicitar.');
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> Solicitar Descriptografia';
+      }
+    })
+    .catch(() => {
+      mostrarToast('erro', 'Erro de comunicação.');
+      btn.disabled = false;
+    });
+  }
+
+  // ── Polling para o solicitante ──────────────────────────────
+  function _iniciarPolling() {
+    if (_pollTimer) clearInterval(_pollTimer);
+    _pollTimer = setInterval(_verificarStatus, 2500);
+  }
+
+  function _verificarStatus() {
+    fetch('/api/descriptografar/status')
+      .then(r => r.json())
+      .then(resp => {
+        if (resp.status === 'aprovado') {
+          clearInterval(_pollTimer);
+          _pollTimer = null;
+          const expira = new Date(resp.expira_em.replace(' ', 'T'));
+          _expiraEm = expira;
+          _mostrarAprovado(resp.client_id_dec, resp.client_secret_dec, resp.aprovado_por, expira);
+          _mostrarEstado('aprovado');
+          _iniciarContagem();
+        } else if (resp.status === 'negado') {
+          clearInterval(_pollTimer);
+          _pollTimer = null;
+          _mostrarEstado('negado', resp.aprovado_por);
+        }
+      })
+      .catch(() => {});
+  }
+
+  // ── Revelar credenciais ─────────────────────────────────────
+  function _mostrarAprovado(clientId, clientSecret, por, expira) {
+    document.getElementById('dc-val-client-id').textContent     = clientId || '—';
+    document.getElementById('dc-val-client-secret').textContent = clientSecret || '—';
+    document.getElementById('dc-aprovado-por').textContent      = por ? `Autorizado por ${por}` : '';
+  }
+
+  function _iniciarContagem() {
+    if (_countdownInt) clearInterval(_countdownInt);
+    function _tick() {
+      const agora = new Date();
+      const restantes = Math.max(0, Math.floor((_expiraEm - agora) / 1000));
+      const min = Math.floor(restantes / 60);
+      const seg = restantes % 60;
+      document.getElementById('dc-timer-label').textContent =
+        `Expira em ${min}:${String(seg).padStart(2,'0')}`;
+      const pct = Math.min(100, (restantes / _totalSeg) * 100);
+      document.getElementById('dc-timer-bar').style.width = pct + '%';
+      if (restantes === 0) {
+        clearInterval(_countdownInt);
+        _mostrarEstado(null);
+        mostrarToast('aviso', 'As credenciais expiraram e foram ocultadas.');
+      }
+    }
+    _tick();
+    _countdownInt = setInterval(_tick, 1000);
+  }
+
+  // ── Exibição de estados ─────────────────────────────────────
+  function _mostrarEstado(estado, por) {
+    document.getElementById('dc-estado-pendente').style.display = '';
+    document.getElementById('dc-estado-aprovado').style.display = '';
+    document.getElementById('dc-estado-negado').style.display   = '';
+    document.getElementById('dc-estado-pendente').style.display = estado === 'pendente' ? '' : 'none';
+    document.getElementById('dc-estado-aprovado').style.display = estado === 'aprovado' ? '' : 'none';
+    document.getElementById('dc-estado-negado').style.display   = estado === 'negado'   ? '' : 'none';
+    if (estado === 'negado' && por) {
+      document.getElementById('dc-negado-por').textContent = `Negado por ${por}. Tente novamente se necessário.`;
+    }
+    const btn = document.getElementById('dc-btn-solicitar');
+    btn.disabled = estado === 'pendente';
+    btn.innerHTML = estado === 'pendente'
+      ? '<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Aguardando…'
+      : '<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> Solicitar Descriptografia';
+  }
+
+  // ── Copiar ─────────────────────────────────────────────────
+  function _copiar(elId, btn) {
+    const texto = document.getElementById(elId).textContent;
+    navigator.clipboard.writeText(texto).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><polyline points="20 6 9 17 4 12"/></svg>';
+      setTimeout(() => { btn.innerHTML = orig; }, 1500);
+    });
+  }
+
+  // ── Aprovador: aprovar / negar ──────────────────────────────
+  function _aprovar(id, btn) {
+    btn.disabled = btn.nextElementSibling.disabled = true;
+    fetch(`/api/descriptografar/${id}/aprovar`, { method: 'POST' })
+      .then(r => r.json())
+      .then(resp => {
+        if (resp.sucesso) {
+          mostrarToast('sucesso', 'Solicitação autorizada.');
+          _removerSolicitacao(id);
+        } else {
+          mostrarToast('erro', resp.erro || 'Erro ao autorizar.');
+          btn.disabled = btn.nextElementSibling.disabled = false;
+        }
+      })
+      .catch(() => { mostrarToast('erro', 'Erro de comunicação.'); });
+  }
+
+  function _negar(id, btn) {
+    btn.disabled = btn.previousElementSibling.disabled = true;
+    fetch(`/api/descriptografar/${id}/negar`, { method: 'POST' })
+      .then(r => r.json())
+      .then(resp => {
+        if (resp.sucesso) {
+          mostrarToast('aviso', 'Solicitação negada.');
+          _removerSolicitacao(id);
+        } else {
+          mostrarToast('erro', resp.erro || 'Erro ao negar.');
+          btn.disabled = btn.previousElementSibling.disabled = false;
+        }
+      })
+      .catch(() => { mostrarToast('erro', 'Erro de comunicação.'); });
+  }
+
+  function _removerSolicitacao(id) {
+    const el = document.getElementById(`sol-${id}`);
+    if (!el) return;
+    el.style.transition = 'opacity 0.3s, transform 0.3s';
+    el.style.opacity    = '0';
+    el.style.transform  = 'translateX(12px)';
+    setTimeout(() => {
+      el.remove();
+      _atualizarVazio();
+    }, 300);
+  }
+
+  function _atualizarVazio() {
+    const lista = document.getElementById('dc-lista-aprovacoes');
+    if (!lista) return;
+    const items = lista.querySelectorAll('.dc-sol-item');
+    const badge = document.getElementById('dc-badge-count');
+    if (items.length === 0) {
+      const vazio = document.getElementById('dc-vazio-msg');
+      if (!vazio) {
+        lista.insertAdjacentHTML('beforeend',
+          '<div class="dc-vazio" id="dc-vazio-msg"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>Nenhuma solicitação pendente</div>');
+      }
+      if (badge) badge.style.display = 'none';
+    } else {
+      if (badge) { badge.textContent = items.length; badge.style.display = ''; }
+    }
+  }
+
+  // ── Polling de novas solicitações para aprovador ────────────
+  {% if pode_aprovar %}
+  let _idsConhecidos = new Set([{% for sol in pendentes %}{{ sol.id }},{% endfor %}]);
+  _atualizarVazio();
+
+  setInterval(function _pollAprovador() {
+    fetch('/api/descriptografar/solicitacoes')
+      .then(r => r.json())
+      .then(lista => {
+        if (!Array.isArray(lista)) return;
+        const novos = lista.filter(s => !_idsConhecidos.has(s.id));
+        novos.forEach(sol => {
+          _idsConhecidos.add(sol.id);
+          const vazio = document.getElementById('dc-vazio-msg');
+          if (vazio) vazio.remove();
+          const lista_el = document.getElementById('dc-lista-aprovacoes');
+          lista_el.insertAdjacentHTML('afterbegin', _renderSolicitacao(sol));
+          _atualizarVazio();
+        });
+        // Remove os que sumiram da lista de pendentes
+        const idsAtivos = new Set(lista.map(s => s.id));
+        _idsConhecidos.forEach(id => {
+          if (!idsAtivos.has(id)) {
+            _idsConhecidos.delete(id);
+            const el = document.getElementById(`sol-${id}`);
+            if (el) el.remove();
+          }
+        });
+        _atualizarVazio();
+      })
+      .catch(() => {});
+  }, 4000);
+
+  function _renderSolicitacao(sol) {
+    const enc_id  = _esc(sol.client_id_enc || '');
+    const enc_sec = _esc(sol.client_secret_enc || '');
+    const nome    = _esc(sol.solicitante_nome || '');
+    const criado  = _esc(sol.criado_em || '');
+    return `<div class="dc-sol-item" id="sol-${sol.id}">
+      <div class="dc-sol-header">
+        <div>
+          <div class="dc-sol-nome">${nome}</div>
+          <div class="dc-sol-meta">${criado}</div>
+        </div>
+        <span class="dc-badge-pendente">Pendente</span>
+      </div>
+      <div class="dc-sol-enc">
+        <div class="dc-sol-enc-row">
+          <div class="dc-sol-enc-label">Client ID (enc.)</div>
+          <div class="dc-sol-enc-val">${enc_id}</div>
+        </div>
+        <div class="dc-sol-enc-row">
+          <div class="dc-sol-enc-label">Client Secret (enc.)</div>
+          <div class="dc-sol-enc-val">${enc_sec}</div>
+        </div>
+      </div>
+      <div class="dc-sol-acoes">
+        <button class="dc-btn-aprovar" onclick="_aprovar(${sol.id},this)">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Autorizar
+        </button>
+        <button class="dc-btn-negar" onclick="_negar(${sol.id},this)">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Negar
+        </button>
+      </div>
+    </div>`;
+  }
+
+  function _esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  {% endif %}
+</script>
+{% endblock %}

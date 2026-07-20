@@ -8,7 +8,7 @@ Localmente usa banco_dados.db na raiz do projeto.
 import os
 import sqlite3
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 
 CAMINHO_BANCO = os.environ.get('DB_PATH', os.path.join(os.path.dirname(__file__), 'banco_dados.db'))
@@ -829,22 +829,23 @@ def atualizar_usuario(id_usuario, campos):
     av_mel  = 1 if campos.get('recebe_aviso_melhorias')   else 0
     av_cred = 1 if campos.get('recebe_aviso_credenciais') else 0
     pode_env = 1 if campos.get('pode_enviar_notificacao') else 0
+    pode_dec = 1 if campos.get('pode_descriptografar')    else 0
     if campos.get('senha'):
         conn.execute(
             "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=?,cor=?,"
             "recebe_aviso_escritural=?,recebe_aviso_melhorias=?,recebe_aviso_credenciais=?,"
-            "pode_enviar_notificacao=? WHERE id=?",
+            "pode_enviar_notificacao=?,pode_descriptografar=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
              _hash_senha(campos['senha']), campos.get('setor') or '', cor,
-             av_esc, av_mel, av_cred, pode_env, id_usuario)
+             av_esc, av_mel, av_cred, pode_env, pode_dec, id_usuario)
         )
     else:
         conn.execute(
             "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,setor=?,cor=?,"
             "recebe_aviso_escritural=?,recebe_aviso_melhorias=?,recebe_aviso_credenciais=?,"
-            "pode_enviar_notificacao=? WHERE id=?",
+            "pode_enviar_notificacao=?,pode_descriptografar=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             campos.get('setor') or '', cor, av_esc, av_mel, av_cred, pode_env, id_usuario)
+             campos.get('setor') or '', cor, av_esc, av_mel, av_cred, pode_env, pode_dec, id_usuario)
         )
     conn.commit()
     conn.close()
@@ -922,9 +923,27 @@ def migrar_flags_avisos():
     try:
         existentes = {r[1] for r in conn.execute("PRAGMA table_info(usuarios)").fetchall()}
         for col in ('recebe_aviso_escritural', 'recebe_aviso_melhorias',
-                    'pode_enviar_notificacao', 'recebe_aviso_credenciais'):
+                    'pode_enviar_notificacao', 'recebe_aviso_credenciais',
+                    'pode_descriptografar'):
             if col not in existentes:
                 conn.execute(f"ALTER TABLE usuarios ADD COLUMN {col} INTEGER DEFAULT 0")
+        # Tabela de solicitações de descriptografia
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS solicitacoes_descriptografia (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                solicitante_id    INTEGER NOT NULL,
+                solicitante_nome  TEXT    NOT NULL,
+                client_id_enc     TEXT    NOT NULL,
+                client_secret_enc TEXT    NOT NULL,
+                client_id_dec     TEXT,
+                client_secret_dec TEXT,
+                status            TEXT    NOT NULL DEFAULT 'pendente',
+                aprovado_por      TEXT,
+                criado_em         TEXT    NOT NULL,
+                respondido_em     TEXT,
+                expira_em         TEXT
+            )
+        """)
         conn.commit()
     except Exception:
         pass
@@ -1302,7 +1321,6 @@ def remover_sla_servico(id_sla):
 
 
 def recalcular_vencimentos_pendentes():
-    from datetime import timedelta
     configs = listar_sla_config()
     config_map = {}
     default_prazo = 30
@@ -3363,6 +3381,7 @@ def listar_usuarios_com_flag(flag_col):
     _cols_validas = {
         'recebe_aviso_escritural', 'recebe_aviso_melhorias',
         'recebe_aviso_credenciais', 'pode_enviar_notificacao',
+        'pode_descriptografar',
     }
     if flag_col not in _cols_validas:
         return []
@@ -3370,3 +3389,132 @@ def listar_usuarios_com_flag(flag_col):
     rows = conn.execute(f"SELECT id, nome FROM usuarios WHERE {flag_col}=1").fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+# ── Descriptografia de credenciais ────────────────────────────────────────────
+
+def _decrypt_raw(s: str, key: int) -> str:
+    C1 = 76541
+    C2 = 84529
+    result = ""
+    key = key % 65536
+    i = 0
+    while i < len(s) - 1:
+        x = int(s[i:i+2], 16)
+        decrypted_byte = x ^ (key >> 8)
+        result += chr(decrypted_byte)
+        key = ((x + key) * C1 + C2) % 65536
+        i += 2
+    return result
+
+
+def descriptografar_valor(valor: str) -> str:
+    try:
+        return _decrypt_raw(valor, 45857)
+    except Exception as e:
+        return f"[erro: {e}]"
+
+
+def criar_solicitacao_descriptografia(solicitante_id: int, solicitante_nome: str,
+                                      client_id_enc: str, client_secret_enc: str) -> int:
+    agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    conn = conectar()
+    try:
+        # Cancela solicitações anteriores pendentes do mesmo usuário
+        conn.execute(
+            "UPDATE solicitacoes_descriptografia SET status='cancelado' WHERE solicitante_id=? AND status='pendente'",
+            (solicitante_id,)
+        )
+        cur = conn.execute(
+            "INSERT INTO solicitacoes_descriptografia "
+            "(solicitante_id,solicitante_nome,client_id_enc,client_secret_enc,status,criado_em) "
+            "VALUES (?,?,?,?,?,?)",
+            (solicitante_id, solicitante_nome, client_id_enc, client_secret_enc, 'pendente', agora)
+        )
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+def listar_solicitacoes_descriptografia(status: str | None = None) -> list:
+    conn = conectar()
+    try:
+        if status:
+            rows = conn.execute(
+                "SELECT * FROM solicitacoes_descriptografia WHERE status=? ORDER BY id DESC",
+                (status,)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM solicitacoes_descriptografia ORDER BY id DESC LIMIT 50"
+            ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def buscar_ultima_solicitacao_usuario(usuario_id: int) -> dict | None:
+    conn = conectar()
+    try:
+        row = conn.execute(
+            "SELECT * FROM solicitacoes_descriptografia WHERE solicitante_id=? ORDER BY id DESC LIMIT 1",
+            (usuario_id,)
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def aprovar_solicitacao_descriptografia(id_sol: int, aprovado_por: str) -> bool:
+    conn = conectar()
+    try:
+        row = conn.execute(
+            "SELECT * FROM solicitacoes_descriptografia WHERE id=? AND status='pendente'",
+            (id_sol,)
+        ).fetchone()
+        if not row:
+            return False
+        d = dict(row)
+        client_id_dec     = descriptografar_valor(d['client_id_enc'])
+        client_secret_dec = descriptografar_valor(d['client_secret_enc'])
+        agora     = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        expira_em = (datetime.now() + timedelta(minutes=3)).strftime('%Y-%m-%d %H:%M:%S')
+        conn.execute(
+            "UPDATE solicitacoes_descriptografia SET status='aprovado',client_id_dec=?,"
+            "client_secret_dec=?,aprovado_por=?,respondido_em=?,expira_em=? WHERE id=?",
+            (client_id_dec, client_secret_dec, aprovado_por, agora, expira_em, id_sol)
+        )
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def negar_solicitacao_descriptografia(id_sol: int, negado_por: str) -> bool:
+    conn = conectar()
+    try:
+        agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        conn.execute(
+            "UPDATE solicitacoes_descriptografia SET status='negado',aprovado_por=?,respondido_em=? WHERE id=? AND status='pendente'",
+            (negado_por, agora, id_sol)
+        )
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def limpar_solicitacoes_expiradas():
+    """Marca como expirado qualquer solicitação aprovada cujo expira_em já passou."""
+    agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    conn = conectar()
+    try:
+        conn.execute(
+            "UPDATE solicitacoes_descriptografia SET status='expirado' "
+            "WHERE status='aprovado' AND expira_em IS NOT NULL AND expira_em <= ?",
+            (agora,)
+        )
+        conn.commit()
+    finally:
+        conn.close()

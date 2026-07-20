@@ -225,3 +225,108 @@ def api_silenciar(cid):
     _log('SILENCIOU' if novo else 'REATIVOU',
          f'{"Silenciou" if novo else "Reativou"} avisos da credencial #{cid}')
     return jsonify({'sucesso': True, 'silenciado': novo})
+
+
+# ── Descriptografia de credenciais ────────────────────────────────────────────
+
+def _pode_descriptografar():
+    if not usuario_logado():
+        return False
+    u = banco.buscar_usuario_por_id(session.get('id_usuario'))
+    if not u:
+        return False
+    return bool(u.get('pode_descriptografar')) or session.get('nivel_acesso') == 'master'
+
+
+@credenciais_bp.route('/descriptografar')
+def pagina_descriptografar():
+    bloqueio = checar_tela('descriptografar')
+    if bloqueio:
+        return bloqueio
+    banco.limpar_solicitacoes_expiradas()
+    pode_aprovar  = _pode_descriptografar()
+    pendentes     = banco.listar_solicitacoes_descriptografia('pendente') if pode_aprovar else []
+    minha_sol     = banco.buscar_ultima_solicitacao_usuario(session.get('id_usuario'))
+    return render_template(
+        'aba_descriptografar.html',
+        aba_ativa='descriptografar',
+        pode_aprovar=pode_aprovar,
+        pendentes=pendentes,
+        minha_sol=minha_sol,
+    )
+
+
+@credenciais_bp.route('/api/descriptografar/solicitar', methods=['POST'])
+def api_solicitar_decrypt():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    d = request.get_json(silent=True) or {}
+    client_id_enc     = (d.get('client_id_enc') or '').strip()
+    client_secret_enc = (d.get('client_secret_enc') or '').strip()
+    if not client_id_enc or not client_secret_enc:
+        return jsonify({'erro': 'Preencha os dois campos.'}), 400
+    uid  = session.get('id_usuario')
+    nome = session.get('nome') or session.get('usuario', '')
+    id_sol = banco.criar_solicitacao_descriptografia(uid, nome, client_id_enc, client_secret_enc)
+    # Notifica quem pode aprovar
+    aprovadores = banco.listar_usuarios_com_flag('pode_descriptografar')
+    for ap in aprovadores:
+        banco.criar_notificacao(
+            ap['id'],
+            f'Solicitação de descriptografia — {nome}',
+            f'Usuário {nome} solicitou descriptografia de credenciais. Acesse a tela para aprovar ou negar.',
+            'aviso',
+        )
+    _log('SOLICITOU', f'Solicitou descriptografia #{id_sol}')
+    return jsonify({'sucesso': True, 'id': id_sol})
+
+
+@credenciais_bp.route('/api/descriptografar/status')
+def api_status_decrypt():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    banco.limpar_solicitacoes_expiradas()
+    sol = banco.buscar_ultima_solicitacao_usuario(session.get('id_usuario'))
+    if not sol:
+        return jsonify({'status': None})
+    resp = {
+        'id':     sol['id'],
+        'status': sol['status'],
+        'expira_em': sol.get('expira_em'),
+    }
+    if sol['status'] == 'aprovado':
+        resp['client_id_dec']     = sol.get('client_id_dec', '')
+        resp['client_secret_dec'] = sol.get('client_secret_dec', '')
+        resp['aprovado_por']      = sol.get('aprovado_por', '')
+    return jsonify(resp)
+
+
+@credenciais_bp.route('/api/descriptografar/solicitacoes')
+def api_listar_solicitacoes():
+    if not _pode_descriptografar():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    banco.limpar_solicitacoes_expiradas()
+    pendentes = banco.listar_solicitacoes_descriptografia('pendente')
+    return jsonify(pendentes)
+
+
+@credenciais_bp.route('/api/descriptografar/<int:id_sol>/aprovar', methods=['POST'])
+def api_aprovar_decrypt(id_sol):
+    if not _pode_descriptografar():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    nome = session.get('nome') or session.get('usuario', '')
+    ok = banco.aprovar_solicitacao_descriptografia(id_sol, nome)
+    if not ok:
+        return jsonify({'erro': 'Solicitação não encontrada ou já respondida.'}), 404
+    _log('APROVOU', f'Aprovou solicitação de descriptografia #{id_sol}')
+    return jsonify({'sucesso': True})
+
+
+@credenciais_bp.route('/api/descriptografar/<int:id_sol>/negar', methods=['POST'])
+def api_negar_decrypt(id_sol):
+    if not _pode_descriptografar():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    nome = session.get('nome') or session.get('usuario', '')
+    banco.negar_solicitacao_descriptografia(id_sol, nome)
+    _log('NEGOU', f'Negou solicitação de descriptografia #{id_sol}')
+    return jsonify({'sucesso': True})
