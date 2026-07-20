@@ -160,6 +160,7 @@ TELAS_AGRUPADAS = [
         ('cancelados',             'Cancelados'),
         ('sispbol',                'SispBol'),
         ('credenciais',            'Credenciais'),
+        ('descriptografar',        'Descriptografar Credenciais'),
         ('escritural',             'Novos Escriturais'),
     ]),
     ('Sistema', [
