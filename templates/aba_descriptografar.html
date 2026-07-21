@@ -514,12 +514,9 @@
 
   // ── Exibição de estados ─────────────────────────────────────
   function _mostrarEstado(estado, por) {
-    document.getElementById('dc-estado-pendente').style.display = '';
-    document.getElementById('dc-estado-aprovado').style.display = '';
-    document.getElementById('dc-estado-negado').style.display   = '';
-    document.getElementById('dc-estado-pendente').style.display = estado === 'pendente' ? '' : 'none';
-    document.getElementById('dc-estado-aprovado').style.display = estado === 'aprovado' ? '' : 'none';
-    document.getElementById('dc-estado-negado').style.display   = estado === 'negado'   ? '' : 'none';
+    document.getElementById('dc-estado-pendente').style.display = estado === 'pendente' ? 'block' : 'none';
+    document.getElementById('dc-estado-aprovado').style.display = estado === 'aprovado' ? 'block' : 'none';
+    document.getElementById('dc-estado-negado').style.display   = estado === 'negado'   ? 'block' : 'none';
     if (estado === 'negado' && por) {
       document.getElementById('dc-negado-por').textContent = `Negado por ${por}. Tente novamente se necessário.`;
     }
