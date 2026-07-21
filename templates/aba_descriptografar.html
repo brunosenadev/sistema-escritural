@@ -442,6 +442,8 @@
     .then(r => r.json())
     .then(resp => {
       if (resp.sucesso) {
+        document.getElementById('dc-client-id').value     = '';
+        document.getElementById('dc-client-secret').value = '';
         mostrarToast('sucesso', 'Solicitação enviada! Aguardando autorização.');
         _mostrarEstado('pendente');
         _iniciarPolling();
