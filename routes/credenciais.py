@@ -11,7 +11,7 @@ from datetime import date, datetime
 
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
-from utils import checar_login, usuario_logado, checar_admin, checar_tela
+from utils import checar_login, usuario_logado, checar_admin, checar_tela, tem_acesso_tela
 
 credenciais_bp = Blueprint('credenciais', __name__)
 
@@ -182,10 +182,18 @@ def api_empresas():
     return jsonify(banco.buscar_empresas_sistema(q))
 
 
+def _checar_acesso_cred():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    if not tem_acesso_tela('credenciais'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    return None
+
+
 @credenciais_bp.route('/api/credenciais', methods=['POST'])
 def api_adicionar():
-    if checar_admin():
-        return jsonify({'erro': 'Sem permissão'}), 403
+    err = _checar_acesso_cred()
+    if err: return err
     d = request.get_json(silent=True) or {}
     d['criado_por'] = session.get('nome', '')
     if not d.get('nome') or not d.get('data_validade'):
@@ -197,8 +205,8 @@ def api_adicionar():
 
 @credenciais_bp.route('/api/credenciais/<int:cid>', methods=['PUT'])
 def api_atualizar(cid):
-    if checar_admin():
-        return jsonify({'erro': 'Sem permissão'}), 403
+    err = _checar_acesso_cred()
+    if err: return err
     d = request.get_json(silent=True) or {}
     if not d.get('nome') or not d.get('data_validade'):
         return jsonify({'erro': 'Nome e data de validade são obrigatórios.'}), 400
@@ -219,8 +227,8 @@ def api_deletar(cid):
 
 @credenciais_bp.route('/api/credenciais/<int:cid>/silenciar', methods=['POST'])
 def api_silenciar(cid):
-    if checar_admin():
-        return jsonify({'erro': 'Sem permissão'}), 403
+    err = _checar_acesso_cred()
+    if err: return err
     novo = banco.toggle_silenciar_credencial(cid)
     _log('SILENCIOU' if novo else 'REATIVOU',
          f'{"Silenciou" if novo else "Reativou"} avisos da credencial #{cid}')
