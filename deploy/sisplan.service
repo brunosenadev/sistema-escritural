@@ -1,0 +1,21 @@
+[Unit]
+Description=Sisplan Escritural
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/sisplan
+EnvironmentFile=/home/ubuntu/sisplan/.env
+ExecStart=/home/ubuntu/sisplan/venv/bin/gunicorn app:app \
+    --workers 1 \
+    --worker-class gthread \
+    --threads 8 \
+    --timeout 120 \
+    --bind 127.0.0.1:8000 \
+    --access-logfile /home/ubuntu/sisplan/logs/access.log \
+    --error-logfile  /home/ubuntu/sisplan/logs/error.log
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
