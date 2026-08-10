@@ -579,6 +579,10 @@
     </svg>
     Bancos
   </button>
+  <button class="tab-btn" onclick="trocarTab('sistema', this)">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+    Sistema
+  </button>
   {% endif %}
   {% endif %}
   {% if nivel_acesso in ('admin', 'master') %}
@@ -824,6 +828,37 @@
 <!-- ════════════════════════════════════════════ -->
 <!-- TAB: Bancos                                 -->
 <!-- ════════════════════════════════════════════ -->
+{% if nivel_acesso == 'master' %}
+<div id="tab-sistema" class="painel-tab">
+  <div class="card-config">
+    <div class="card-config-header">
+      <span class="card-config-titulo">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Modo Manutenção
+      </span>
+    </div>
+    <div class="card-config-body" style="padding:20px;">
+      <p style="font-size:13px;color:var(--z-text-2,#64748b);margin-bottom:16px;line-height:1.6;">
+        Quando ativado, apenas usuários <strong>master</strong> conseguem acessar o sistema.
+        Todos os outros veem uma tela de manutenção.
+      </p>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div id="manut-status" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">
+          <span id="manut-dot" style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
+          <span id="manut-txt">Sistema online</span>
+        </div>
+        <button id="manut-btn" onclick="toggleManutencao()" style="
+          padding:8px 18px;border-radius:8px;border:none;font-size:13px;
+          font-weight:600;font-family:inherit;cursor:pointer;
+          background:#ef4444;color:#fff;transition:background 0.15s;">
+          Ativar Manutenção
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div id="tab-bancos" class="painel-tab">
   <div class="card-config">
     <div class="card-config-header">
@@ -1616,6 +1651,57 @@
         if (d.sucesso) mostrarToast('sucesso', d.atualizados + ' pendente(s) atualizados com Data de Vencimento.');
         else mostrarToast('erro', d.erro || 'Erro ao recalcular.');
       }).catch(() => mostrarToast('erro', 'Falha de comunicação com o servidor.'));
+  }
+
+  // ── Manutenção ──────────────────────────────────────────────
+  let _manutAtivo = false;
+
+  (function _initManut() {
+    fetch('/api/manutencao/status')
+      .then(r => r.json())
+      .then(d => _setManutEstado(d.ativo))
+      .catch(() => {});
+  })();
+
+  function _setManutEstado(ativo) {
+    _manutAtivo = ativo;
+    const dot = document.getElementById('manut-dot');
+    const txt = document.getElementById('manut-txt');
+    const btn = document.getElementById('manut-btn');
+    if (!dot) return;
+    if (ativo) {
+      dot.style.background = '#ef4444';
+      txt.textContent = 'Sistema em manutenção';
+      btn.textContent = 'Desativar Manutenção';
+      btn.style.background = '#16a34a';
+    } else {
+      dot.style.background = '#22c55e';
+      txt.textContent = 'Sistema online';
+      btn.textContent = 'Ativar Manutenção';
+      btn.style.background = '#ef4444';
+    }
+  }
+
+  function toggleManutencao() {
+    const novoEstado = !_manutAtivo;
+    const msg = novoEstado
+      ? 'Ativar modo manutenção? Apenas masters conseguirão acessar o sistema.'
+      : 'Desativar manutenção e liberar o sistema para todos?';
+    if (!confirm(msg)) return;
+    fetch('/api/manutencao', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ativo: novoEstado}),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) {
+        _setManutEstado(d.ativo);
+        mostrarToast(d.ativo ? 'aviso' : 'sucesso',
+          d.ativo ? 'Manutenção ativada. Outros usuários estão bloqueados.' : 'Sistema liberado para todos.');
+      }
+    })
+    .catch(() => mostrarToast('erro', 'Erro ao alterar modo manutenção.'));
   }
 </script>
 {% endblock %}

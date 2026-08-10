@@ -7,7 +7,7 @@ import datetime
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, session, redirect, url_for, g
+from flask import Flask, session, redirect, url_for, g, render_template, request, jsonify
 import banco
 from routes.auth        import auth_bp
 from routes.pendente    import pendente_bp
@@ -66,6 +66,37 @@ app.register_blueprint(usuarios_bp)
 
 iniciar_polling()
 iniciar_checker_credenciais()
+
+@app.before_request
+def _modo_manutencao():
+    from flask import request as req
+    if req.endpoint in ('static', None):
+        return
+    if banco.get_config('manutencao') != '1':
+        return
+    # masters passam mesmo em manutenção
+    if session.get('nivel_acesso') == 'master':
+        return
+    if req.path.startswith('/api/manutencao') or req.endpoint in ('api_status_manutencao', 'api_toggle_manutencao'):
+        return
+    return render_template('manutencao.html'), 503
+
+
+@app.route('/api/manutencao/status')
+def api_status_manutencao():
+    if session.get('nivel_acesso') != 'master':
+        return jsonify({'erro': 'Sem permissão'}), 403
+    return jsonify({'ativo': banco.get_config('manutencao') == '1'})
+
+
+@app.route('/api/manutencao', methods=['POST'])
+def api_toggle_manutencao():
+    if session.get('nivel_acesso') != 'master':
+        return jsonify({'erro': 'Sem permissão'}), 403
+    d = request.get_json(silent=True, force=True) or {}
+    novo = '1' if d.get('ativo') else '0'
+    banco.set_config('manutencao', novo)
+    return jsonify({'sucesso': True, 'ativo': novo == '1'})
 
 _ROTAS_PUBLICAS = {
     'auth.pagina_login', 'auth.sair', 'static',
