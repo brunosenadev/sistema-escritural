@@ -67,17 +67,17 @@ app.register_blueprint(usuarios_bp)
 iniciar_polling()
 iniciar_checker_credenciais()
 
+_MANUT_BYPASS = {'static', None, 'auth.pagina_login', 'auth.sair',
+                 'api_status_manutencao', 'api_toggle_manutencao'}
+
 @app.before_request
 def _modo_manutencao():
     from flask import request as req
-    if req.endpoint in ('static', None):
+    if req.endpoint in _MANUT_BYPASS:
         return
     if banco.get_config('manutencao') != '1':
         return
-    # masters passam mesmo em manutenção
     if session.get('nivel_acesso') == 'master':
-        return
-    if req.path.startswith('/api/manutencao') or req.endpoint in ('api_status_manutencao', 'api_toggle_manutencao'):
         return
     return render_template('manutencao.html'), 503
 
