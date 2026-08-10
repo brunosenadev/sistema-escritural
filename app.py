@@ -3,11 +3,13 @@ app.py — Ponto de entrada do Sisplan.
 """
 
 import os
+import time
 import datetime
 from dotenv import load_dotenv
 load_dotenv()
 
 from flask import Flask, session, redirect, url_for, g, render_template, request, jsonify
+from flask_compress import Compress
 import banco
 from routes.auth        import auth_bp
 from routes.pendente    import pendente_bp
@@ -34,6 +36,53 @@ from routes.usuarios            import usuarios_bp
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(days=30)
+app.config['COMPRESS_MIMETYPES'] = [
+    'text/html', 'text/css', 'text/javascript',
+    'application/javascript', 'application/json',
+]
+app.config['COMPRESS_MIN_SIZE'] = 1024
+Compress(app)
+
+# Serve static files via WhiteNoise (bypasses Python on Render/gunicorn)
+try:
+    from whitenoise import WhiteNoise
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(os.path.dirname(__file__), 'static'), prefix='static')
+except ImportError:
+    pass
+
+# ── Caches em memória ──────────────────────────────────────
+_MANUT_TTL   = 5   # segundos
+_SESSAO_TTL  = 30  # segundos
+
+_manut_cache  = {'val': None, 'ts': 0.0}
+_sessao_cache: dict = {}  # jti -> {'info': dict|None, 'ts': float}
+
+
+def _get_manutencao() -> str:
+    now = time.monotonic()
+    if now - _manut_cache['ts'] < _MANUT_TTL:
+        return _manut_cache['val']
+    v = banco.get_config('manutencao')
+    _manut_cache['val'] = v
+    _manut_cache['ts']  = now
+    return v
+
+
+def _invalidar_manutencao():
+    _manut_cache['ts'] = 0.0
+
+
+def _sessao_valida_cached(jti: str):
+    now = time.monotonic()
+    entry = _sessao_cache.get(jti)
+    if entry and now - entry['ts'] < _SESSAO_TTL:
+        return entry['info']
+    info = banco.sessao_valida(jti)
+    if info is not None:
+        _sessao_cache[jti] = {'info': info, 'ts': now}
+    else:
+        _sessao_cache.pop(jti, None)
+    return info
 
 banco.inicializar_banco()
 banco.migrar_pendentes_legados()
@@ -75,7 +124,7 @@ def _modo_manutencao():
     from flask import request as req
     if req.endpoint in _MANUT_BYPASS:
         return
-    if banco.get_config('manutencao') != '1':
+    if _get_manutencao() != '1':
         return
     if session.get('nivel_acesso') == 'master':
         return
@@ -96,6 +145,7 @@ def api_toggle_manutencao():
     d = request.get_json(silent=True, force=True) or {}
     novo = '1' if d.get('ativo') else '0'
     banco.set_config('manutencao', novo)
+    _invalidar_manutencao()
     return jsonify({'sucesso': True, 'ativo': novo == '1'})
 
 _ROTAS_PUBLICAS = {
@@ -118,11 +168,10 @@ def _jwt_guard():
     if payload:
         jti = payload.get('jti')
         if jti:
-            info = banco.sessao_valida(jti)
+            info = _sessao_valida_cached(jti)
             if info is None:
                 # sessão foi encerrada (force logout)
                 session.clear()
-                from flask import request as req
                 if req.path.startswith('/api/'):
                     from flask import jsonify as _json
                     return _json({'erro': 'Sessão encerrada', 'redirect': '/login'}), 401
@@ -130,7 +179,9 @@ def _jwt_guard():
             # sobrescreve mp com valor real do banco (evita bypass via JWT antigo)
             payload = dict(payload)
             payload['mp'] = info.get('mudar_senha', payload.get('mp', 0))
-        _preencher_sessao(payload)
+        # só preenche session quando ainda não está populada
+        if not session.get('usuario'):
+            _preencher_sessao(payload)
         # telas não está no JWT — restaura do banco só quando a session foi perdida
         if not session.get('telas'):
             niv = payload.get('niv', '')
@@ -145,7 +196,7 @@ def _jwt_guard():
     payload_r = _payload_refresh()
     if payload_r:
         jti = payload_r.get('jti')
-        if jti and banco.sessao_valida(jti) is None:
+        if jti and _sessao_valida_cached(jti) is None:
             session.clear()
             return redirect(url_for('auth.pagina_login'))
         u = banco.buscar_usuario_por_id(int(payload_r['sub']))
