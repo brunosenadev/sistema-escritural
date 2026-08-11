@@ -1637,10 +1637,15 @@
     }
 
     // Notificação nativa do Windows/OS
-    function _notifNativa(titulo, mensagem) {
+    function _notifNativa(titulo, mensagem, link) {
       if (!('Notification' in window)) return;
-      if (Notification.permission === 'granted') {
-        new Notification(titulo, { body: mensagem, icon: '/static/icon.ico' });
+      if (Notification.permission !== 'granted') return;
+      var n = new Notification(titulo, { body: mensagem, icon: '/static/icon.ico' });
+      if (link) {
+        n.onclick = function() {
+          window.focus();
+          window.location.href = link;
+        };
       }
     }
 
@@ -1659,7 +1664,7 @@
           if (d.novas && d.novas.length > 0) {
             d.novas.forEach(function(n) {
               _mostrarToastNotif(n.titulo, n.mensagem);
-              _notifNativa(n.titulo, n.mensagem);
+              _notifNativa(n.titulo, n.mensagem, n.link);
             });
             _tocarSom();
             var maxId = Math.max.apply(null, d.novas.map(function(n) { return n.id; }));

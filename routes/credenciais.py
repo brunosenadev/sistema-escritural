@@ -323,9 +323,16 @@ def api_aprovar_decrypt(id_sol):
     if not _pode_descriptografar():
         return jsonify({'erro': 'Sem permissão'}), 403
     nome = session.get('nome') or session.get('usuario', '')
-    ok = banco.aprovar_solicitacao_descriptografia(id_sol, nome)
-    if not ok:
+    resultado = banco.aprovar_solicitacao_descriptografia(id_sol, nome)
+    if not resultado:
         return jsonify({'erro': 'Solicitação não encontrada ou já respondida.'}), 404
+    banco.criar_notificacao(
+        resultado['solicitante_id'],
+        'Descriptografia aprovada',
+        f'{nome} aprovou sua solicitação. Acesse a tela para ver as credenciais (válido por 3 min).',
+        tipo='sucesso',
+        link='/descriptografar',
+    )
     _log('APROVOU', f'Aprovou solicitação de descriptografia #{id_sol}')
     return jsonify({'sucesso': True})
 
@@ -335,6 +342,14 @@ def api_negar_decrypt(id_sol):
     if not _pode_descriptografar():
         return jsonify({'erro': 'Sem permissão'}), 403
     nome = session.get('nome') or session.get('usuario', '')
-    banco.negar_solicitacao_descriptografia(id_sol, nome)
+    resultado = banco.negar_solicitacao_descriptografia(id_sol, nome)
+    if resultado:
+        banco.criar_notificacao(
+            resultado['solicitante_id'],
+            'Descriptografia negada',
+            f'{nome} negou sua solicitação de descriptografia.',
+            tipo='erro',
+            link='/descriptografar',
+        )
     _log('NEGOU', f'Negou solicitação de descriptografia #{id_sol}')
     return jsonify({'sucesso': True})

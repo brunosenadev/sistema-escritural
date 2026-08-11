@@ -945,6 +945,10 @@ def migrar_flags_avisos():
                 expira_em         TEXT
             )
         """)
+        # Coluna link em notificacoes (para navegação ao clicar na notif nativa)
+        cols_notif = {r[1] for r in conn.execute("PRAGMA table_info(notificacoes)").fetchall()}
+        if 'link' not in cols_notif:
+            conn.execute("ALTER TABLE notificacoes ADD COLUMN link TEXT DEFAULT ''")
         conn.commit()
     except Exception:
         pass
@@ -3167,11 +3171,11 @@ def buscar_empresa_log(tabela, id_registro):
 
 # ── Notificações ──────────────────────────────────────────
 
-def criar_notificacao(usuario_id, titulo, mensagem='', tipo='info'):
+def criar_notificacao(usuario_id, titulo, mensagem='', tipo='info', link=''):
     conn = conectar()
     cur = conn.execute(
-        "INSERT INTO notificacoes (usuario_id, titulo, mensagem, tipo) VALUES (?,?,?,?)",
-        (usuario_id, titulo, mensagem, tipo)
+        "INSERT INTO notificacoes (usuario_id, titulo, mensagem, tipo, link) VALUES (?,?,?,?,?)",
+        (usuario_id, titulo, mensagem, tipo, link or '')
     )
     notif_id = cur.lastrowid
     conn.commit()
@@ -3467,7 +3471,8 @@ def buscar_ultima_solicitacao_usuario(usuario_id: int) -> dict | None:
         conn.close()
 
 
-def aprovar_solicitacao_descriptografia(id_sol: int, aprovado_por: str) -> bool:
+def aprovar_solicitacao_descriptografia(id_sol: int, aprovado_por: str):
+    """Retorna dict com solicitante_id e solicitante_nome, ou None se não encontrado."""
     conn = conectar()
     try:
         row = conn.execute(
@@ -3475,7 +3480,7 @@ def aprovar_solicitacao_descriptografia(id_sol: int, aprovado_por: str) -> bool:
             (id_sol,)
         ).fetchone()
         if not row:
-            return False
+            return None
         d = dict(row)
         client_id_dec     = descriptografar_valor(d['client_id_enc'])
         client_secret_dec = descriptografar_valor(d['client_secret_enc'])
@@ -3487,21 +3492,28 @@ def aprovar_solicitacao_descriptografia(id_sol: int, aprovado_por: str) -> bool:
             (client_id_dec, client_secret_dec, aprovado_por, agora, expira_em, id_sol)
         )
         conn.commit()
-        return True
+        return {'solicitante_id': d['solicitante_id'], 'solicitante_nome': d['solicitante_nome']}
     finally:
         conn.close()
 
 
-def negar_solicitacao_descriptografia(id_sol: int, negado_por: str) -> bool:
+def negar_solicitacao_descriptografia(id_sol: int, negado_por: str):
+    """Retorna dict com solicitante_id e solicitante_nome, ou None se não encontrado."""
     conn = conectar()
     try:
+        row = conn.execute(
+            "SELECT solicitante_id, solicitante_nome FROM solicitacoes_descriptografia WHERE id=? AND status='pendente'",
+            (id_sol,)
+        ).fetchone()
+        if not row:
+            return None
         agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         conn.execute(
-            "UPDATE solicitacoes_descriptografia SET status='negado',aprovado_por=?,respondido_em=? WHERE id=? AND status='pendente'",
+            "UPDATE solicitacoes_descriptografia SET status='negado',aprovado_por=?,respondido_em=? WHERE id=?",
             (negado_por, agora, id_sol)
         )
         conn.commit()
-        return True
+        return {'solicitante_id': row[0], 'solicitante_nome': row[1]}
     finally:
         conn.close()
 
