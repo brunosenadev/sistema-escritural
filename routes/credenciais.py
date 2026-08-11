@@ -284,6 +284,7 @@ def api_solicitar_decrypt():
             f'Solicitação de descriptografia — {nome}',
             f'Usuário {nome} solicitou descriptografia de credenciais. Acesse a tela para aprovar ou negar.',
             'aviso',
+            link='/descriptografar',
         )
     _log('SOLICITOU', f'Solicitou descriptografia #{id_sol}')
     return jsonify({'sucesso': True, 'id': id_sol})
