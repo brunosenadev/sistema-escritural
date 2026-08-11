@@ -1636,6 +1636,19 @@
       }, 5000);
     }
 
+    // Notificação nativa do Windows/OS
+    function _notifNativa(titulo, mensagem) {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'granted') {
+        new Notification(titulo, { body: mensagem, icon: '/static/icon.ico' });
+      }
+    }
+
+    // Pede permissão uma vez (silencioso — só aparece o prompt do navegador)
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     function _poll() {
       if (_ultimoId === null) return; // aguarda init
       fetch('/api/notificacoes/contagem?desde_id=' + _ultimoId)
@@ -1644,7 +1657,10 @@
           if (!d) return;
           _setBadge(d.nao_lidas);
           if (d.novas && d.novas.length > 0) {
-            d.novas.forEach(function(n) { _mostrarToastNotif(n.titulo, n.mensagem); });
+            d.novas.forEach(function(n) {
+              _mostrarToastNotif(n.titulo, n.mensagem);
+              _notifNativa(n.titulo, n.mensagem);
+            });
             _tocarSom();
             var maxId = Math.max.apply(null, d.novas.map(function(n) { return n.id; }));
             if (maxId > _ultimoId) _ultimoId = maxId;
