@@ -56,7 +56,7 @@ def atualizar_status_os(id_os):
     if not _eh_master_ou_admin() and reg.get('usuario_id') != session.get('id_usuario'):
         return jsonify({'erro': 'Sem permissão para alterar esta O.S.'}), 403
     novo_status = (request.get_json() or {}).get('status', '')
-    if novo_status not in ('PENDENTE', 'CONCLUIDA'):
+    if novo_status not in ('PENDENTE', 'CONCLUIDA', 'BONIFICADA'):
         return jsonify({'erro': 'Status inválido'}), 400
     banco.atualizar_status_os(id_os, novo_status)
     _log('STATUS', f'Alterou status da O.S. #{id_os} ({reg.get("empresa","?")}) → {novo_status}')

@@ -2440,7 +2440,7 @@ def buscar_os(id_os):
 
 def atualizar_status_os(id_os, novo_status):
     conn = conectar()
-    if novo_status == 'CONCLUIDA':
+    if novo_status in ('CONCLUIDA', 'BONIFICADA'):
         conn.execute(
             "UPDATE os_controle SET status=?, concluido_em=datetime('now','localtime') WHERE id=?",
             (novo_status, id_os)

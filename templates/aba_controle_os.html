@@ -20,8 +20,9 @@
     white-space: nowrap;
     letter-spacing: 0.2px;
   }
-  .status-homologado { background-color:#dcfce7; color:#15803d; }
-  .status-padrao      { background-color:#f1f5f9; color:#475569; }
+  .status-homologado             { background-color:#dcfce7; color:#15803d; }
+  .status-aguardando-atualizacao { background-color:#ede9fe; color:#6d28d9; }
+  .status-padrao                 { background-color:#f1f5f9; color:#475569; }
 
   /* ── Select de status inline ─────────────────── */
   .select-status-inline {
@@ -192,6 +193,7 @@
       <option value="">Todos os status</option>
       <option value="PENDENTE">Pendente</option>
       <option value="CONCLUIDA">Concluída</option>
+      <option value="BONIFICADA">Bonificada</option>
     </select>
   </div>
 
@@ -240,13 +242,15 @@
             <td>{{ nomes_aba.get(reg.aba_homologado, reg.aba_homologado) }}</td>
             <td>{{ reg.criado_em or '—' }}</td>
             <td>
+              {% set _classe_status = {'CONCLUIDA': 'status-homologado', 'BONIFICADA': 'status-aguardando-atualizacao'}.get(reg.status, 'status-padrao') %}
               <select
-                class="badge-status select-status-inline {{ 'status-homologado' if reg.status == 'CONCLUIDA' else 'status-padrao' }}"
+                class="badge-status select-status-inline {{ _classe_status }}"
                 data-id="{{ reg.id }}"
                 onchange="atualizarStatusOS(this)"
               >
-                <option value="PENDENTE"  {% if reg.status == 'PENDENTE'  %}selected{% endif %}>PENDENTE</option>
-                <option value="CONCLUIDA" {% if reg.status == 'CONCLUIDA' %}selected{% endif %}>CONCLUÍDA</option>
+                <option value="PENDENTE"   {% if reg.status == 'PENDENTE'   %}selected{% endif %}>PENDENTE</option>
+                <option value="CONCLUIDA"  {% if reg.status == 'CONCLUIDA'  %}selected{% endif %}>CONCLUÍDA</option>
+                <option value="BONIFICADA" {% if reg.status == 'BONIFICADA' %}selected{% endif %}>BONIFICADA</option>
               </select>
             </td>
           </tr>
@@ -308,8 +312,9 @@
     const novoStatus = el.value;
     const linha = el.closest('tr');
 
+    const CLASSE_POR_STATUS = { CONCLUIDA: 'status-homologado', BONIFICADA: 'status-aguardando-atualizacao' };
     el.className = el.className.replace(/\bstatus-\S+/g, '').trim();
-    el.classList.add(novoStatus === 'CONCLUIDA' ? 'status-homologado' : 'status-padrao');
+    el.classList.add(CLASSE_POR_STATUS[novoStatus] || 'status-padrao');
     if (linha) linha.dataset.status = novoStatus;
 
     fetch(`/controle-os/status/${id}`, {
