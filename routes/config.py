@@ -19,7 +19,10 @@ def _log(tela, acao, descricao):
 def api_contadores():
     if not usuario_logado():
         return jsonify({'erro': 'Não autenticado'}), 401
-    return jsonify(banco.contar_todos())
+    d = banco.contar_todos()
+    uid = None if session.get('nivel_acesso') in ('admin', 'master') else session.get('id_usuario')
+    d['os_pendentes'] = banco.contar_os_pendentes(uid)
+    return jsonify(d)
 
 
 @config_bp.route('/configuracoes')

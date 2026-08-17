@@ -189,7 +189,7 @@ def homologar_pendente(id_registro):
     err = _sem_permissao()
     if err: return err
     empresa = banco.buscar_empresa_log('pendentes', id_registro)
-    id_novo, aba = banco.mover_pendente_para_homologado(id_registro)
+    id_novo, aba, dados_pend = banco.mover_pendente_para_homologado(id_registro)
     if id_novo:
         nomes = {
             'cobranca':   'Hom. Cobrança',
@@ -198,5 +198,20 @@ def homologar_pendente(id_registro):
             'ext_bancario': 'Hom. Extrato Bancário',
         }
         _log('MOVEU', f'Homologou pendente #{id_registro} ({empresa}) → {nomes.get(aba, aba)} #{id_novo}')
+
+        try:
+            dono = banco.buscar_usuario_por_tecnico(dados_pend.get('tecnico', ''))
+            banco.criar_os({
+                'usuario_id':     dono['id'] if dono else None,
+                'tecnico':        dados_pend.get('tecnico', ''),
+                'empresa':        dados_pend.get('empresa', ''),
+                'banco':          dados_pend.get('banco', ''),
+                'servico':        dados_pend.get('servico', ''),
+                'aba_homologado': aba,
+                'id_homologado':  id_novo,
+            })
+        except Exception:
+            pass  # a homologação já foi efetivada; falha ao gerar a O.S. não pode travar o fluxo
+
         return jsonify({'sucesso': True, 'id_homologado': id_novo, 'aba': aba, 'nome_aba': nomes.get(aba, aba)})
     return jsonify({'erro': 'Registro não encontrado'}), 404

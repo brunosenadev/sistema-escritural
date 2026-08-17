@@ -255,6 +255,29 @@ def assumir_homologado(tipo, id_registro):
     return jsonify({'erro': 'Registro não encontrado ou já possui técnico.'}), 404
 
 
+@homologados_bp.route('/homologados-<tipo>/gerar-os/<int:id_registro>', methods=['POST'])
+def gerar_os_homologado(tipo, id_registro):
+    if tipo not in _CONFIGS:
+        return jsonify({'erro': 'Tipo inválido'}), 400
+    err = _sem_permissao()
+    if err: return err
+    reg = banco.buscar_registro_homologado(_TABELA_DB[tipo], id_registro)
+    if not reg:
+        return jsonify({'erro': 'Registro não encontrado'}), 404
+    dono = banco.buscar_usuario_por_tecnico(reg.get('tecnico', ''))
+    id_os = banco.criar_os({
+        'usuario_id':     dono['id'] if dono else None,
+        'tecnico':        reg.get('tecnico', ''),
+        'empresa':        reg.get('empresa', ''),
+        'banco':          reg.get('banco', ''),
+        'servico':        reg.get('servico', ''),
+        'aba_homologado': tipo.replace('-', '_'),
+        'id_homologado':  id_registro,
+    })
+    _log(tipo, 'OS_CRIADA', f'Gerou nova O.S. #{id_os} para {_NOME_ABA[tipo]} #{id_registro} ({reg.get("empresa","?")})')
+    return jsonify({'sucesso': True, 'id_os': id_os, 'tecnico': dono['nome'] if dono else None})
+
+
 @homologados_bp.route('/homologados-<tipo>/cancelar/<int:id_registro>', methods=['POST'])
 def cancelar_homologado(tipo, id_registro):
     if tipo not in _CONFIGS:

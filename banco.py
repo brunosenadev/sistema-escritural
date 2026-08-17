@@ -158,6 +158,7 @@ TELAS_AGRUPADAS = [
         ('homologados_extrato',         'Homologados Extrato Cartão'),
         ('homologados_ext_bancario',    'Homologados Extrato Bancário'),
         ('cancelados',             'Cancelados'),
+        ('controle_os',            'Controle de O.S.'),
         ('sispbol',                'SispBol'),
         ('credenciais',            'Credenciais'),
         ('descriptografar',        'Descriptografar Credenciais'),
@@ -618,6 +619,22 @@ def inicializar_banco():
             enviado_em    TEXT    DEFAULT (datetime('now','localtime')),
             UNIQUE(credencial_id, tipo_aviso)
         );
+
+        CREATE TABLE IF NOT EXISTS os_controle (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id     INTEGER,
+            tecnico        TEXT,
+            empresa        TEXT,
+            banco          TEXT,
+            servico        TEXT,
+            aba_homologado TEXT,
+            id_homologado  INTEGER,
+            status         TEXT DEFAULT 'PENDENTE',
+            criado_em      TEXT DEFAULT (datetime('now','localtime')),
+            concluido_em   TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_os_controle_usuario ON os_controle(usuario_id);
+        CREATE INDEX IF NOT EXISTS idx_os_controle_status  ON os_controle(status);
     """)
 
     if conn.execute("SELECT COUNT(*) FROM usuarios").fetchone()[0] == 0:
@@ -2353,12 +2370,23 @@ _TABELA_HOMOLOGADO = {
 _TABELAS_HOMOLOGADO_VALIDAS = frozenset(_TABELA_HOMOLOGADO.values())
 
 
+def buscar_registro_homologado(tabela, id_registro):
+    """Busca uma linha completa de uma das 4 tabelas homologados_* pelo id.
+    'tabela' é validada contra a whitelist para não permitir SQL dinâmico arbitrário."""
+    if tabela not in _TABELAS_HOMOLOGADO_VALIDAS:
+        return None
+    conn = conectar()
+    row = conn.execute(f"SELECT * FROM {tabela} WHERE id=?", (id_registro,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
 def mover_pendente_para_homologado(id_pendente):
     conn = conectar()
     row = conn.execute("SELECT * FROM pendentes WHERE id=?", (id_pendente,)).fetchone()
     if not row:
         conn.close()
-        return None, None
+        return None, None, None
     d      = dict(row)
     aba    = _aba_homologado(d['servico'])
     tabela = _TABELA_HOMOLOGADO[aba]
@@ -2371,7 +2399,75 @@ def mover_pendente_para_homologado(id_pendente):
     conn.execute("DELETE FROM pendentes WHERE id=?", (id_pendente,))
     conn.commit()
     conn.close()
-    return cur.lastrowid, aba
+    return cur.lastrowid, aba, d
+
+
+# ── Controle de O.S. ──────────────────────────────────────
+
+def criar_os(dados: dict) -> int:
+    conn = conectar()
+    cur = conn.execute(
+        "INSERT INTO os_controle (usuario_id,tecnico,empresa,banco,servico,aba_homologado,id_homologado,status) "
+        "VALUES (?,?,?,?,?,?,?,'PENDENTE')",
+        (dados.get('usuario_id'), dados.get('tecnico', ''), dados.get('empresa', ''),
+         dados.get('banco', ''), dados.get('servico', ''), dados.get('aba_homologado', ''),
+         dados.get('id_homologado'))
+    )
+    id_novo = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return id_novo
+
+
+def listar_os(usuario_id=None):
+    conn = conectar()
+    if usuario_id is None:
+        rows = conn.execute("SELECT * FROM os_controle ORDER BY id DESC").fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT * FROM os_controle WHERE usuario_id=? ORDER BY id DESC", (usuario_id,)
+        ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def buscar_os(id_os):
+    conn = conectar()
+    row = conn.execute("SELECT * FROM os_controle WHERE id=?", (id_os,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def atualizar_status_os(id_os, novo_status):
+    conn = conectar()
+    if novo_status == 'CONCLUIDA':
+        conn.execute(
+            "UPDATE os_controle SET status=?, concluido_em=datetime('now','localtime') WHERE id=?",
+            (novo_status, id_os)
+        )
+    else:
+        conn.execute("UPDATE os_controle SET status=?, concluido_em=NULL WHERE id=?", (novo_status, id_os))
+    conn.commit()
+    conn.close()
+
+
+def atribuir_os(id_os, usuario_id, tecnico):
+    conn = conectar()
+    conn.execute("UPDATE os_controle SET usuario_id=?, tecnico=? WHERE id=?", (usuario_id, tecnico, id_os))
+    conn.commit()
+    conn.close()
+
+
+def contar_os_pendentes(usuario_id=None):
+    conn = conectar()
+    if usuario_id is None:
+        n = conn.execute("SELECT COUNT(*) FROM os_controle WHERE status='PENDENTE'").fetchone()[0]
+    else:
+        n = conn.execute(
+            "SELECT COUNT(*) FROM os_controle WHERE status='PENDENTE' AND usuario_id=?", (usuario_id,)
+        ).fetchone()[0]
+    conn.close()
+    return n
 
 
 def mover_homologado_para_pendente(id_registro, tipo, novo_status):
