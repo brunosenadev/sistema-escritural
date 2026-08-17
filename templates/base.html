@@ -436,6 +436,72 @@
     [data-tema="dark"] .btn-toggle-sidebar { color: var(--z-text-2); }
     [data-tema="dark"] .btn-toggle-sidebar:hover { color: var(--z-text-1) !important; background: rgba(255,255,255,0.10) !important; }
 
+    /* ── Topo fixo (barra de abas + header) ─────── */
+    .topo-fixo {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    /* ── Barra de abas abertas ───────────────────── */
+    .barra-abas-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .barra-abas-nav:empty { padding: 0; }
+    .barra-abas-nav::-webkit-scrollbar { display: none; }
+
+    .aba-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 8px 7px 13px;
+      border-radius: 9px 9px 0 0;
+      background: #eef2fb;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 500;
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+      max-width: 180px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .aba-nav-item:hover { background: #e2e8f0; color: #1e293b; }
+    .aba-nav-item.ativa { background: var(--fundo-card); color: #1e293b; font-weight: 600; box-shadow: 0 -1px 0 var(--borda) inset; }
+
+    .aba-nav-titulo {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .aba-nav-fechar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      color: inherit;
+      opacity: 0.55;
+      flex-shrink: 0;
+    }
+    .aba-nav-fechar:hover { opacity: 1; background: rgba(0,0,0,0.10); }
+
+    [data-tema="dark"] .barra-abas-nav { background: var(--z-bg) !important; }
+    [data-tema="dark"] .aba-nav-item { background: var(--z-elevated); color: var(--z-text-2); }
+    [data-tema="dark"] .aba-nav-item:hover { background: var(--z-border-s); color: var(--z-text-1); }
+    [data-tema="dark"] .aba-nav-item.ativa { background: var(--z-surface); color: var(--z-text-1); box-shadow: 0 -1px 0 var(--z-border-s) inset; }
+    [data-tema="dark"] .aba-nav-fechar:hover { background: rgba(255,255,255,0.12); }
+
     /* Header da página */
     .header-pagina {
       background: rgba(255, 255, 255, 0.88);
@@ -446,9 +512,6 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      position: sticky;
-      top: 0;
-      z-index: 50;
     }
 
     .titulo-pagina {
@@ -1265,29 +1328,33 @@
   <!-- ═══ Conteúdo principal ════════════════════ -->
   <main class="conteudo-principal">
 
-    <div class="header-pagina">
-      <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Recolher/expandir menu" onclick="toggleSidebar()">
-        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-      <div>
-        <h1 class="titulo-pagina">{% block titulo_pagina %}{% endblock %}</h1>
-        <div class="breadcrumb">{% block breadcrumb %}{% endblock %}</div>
-      </div>
-      <div class="acoes-header">
-        {% block acoes_header %}{% endblock %}
-        <button class="btn-header-action btn-sino" id="btn-sino" title="Notificações" onclick="toggleDropdownNotif(event)">
-          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span class="badge-sino" id="badge-sino" style="display:none"></span>
+    <div class="topo-fixo">
+      <div class="barra-abas-nav" id="barra-abas-nav"></div>
+
+      <div class="header-pagina">
+        <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Recolher/expandir menu" onclick="toggleSidebar()">
+          <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
-        <button class="btn-header-action" title="Alterar minha senha" onclick="abrirModalMinhaSenha()">
-          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-        </button>
-        <button class="btn-header-action" id="btn-tema" title="Alternar tema" onclick="alternarTema()">
-          <svg id="icone-tema-sol" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          <svg id="icone-tema-lua" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        </button>
+        <div>
+          <h1 class="titulo-pagina">{% block titulo_pagina %}{% endblock %}</h1>
+          <div class="breadcrumb">{% block breadcrumb %}{% endblock %}</div>
+        </div>
+        <div class="acoes-header">
+          {% block acoes_header %}{% endblock %}
+          <button class="btn-header-action btn-sino" id="btn-sino" title="Notificações" onclick="toggleDropdownNotif(event)">
+            <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="badge-sino" id="badge-sino" style="display:none"></span>
+          </button>
+          <button class="btn-header-action" title="Alterar minha senha" onclick="abrirModalMinhaSenha()">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </button>
+          <button class="btn-header-action" id="btn-tema" title="Alternar tema" onclick="alternarTema()">
+            <svg id="icone-tema-sol" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg id="icone-tema-lua" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1769,6 +1836,94 @@
           if (dd) dd.classList.remove('aberto');
         });
     };
+  })();
+  </script>
+
+  <!-- ── Barra de abas abertas (persistente por usuário) ─────────── -->
+  <script>
+  (function() {
+    var CHAVE = 'sisplan_abas_nav_' + {{ (session.nome or '') | tojson }};
+    var MAX_ABAS = 15;
+
+    function _esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function _carregarAbas() {
+      try { return JSON.parse(localStorage.getItem(CHAVE) || '[]'); } catch(e) { return []; }
+    }
+
+    function _salvarAbas(abas) {
+      try { localStorage.setItem(CHAVE, JSON.stringify(abas)); } catch(e) {}
+    }
+
+    function _urlAtual() {
+      return window.location.pathname + window.location.search;
+    }
+
+    function _tituloAtual() {
+      var h1 = document.querySelector('.titulo-pagina');
+      var texto = h1 && h1.textContent.trim();
+      return texto || document.title || 'Página';
+    }
+
+    function _renderAbas(abas) {
+      var barra = document.getElementById('barra-abas-nav');
+      if (!barra) return;
+      var atual = _urlAtual();
+      barra.innerHTML = abas.map(function(aba) {
+        var ativa = aba.url === atual;
+        var urlAttr = _esc(aba.url);
+        return '<a href="' + urlAttr + '" class="aba-nav-item' + (ativa ? ' ativa' : '') + '" data-url="' + urlAttr + '" title="' + _esc(aba.titulo) + '">' +
+          '<span class="aba-nav-titulo">' + _esc(aba.titulo) + '</span>' +
+          '<span class="aba-nav-fechar" onclick="_fecharAbaNav(event, this)">' +
+            '<svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+          '</span>' +
+        '</a>';
+      }).join('');
+    }
+
+    function _registrarAbaAtual() {
+      var abas = _carregarAbas();
+      var atual = _urlAtual();
+      var titulo = _tituloAtual();
+      var existente = null;
+      for (var i = 0; i < abas.length; i++) {
+        if (abas[i].url === atual) { existente = abas[i]; break; }
+      }
+      if (existente) {
+        existente.titulo = titulo;
+      } else {
+        abas.push({ url: atual, titulo: titulo });
+        if (abas.length > MAX_ABAS) abas.shift();
+      }
+      _salvarAbas(abas);
+      _renderAbas(abas);
+    }
+
+    window._fecharAbaNav = function(e, el) {
+      e.preventDefault();
+      e.stopPropagation();
+      var link = el.closest('.aba-nav-item');
+      var url  = link.dataset.url;
+      var abas = _carregarAbas();
+      var idx  = -1;
+      for (var i = 0; i < abas.length; i++) {
+        if (abas[i].url === url) { idx = i; break; }
+      }
+      if (idx === -1) return;
+      var eraAtiva = (url === _urlAtual());
+      abas.splice(idx, 1);
+      _salvarAbas(abas);
+      if (eraAtiva) {
+        var destino = abas.length ? abas[Math.max(0, idx - 1)].url : '/';
+        window.location.href = destino;
+      } else {
+        _renderAbas(abas);
+      }
+    };
+
+    _registrarAbaAtual();
   })();
   </script>
 
