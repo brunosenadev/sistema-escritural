@@ -13,6 +13,14 @@ melhorias_bp = Blueprint('melhorias', __name__)
 _SETORES_VISUALIZACAO = {'PROGRAMAÇÃO', 'SUPORTE'}
 _SETORES_EDICAO       = {'PROGRAMAÇÃO'}
 
+_ESTAGIO_LABEL = {
+    'analisa':         'Analisada',
+    'em_analise':      'Em Análise',
+    'em_programacao':  'Em Programação',
+    'concluida':       'Concluída',
+    'rejeitada':       'Rejeitada',
+}
+
 
 def _setor():
     return (session.get('setor') or '').upper().strip()
@@ -82,7 +90,8 @@ def api_adicionar_melhoria():
     if err:
         return err
     dados = request.get_json() or {}
-    dados['criado_por'] = session.get('nome', '')
+    dados['criado_por']    = session.get('nome', '')
+    dados['criado_por_id'] = session.get('id_usuario')
     if not _pode_mover():
         dados['estagio'] = 'analisa'
     novo_id = banco.adicionar_melhoria(dados)
@@ -121,6 +130,25 @@ def api_mover_melhoria(id_melhoria):
         return jsonify({'erro': 'Estágio inválido'}), 400
     banco.mover_estagio_melhoria(id_melhoria, estagio, dados.get('motivo', ''))
     _log('MOVEU', f'Moveu melhoria #{id_melhoria} → {estagio}')
+
+    try:
+        mel = banco.buscar_melhoria(id_melhoria)
+        criado_por_id = mel.get('criado_por_id') if mel else None
+        if criado_por_id and criado_por_id != session.get('id_usuario'):
+            quem = session.get('nome', 'Alguém')
+            label = _ESTAGIO_LABEL.get(estagio, estagio)
+            titulo_mel = (mel.get('titulo') or mel.get('descricao') or '')[:60]
+            tipo_notif = 'sucesso' if estagio == 'concluida' else ('erro' if estagio == 'rejeitada' else 'info')
+            banco.criar_notificacao(
+                criado_por_id,
+                f'Melhoria #{id_melhoria} → {label}',
+                f'{quem} moveu "{titulo_mel}" para {label}.',
+                tipo_notif,
+                link='/melhorias',
+            )
+    except Exception:
+        pass  # notificação é best-effort; não pode travar a movimentação já efetivada
+
     return jsonify({'sucesso': True})
 
 

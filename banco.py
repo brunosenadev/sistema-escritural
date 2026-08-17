@@ -709,6 +709,7 @@ def inicializar_banco():
         "ALTER TABLE email_thread_escritural ADD COLUMN enviado_por TEXT DEFAULT ''",
         "ALTER TABLE email_thread_escritural ADD COLUMN corpo_html TEXT DEFAULT ''",
         "ALTER TABLE email_config_usuario ADD COLUMN assinatura TEXT DEFAULT ''",
+        "ALTER TABLE melhorias ADD COLUMN criado_por_id INTEGER",
     ]:
         try:
             conn.execute(ddl)
@@ -1188,8 +1189,8 @@ def adicionar_melhoria(dados: dict) -> int:
     agora = datetime.now().strftime('%d/%m/%Y %H:%M')
     conn = conectar()
     cur = conn.execute(
-        """INSERT INTO melhorias (titulo, descricao, prioridade, programador, solicitante, criado_por, criado_em, atualizado_em)
-           VALUES (?,?,?,?,?,?,?,?)""",
+        """INSERT INTO melhorias (titulo, descricao, prioridade, programador, solicitante, criado_por, criado_por_id, criado_em, atualizado_em)
+           VALUES (?,?,?,?,?,?,?,?,?)""",
         (
             dados.get('titulo', ''),
             dados.get('descricao', ''),
@@ -1197,6 +1198,7 @@ def adicionar_melhoria(dados: dict) -> int:
             dados.get('programador', ''),
             dados.get('solicitante', ''),
             dados.get('criado_por', ''),
+            dados.get('criado_por_id'),
             agora, agora,
         )
     )
