@@ -928,7 +928,7 @@
             placeholder="DADOS NO E-MAIL:"
             rows="4"
             style="text-transform:uppercase;resize:vertical;min-height:90px;line-height:1.55;font-family:inherit;"
-            oninput="this.value = this.value.toUpperCase(); _autoResizeObs(this);"
+            oninput="_upperPreservandoCursor(this); _autoResizeObs(this);"
           ></textarea>
         </div>
 
@@ -1645,6 +1645,14 @@
   function _autoResizeObs(el) {
     el.style.height = 'auto';
     el.style.height = Math.max(90, el.scrollHeight) + 'px';
+  }
+
+  // Maiúsculas sem jogar o cursor pro fim do texto ao editar no meio
+  function _upperPreservandoCursor(el) {
+    const inicio = el.selectionStart;
+    const fim    = el.selectionEnd;
+    el.value = el.value.toUpperCase();
+    el.setSelectionRange(inicio, fim);
   }
 
   // Dispara resize ao preencher obs programaticamente

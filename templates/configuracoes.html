@@ -678,7 +678,7 @@
           {% endfor %}
         </div>
         <div class="form-inline-adicionar">
-          <input class="input-config" type="text" id="input-novo-status" placeholder="Ex: EM ANÁLISE" oninput="this.value=this.value.toUpperCase()">
+          <input class="input-config" type="text" id="input-novo-status" placeholder="Ex: EM ANÁLISE" oninput="_upperPreservandoCursor(this)">
           <button class="btn-primario-config" onclick="adicionarStatus()">
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
@@ -735,7 +735,7 @@
         </table>
         <div style="padding:14px 16px;border-top:1px solid #f1f5f9;">
           <div class="form-inline-adicionar" style="margin-top:0;">
-            <input class="input-config" type="text" id="input-novo-servico" placeholder="Ex: PIX API" oninput="this.value=this.value.toUpperCase()">
+            <input class="input-config" type="text" id="input-novo-servico" placeholder="Ex: PIX API" oninput="_upperPreservandoCursor(this)">
             <button class="btn-primario-config" onclick="adicionarServico()">
               <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/>
                 <line x1="5" y1="12" x2="19" y2="12"/>
@@ -773,7 +773,7 @@
           {% endfor %}
         </div>
         <div class="form-inline-adicionar">
-          <input class="input-config" type="text" id="input-novo-status-escritural" placeholder="Ex: EM ANÁLISE" oninput="this.value=this.value.toUpperCase()">
+          <input class="input-config" type="text" id="input-novo-status-escritural" placeholder="Ex: EM ANÁLISE" oninput="_upperPreservandoCursor(this)">
           <button class="btn-primario-config" onclick="adicionarStatusEscritural()">
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
@@ -815,7 +815,7 @@
         {% endfor %}
       </div>
       <div class="form-inline-adicionar">
-        <input class="input-config" type="text" id="input-novo-setor" placeholder="Ex: FINANCEIRO" oninput="this.value=this.value.toUpperCase()">
+        <input class="input-config" type="text" id="input-novo-setor" placeholder="Ex: FINANCEIRO" oninput="_upperPreservandoCursor(this)">
         <button class="btn-primario-config" onclick="adicionarSetor()">
           <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Adicionar
@@ -1157,7 +1157,7 @@
     </div>
     <div class="grupo-modal">
       <label>Nome do técnico</label>
-      <input class="input-modal" type="text" id="campo-tecnico-nome" placeholder="Ex: HEITOR" oninput="this.value=this.value.toUpperCase()">
+      <input class="input-modal" type="text" id="campo-tecnico-nome" placeholder="Ex: HEITOR" oninput="_upperPreservandoCursor(this)">
     </div>
     <input type="hidden" id="campo-tecnico-nome-original">
     <div class="rodape-modal">
@@ -1178,6 +1178,14 @@
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('ativo'));
     document.getElementById('tab-' + idTab).classList.add('ativo');
     botao.classList.add('ativo');
+  }
+
+  // Maiúsculas sem jogar o cursor pro fim do texto ao editar no meio
+  function _upperPreservandoCursor(el) {
+    const inicio = el.selectionStart;
+    const fim    = el.selectionEnd;
+    el.value = el.value.toUpperCase();
+    el.setSelectionRange(inicio, fim);
   }
 
   // ─── Helpers de modal ────────────────────────────────────────
