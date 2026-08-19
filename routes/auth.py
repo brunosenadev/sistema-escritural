@@ -17,14 +17,15 @@ def _set_tokens(response, usuario_row: dict, ip: str = '', registrar: bool = Fal
 
 
 _TELAS_ORDEM = [
-    ('pendente',               'pendente.aba_pendente',      {}),
-    ('homologados_cobranca',   'homologados.aba_homologados', {'tipo': 'cobranca'}),
-    ('homologados_pagamentos', 'homologados.aba_homologados', {'tipo': 'pagamentos'}),
-    ('homologados_extrato',    'homologados.aba_homologados', {'tipo': 'extrato'}),
-    ('cancelados',             'cancelados.aba_cancelados',  {}),
-    ('melhorias',              'melhorias.aba_melhorias',    {}),
-    ('hub',                    'hub.aba_hub',                {}),
-    ('acesso',                 'acesso.aba_acesso',          {}),
+    ('pendente',                 'pendente.aba_pendente',                  {}),
+    ('homologados_cobranca',     'homologados.aba_homologados_cobranca',   {}),
+    ('homologados_pagamentos',   'homologados.aba_homologados_pagamentos', {}),
+    ('homologados_extrato',      'homologados.aba_homologados_extrato',    {}),
+    ('homologados_ext_bancario', 'homologados.aba_homologados_ext_bancario', {}),
+    ('cancelados',                'cancelados.aba_cancelados',  {}),
+    ('melhorias',                 'melhorias.aba_melhorias',    {}),
+    ('hub',                       'hub.aba_hub',                {}),
+    ('acesso',                    'acesso.aba_acesso',          {}),
 ]
 
 @auth_bp.route('/')
