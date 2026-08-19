@@ -1,6 +1,10 @@
-from flask import Blueprint, render_template, request, jsonify, session
+import os
+from flask import Blueprint, render_template, request, jsonify, session, send_file
 import banco
+from planilha import exportar_pendentes_para_excel
 from utils import usuario_logado, pode_editar, checar_tela
+
+_PASTA_UPLOADS = '/tmp' if os.environ.get('RENDER') else os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
 
 
 def _sem_permissao():
@@ -219,6 +223,24 @@ def deletar_hom_ext_bancario(id_registro):
     banco.deletar_homologado_ext_bancario(id_registro)
     _log('ext-bancario', 'DELETOU', f'Deletou Hom. Extrato Bancário #{id_registro} — {empresa}')
     return jsonify({'sucesso': True})
+
+
+# ── Exportar para Excel ────────────────────────────────────
+
+@homologados_bp.route('/homologados-<tipo>/exportar')
+def exportar_homologado(tipo):
+    if tipo not in _CONFIGS:
+        return jsonify({'erro': 'Tipo inválido'}), 400
+    bloqueio = checar_tela(_CONFIGS[tipo][2])
+    if bloqueio:
+        return bloqueio
+    listar_fn, nome_aba, _ = _CONFIGS[tipo]
+    registros = getattr(banco, listar_fn)()
+    os.makedirs(_PASTA_UPLOADS, exist_ok=True)
+    caminho = os.path.join(_PASTA_UPLOADS, f'exportacao_homologados_{tipo}.xlsx')
+    exportar_pendentes_para_excel(registros, caminho, titulo_aba=nome_aba)
+    _log(tipo, 'EXPORTOU', f'Exportou {_NOME_ABA[tipo]} para Excel ({len(registros)} registros)')
+    return send_file(caminho, as_attachment=True, download_name=f'homologados_{tipo}_exportado.xlsx')
 
 
 # ── Mover homologado → pendente ou cancelado ──────────────

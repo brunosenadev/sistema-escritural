@@ -72,10 +72,10 @@ def ler_pendentes_do_excel(caminho_arquivo):
     return registros
 
 
-def exportar_pendentes_para_excel(registros, caminho_destino):
+def exportar_pendentes_para_excel(registros, caminho_destino, titulo_aba='Pendente'):
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = 'Pendente'
+    ws.title = titulo_aba[:31]  # limite do Excel pro nome da aba
 
     cabecalhos = ['TÉCNICO', 'EMPRESA', 'SERVIÇO', 'BANCO', 'DT.SOLICITA', 'DT.STATUS', 'STATUS', 'OBS']
     estilo_cab = Font(bold=True, color='FFFFFF')
