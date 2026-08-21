@@ -99,5 +99,5 @@ def converter():
         buffer_zip,
         mimetype='application/zip',
         as_attachment=True,
-        download_name=f'certificado_{conta_segura}.zip',
+        download_name=f'{conta_segura}.zip',
     )
