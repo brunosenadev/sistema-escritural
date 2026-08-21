@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block titulo %}Conversor de Certificado{% endblock %}
+{% block titulo_pagina %}Conversor de Certificado{% endblock %}
+{% block breadcrumb %}Processos / Conversor de Certificado{% endblock %}
+
+{% set aba_ativa = 'conversor_certificado' %}
+
+{% block estilos_extras %}
+<style>
+
+  .card-config {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(30,79,196,0.05);
+    max-width: 520px;
+  }
+
+  .card-config-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .card-config-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .card-config-body { padding: 20px; }
+
+  /* campo-cert (não usa o nome "grupo-form" de propósito — evita o override
+     global de dark mode em base.html que deixa o label ilegível) */
+  .campo-cert { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+  .rotulo-campo {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    color: var(--texto-medio);
+  }
+  .input-form {
+    padding: 8px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+    color: #1e293b;
+  }
+  .input-form:focus { border-color: #3b82f6; }
+
+  .botao-salvar {
+    padding: 9px 20px; border-radius: 8px;
+    border: none; background: #0a1628;
+    color: #fff; font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    transition: background 0.15s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .botao-salvar:hover { background: #1a3a7a; }
+  [data-tema="dark"] .botao-salvar { background: #2563eb; }
+  [data-tema="dark"] .botao-salvar:hover { background: #1d4ed8; }
+  .botao-salvar svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+
+  .mensagem-erro {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .mensagem-erro svg { width: 14px; height: 14px; stroke: #dc2626; fill: none; stroke-width: 2; flex-shrink: 0; }
+  [data-tema="dark"] .mensagem-erro { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.35); color: #fca5a5; }
+  [data-tema="dark"] .mensagem-erro svg { stroke: #fca5a5; }
+
+  .aviso-seguranca {
+    display: flex; gap: 8px; align-items: flex-start;
+    background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8;
+    border-radius: 8px; padding: 10px 14px; font-size: 12px; line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  .aviso-seguranca svg { width: 15px; height: 15px; stroke: #1d4ed8; fill: none; stroke-width: 2; flex-shrink: 0; margin-top: 1px; }
+  [data-tema="dark"] .aviso-seguranca { background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.35); color: #a5b4fc; }
+  [data-tema="dark"] .aviso-seguranca svg { stroke: #a5b4fc; }
+
+  /* ── Botão de arquivo customizado (usa as variáveis de tema, se adapta ao dark sozinho) ── */
+  .campo-arquivo-oculto { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+
+  .botao-arquivo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border: 1.5px dashed var(--borda);
+    border-radius: 8px;
+    background: var(--fundo-pagina);
+    color: var(--texto-medio);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .botao-arquivo:hover { border-color: #3b82f6; background: rgba(59,130,246,0.06); }
+  .botao-arquivo svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
+  .botao-arquivo .nome-do-arquivo { color: var(--texto-escuro); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── Chips de tipo de serviço (igual ao simulador de Credenciais) ── */
+  .grade-tipos { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; }
+  .chip-tipo {
+    padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 600;
+    cursor: pointer; border: 1.5px solid #2563eb; color: #2563eb;
+    background: #eff6ff; transition: all 0.12s; user-select: none;
+    display: inline-flex; align-items: center;
+  }
+  .chip-tipo input { display: none; }
+  .chip-tipo.marcado { background: #2563eb; color: #fff; border-color: #2563eb; }
+  [data-tema="dark"] .chip-tipo { background: rgba(37,99,235,.12); border-color: #2563eb; color: #93c5fd; }
+  [data-tema="dark"] .chip-tipo.marcado { background: #2563eb; color: #fff; }
+
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="card-config">
+  <div class="card-config-header">
+    <span class="card-config-titulo">Converter .pfx para .crt / .key / .pem</span>
+  </div>
+  <div class="card-config-body">
+
+    <div class="aviso-seguranca">
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>O arquivo e a senha não ficam salvos — a conversão acontece na hora e você recebe um .zip pra baixar.</span>
+    </div>
+
+    {% if erro %}
+    <div class="mensagem-erro">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      {{ erro }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/conversor-certificado/converter" enctype="multipart/form-data">
+
+      <div class="campo-cert">
+        <label class="rotulo-campo">Certificado (.pfx)</label>
+        <input class="campo-arquivo-oculto" type="file" id="campo-pfx" name="pfx" accept=".pfx" required onchange="_atualizarNomeArquivo(this)">
+        <label class="botao-arquivo" for="campo-pfx">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span class="nome-do-arquivo" id="nome-do-arquivo">Escolher arquivo .pfx</span>
+        </label>
+      </div>
+
+      <div class="campo-cert">
+        <label class="rotulo-campo">Senha do certificado</label>
+        <input class="input-form" type="password" name="senha" autocomplete="off" required>
+      </div>
+
+      <div class="campo-cert">
+        <label class="rotulo-campo">Conta</label>
+        <input class="input-form" type="text" name="conta" placeholder="Ex: 12345-6" value="{{ conta or '' }}" required>
+      </div>
+
+      <div class="campo-cert">
+        <label class="rotulo-campo">Tipo de serviço</label>
+        <div class="grade-tipos">
+          {% for chave, rotulo, _pasta in tipos_servico %}
+          <label class="chip-tipo {% if tipos_marcados and chave in tipos_marcados %}marcado{% endif %}">
+            <input type="checkbox" name="tipos" value="{{ chave }}" {% if tipos_marcados and chave in tipos_marcados %}checked{% endif %}
+              onchange="this.closest('.chip-tipo').classList.toggle('marcado', this.checked)">
+            {{ rotulo }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button type="submit" class="botao-salvar">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Converter e Baixar
+      </button>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+  function _atualizarNomeArquivo(el) {
+    const span = document.getElementById('nome-do-arquivo');
+    span.textContent = el.files && el.files.length ? el.files[0].name : 'Escolher arquivo .pfx';
+  }
+</script>
+{% endblock %}

@@ -16,6 +16,7 @@ from routes.pendente    import pendente_bp
 from routes.homologados import homologados_bp
 from routes.cancelados  import cancelados_bp
 from routes.controle_os import controle_os_bp
+from routes.conversor_certificado import conversor_certificado_bp
 from routes.importacao  import importacao_bp
 from routes.config      import config_bp
 from routes.melhorias   import melhorias_bp
@@ -97,6 +98,7 @@ app.register_blueprint(pendente_bp)
 app.register_blueprint(homologados_bp)
 app.register_blueprint(cancelados_bp)
 app.register_blueprint(controle_os_bp)
+app.register_blueprint(conversor_certificado_bp)
 app.register_blueprint(importacao_bp)
 app.register_blueprint(config_bp)
 app.register_blueprint(melhorias_bp)

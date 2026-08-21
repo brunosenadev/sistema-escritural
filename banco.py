@@ -162,6 +162,7 @@ TELAS_AGRUPADAS = [
         ('sispbol',                'SispBol'),
         ('credenciais',            'Credenciais'),
         ('descriptografar',        'Descriptografar Credenciais'),
+        ('conversor_certificado',  'Conversor de Certificado'),
         ('escritural',             'Novos Escriturais'),
     ]),
     ('Sistema', [
