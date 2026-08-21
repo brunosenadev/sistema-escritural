@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block titulo %}Gerador de Certificado Itaú{% endblock %}
+{% block titulo_pagina %}Gerador de Certificado Itaú{% endblock %}
+{% block breadcrumb %}Processos / Gerador de Certificado Itaú{% endblock %}
+
+{% set aba_ativa = 'gerador_certificado_itau' %}
+
+{% block estilos_extras %}
+<style>
+
+  .card-config {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(30,79,196,0.05);
+    max-width: 520px;
+  }
+
+  .card-config-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .card-config-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .card-config-body { padding: 20px; }
+
+  .campo-cert { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+  .rotulo-campo {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    color: var(--texto-medio);
+  }
+  .input-form {
+    padding: 8px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+    color: #1e293b;
+  }
+  .input-form:focus { border-color: #3b82f6; }
+
+  .grade-dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .botao-salvar {
+    padding: 9px 20px; border-radius: 8px;
+    border: none; background: #0a1628;
+    color: #fff; font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    transition: background 0.15s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .botao-salvar:hover { background: #1a3a7a; }
+  [data-tema="dark"] .botao-salvar { background: #2563eb; }
+  [data-tema="dark"] .botao-salvar:hover { background: #1d4ed8; }
+  .botao-salvar svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+
+  .mensagem-erro {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .mensagem-erro svg { width: 14px; height: 14px; stroke: #dc2626; fill: none; stroke-width: 2; flex-shrink: 0; }
+  [data-tema="dark"] .mensagem-erro { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.35); color: #fca5a5; }
+  [data-tema="dark"] .mensagem-erro svg { stroke: #fca5a5; }
+
+  .aviso-seguranca {
+    display: flex; gap: 8px; align-items: flex-start;
+    background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8;
+    border-radius: 8px; padding: 10px 14px; font-size: 12px; line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  .aviso-seguranca svg { width: 15px; height: 15px; stroke: #1d4ed8; fill: none; stroke-width: 2; flex-shrink: 0; margin-top: 1px; }
+  [data-tema="dark"] .aviso-seguranca { background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.35); color: #a5b4fc; }
+  [data-tema="dark"] .aviso-seguranca svg { stroke: #a5b4fc; }
+
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="card-config">
+  <div class="card-config-header">
+    <span class="card-config-titulo">Gerar certificado dinâmico Itaú</span>
+  </div>
+  <div class="card-config-body">
+
+    <div class="aviso-seguranca">
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>O token de acesso e a senha não ficam salvos — a chamada é feita direto pro Itaú na hora e você recebe um .zip pra baixar (.crt, .key, .pfx e Client_ID/Secret).</span>
+    </div>
+
+    {% if erro %}
+    <div class="mensagem-erro">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      {{ erro }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/gerador-certificado-itau/gerar">
+
+      <div class="campo-cert">
+        <label class="rotulo-campo">Client ID</label>
+        <input class="input-form" type="text" name="client_id" placeholder="Fornecido pelo Itaú por e-mail" value="{{ client_id or '' }}" required>
+      </div>
+
+      <div class="campo-cert">
+        <label class="rotulo-campo">Token de acesso</label>
+        <input class="input-form" type="password" name="access_token" placeholder="Fornecido junto com o Client ID" autocomplete="off" required>
+      </div>
+
+      <div class="campo-cert">
+        <label class="rotulo-campo">Nome da empresa / loja / filial</label>
+        <input class="input-form" type="text" name="nome_empresa" placeholder="Ex: EMPRESA TESTE LTDA" value="{{ nome_empresa or '' }}" required>
+      </div>
+
+      <div class="grade-dupla">
+        <div class="campo-cert">
+          <label class="rotulo-campo">Cidade</label>
+          <input class="input-form" type="text" name="cidade" placeholder="Ex: SAO PAULO" value="{{ cidade or '' }}" required>
+        </div>
+        <div class="campo-cert">
+          <label class="rotulo-campo">UF</label>
+          <input class="input-form" type="text" name="uf" placeholder="Ex: SP" maxlength="2" value="{{ uf or '' }}" required>
+        </div>
+      </div>
+
+      <div class="campo-cert">
+        <label class="rotulo-campo">Senha do .pfx</label>
+        <input class="input-form" type="password" name="senha_pfx" autocomplete="off" required>
+      </div>
+
+      <button type="submit" class="botao-salvar">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Gerar e Baixar
+      </button>
+
+    </form>
+  </div>
+</div>
+{% endblock %}

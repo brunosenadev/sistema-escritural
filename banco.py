@@ -163,6 +163,7 @@ TELAS_AGRUPADAS = [
         ('credenciais',            'Credenciais'),
         ('descriptografar',        'Descriptografar Credenciais'),
         ('conversor_certificado',  'Conversor de Certificado'),
+        ('gerador_certificado_itau', 'Gerador de Certificado Itaú'),
         ('escritural',             'Novos Escriturais'),
     ]),
     ('Sistema', [
