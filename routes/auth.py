@@ -1,5 +1,7 @@
+from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, make_response
 import banco
+import sisplan_auth
 from utils import usuario_logado, criar_tokens
 
 auth_bp = Blueprint('auth', __name__)
@@ -49,10 +51,49 @@ def pagina_login():
 
     erro = None
     if request.method == 'POST':
-        usuario = banco.buscar_usuario_por_login(
-            request.form.get('usuario', '').strip(),
-            request.form.get('senha', '').strip(),
-        )
+        usuario_digitado = request.form.get('usuario', '').strip()
+        senha_digitada    = request.form.get('senha', '').strip()
+
+        usuario     = None
+        via_sisplan = False
+
+        # 1) tenta validar direto na API do Sisplan com o que foi digitado
+        if sisplan_auth.validar_login_sisplan(usuario_digitado, senha_digitada):
+            usuario = banco.buscar_usuario_por_usuario_sisplan(usuario_digitado)
+            if not usuario:
+                banco.registrar_log(
+                    usuario=usuario_digitado,
+                    tela='Login', acao='LOGIN_FALHA',
+                    descricao='Login validado no Sisplan, mas usuário sem vínculo no sistema',
+                    ip=request.remote_addr,
+                )
+                return render_template(
+                    'login.html',
+                    erro='Usuário Sisplan não vinculado a nenhum usuário local do sistema.',
+                    ano_atual=datetime.now().year,
+                )
+            via_sisplan = True
+
+        # 2) se o Sisplan não validou (senha errada, indisponível, etc.),
+        #    tenta como login local — mas só se essa conta não tiver um
+        #    usuário Sisplan vinculado (nesse caso o login local fica bloqueado)
+        if not usuario:
+            id_local    = banco.buscar_id_usuario(usuario_digitado)
+            conta_local = banco.buscar_usuario_por_id(id_local) if id_local else None
+            if conta_local and (conta_local.get('usuario_sisplan') or '').strip():
+                banco.registrar_log(
+                    usuario=usuario_digitado,
+                    tela='Login', acao='LOGIN_FALHA',
+                    descricao='Tentativa de login local em conta vinculada ao Sisplan',
+                    ip=request.remote_addr,
+                )
+                return render_template(
+                    'login.html',
+                    erro='Usuário Sisplan vinculado ao usuário local, favor usar usuário Sisplan pra fazer login.',
+                    ano_atual=datetime.now().year,
+                )
+            usuario = banco.buscar_usuario_por_login(usuario_digitado, senha_digitada)
+
         if usuario:
             session.permanent            = True
             session['usuario']           = usuario['usuario']
@@ -67,7 +108,7 @@ def pagina_login():
             banco.registrar_log(
                 usuario=usuario['nome'] or usuario['usuario'],
                 tela='Login', acao='LOGIN',
-                descricao='Entrou no sistema',
+                descricao='Entrou no sistema' + (' (via usuário Sisplan)' if via_sisplan else ''),
                 usuario_id=usuario['id'],
                 nivel=usuario['nivel'],
                 ip=request.remote_addr,
@@ -79,14 +120,14 @@ def pagina_login():
             return resp
 
         banco.registrar_log(
-            usuario=request.form.get('usuario', '').strip(),
+            usuario=usuario_digitado,
             tela='Login', acao='LOGIN_FALHA',
             descricao='Tentativa de login com credenciais inválidas',
             ip=request.remote_addr,
         )
         erro = 'Usuário ou senha incorretos.'
 
-    return render_template('login.html', erro=erro)
+    return render_template('login.html', erro=erro, ano_atual=datetime.now().year)
 
 
 @auth_bp.route('/trocar-senha', methods=['GET', 'POST'])

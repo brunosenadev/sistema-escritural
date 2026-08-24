@@ -712,6 +712,7 @@ def inicializar_banco():
         "ALTER TABLE email_thread_escritural ADD COLUMN corpo_html TEXT DEFAULT ''",
         "ALTER TABLE email_config_usuario ADD COLUMN assinatura TEXT DEFAULT ''",
         "ALTER TABLE melhorias ADD COLUMN criado_por_id INTEGER",
+        "ALTER TABLE usuarios ADD COLUMN usuario_sisplan TEXT DEFAULT ''",
     ]:
         try:
             conn.execute(ddl)
@@ -851,22 +852,23 @@ def atualizar_usuario(id_usuario, campos):
     av_cred = 1 if campos.get('recebe_aviso_credenciais') else 0
     pode_env = 1 if campos.get('pode_enviar_notificacao') else 0
     pode_dec = 1 if campos.get('pode_descriptografar')    else 0
+    usuario_sisplan = (campos.get('usuario_sisplan') or '').strip()
     if campos.get('senha'):
         conn.execute(
             "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=?,cor=?,"
             "recebe_aviso_escritural=?,recebe_aviso_melhorias=?,recebe_aviso_credenciais=?,"
-            "pode_enviar_notificacao=?,pode_descriptografar=? WHERE id=?",
+            "pode_enviar_notificacao=?,pode_descriptografar=?,usuario_sisplan=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
              _hash_senha(campos['senha']), campos.get('setor') or '', cor,
-             av_esc, av_mel, av_cred, pode_env, pode_dec, id_usuario)
+             av_esc, av_mel, av_cred, pode_env, pode_dec, usuario_sisplan, id_usuario)
         )
     else:
         conn.execute(
             "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,setor=?,cor=?,"
             "recebe_aviso_escritural=?,recebe_aviso_melhorias=?,recebe_aviso_credenciais=?,"
-            "pode_enviar_notificacao=?,pode_descriptografar=? WHERE id=?",
+            "pode_enviar_notificacao=?,pode_descriptografar=?,usuario_sisplan=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             campos.get('setor') or '', cor, av_esc, av_mel, av_cred, pode_env, pode_dec, id_usuario)
+             campos.get('setor') or '', cor, av_esc, av_mel, av_cred, pode_env, pode_dec, usuario_sisplan, id_usuario)
         )
     conn.commit()
     conn.close()
@@ -887,6 +889,19 @@ def buscar_usuario_por_tecnico(nome_tecnico):
     row = conn.execute(
         "SELECT * FROM usuarios WHERE LOWER(TRIM(tecnico_vinculado))=LOWER(TRIM(?))",
         (nome_tecnico,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def buscar_usuario_por_usuario_sisplan(usuario_sisplan):
+    """Retorna o dict do usuário local vinculado a esse usuário Sisplan, ou None."""
+    if not usuario_sisplan:
+        return None
+    conn = conectar()
+    row = conn.execute(
+        "SELECT * FROM usuarios WHERE usuario_sisplan<>'' AND LOWER(TRIM(usuario_sisplan))=LOWER(TRIM(?))",
+        (usuario_sisplan,)
     ).fetchone()
     conn.close()
     return dict(row) if row else None
@@ -3518,6 +3533,25 @@ def descriptografar_valor(valor: str) -> str:
         return _decrypt_raw(valor, 45857)
     except Exception as e:
         return f"[erro: {e}]"
+
+
+def _encrypt_raw(s: str, key: int) -> str:
+    """Mesma cifra de _decrypt_raw, sentido inverso — porte do SZCRC32.Encrypt (Delphi)."""
+    C1 = 76541
+    C2 = 84529
+    key = key % 65536
+    result = ""
+    for ch in s:
+        plain_byte = ord(ch) & 0xFF
+        xored = plain_byte ^ (key >> 8)
+        result += format(xored & 0xFF, '02X')
+        key = ((xored & 0xFF) + key) * C1 + C2
+        key = key % 65536
+    return result
+
+
+def criptografar_valor(valor: str) -> str:
+    return _encrypt_raw(valor, 45857)
 
 
 def criar_solicitacao_descriptografia(solicitante_id: int, solicitante_nome: str,
