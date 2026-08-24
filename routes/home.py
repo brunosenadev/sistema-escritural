@@ -47,8 +47,10 @@ def pagina_home():
         dados['total_homologadas'] = sum(qtd for _, qtd in contagens)
         ranking = banco.ranking_tecnicos_homologados([tabela for _, tabela, _ in tipos_visiveis])
         maior_ranking = max(ranking.values()) if ranking else 1
+        cores_tecnicos = banco.cores_por_tecnico()
         dados['ranking_tecnicos'] = [
-            {'tecnico': tec, 'qtd': qtd, 'pct': round(qtd / maior_ranking * 100, 1)}
+            {'tecnico': tec, 'qtd': qtd, 'pct': round(qtd / maior_ranking * 100, 1),
+             'cor': cores_tecnicos.get(tec) or '#94a3b8'}
             for tec, qtd in ranking.items()
         ]
 
