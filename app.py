@@ -18,6 +18,7 @@ from routes.cancelados  import cancelados_bp
 from routes.controle_os import controle_os_bp
 from routes.conversor_certificado import conversor_certificado_bp
 from routes.gerador_certificado_itau import gerador_certificado_itau_bp
+from routes.home import home_bp
 from routes.importacao  import importacao_bp
 from routes.config      import config_bp
 from routes.melhorias   import melhorias_bp
@@ -101,6 +102,7 @@ app.register_blueprint(cancelados_bp)
 app.register_blueprint(controle_os_bp)
 app.register_blueprint(conversor_certificado_bp)
 app.register_blueprint(gerador_certificado_itau_bp)
+app.register_blueprint(home_bp)
 app.register_blueprint(importacao_bp)
 app.register_blueprint(config_bp)
 app.register_blueprint(melhorias_bp)
@@ -213,6 +215,7 @@ def _jwt_guard():
                 'niv':  u['nivel'],   'tec':  u.get('tecnico_vinculado') or '',
                 'setor': u.get('setor') or '',
                 'tema': u.get('tema') or 'light', 'sub': u['id'], 'mp': int(u.get('mudar_senha') or 0),
+                'tela_inicial': u.get('tela_inicial') or 'home',
             })
             session['cor']   = u.get('cor') or ''
             session['telas'] = '__all__' if u['nivel'] == 'master' else banco.listar_telas_usuario(u['id'])

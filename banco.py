@@ -713,6 +713,7 @@ def inicializar_banco():
         "ALTER TABLE email_config_usuario ADD COLUMN assinatura TEXT DEFAULT ''",
         "ALTER TABLE melhorias ADD COLUMN criado_por_id INTEGER",
         "ALTER TABLE usuarios ADD COLUMN usuario_sisplan TEXT DEFAULT ''",
+        "ALTER TABLE usuarios ADD COLUMN tela_inicial TEXT DEFAULT 'home'",
     ]:
         try:
             conn.execute(ddl)
@@ -2398,6 +2399,40 @@ def buscar_registro_homologado(tabela, id_registro):
     row = conn.execute(f"SELECT * FROM {tabela} WHERE id=?", (id_registro,)).fetchone()
     conn.close()
     return dict(row) if row else None
+
+
+def contar_registros_homologado(tabela):
+    """Conta linhas de uma das 4 tabelas homologados_*, validada contra a whitelist."""
+    if tabela not in _TABELAS_HOMOLOGADO_VALIDAS:
+        return 0
+    conn = conectar()
+    n = conn.execute(f"SELECT COUNT(*) FROM {tabela}").fetchone()[0]
+    conn.close()
+    return n
+
+
+def ranking_tecnicos_homologados(tabelas):
+    """Soma registros por técnico entre as tabelas homologados_* informadas
+    (só as que estiverem na whitelist são consideradas). Retorna dict
+    {tecnico: quantidade} ordenado do maior pro menor."""
+    tabelas_validas = [t for t in tabelas if t in _TABELAS_HOMOLOGADO_VALIDAS]
+    if not tabelas_validas:
+        return {}
+    conn = conectar()
+    ranking = {}
+    for tabela in tabelas_validas:
+        for r in conn.execute(f"SELECT tecnico, COUNT(*) as qtd FROM {tabela} GROUP BY tecnico").fetchall():
+            tec = r['tecnico'] or 'SEM TEC.'
+            ranking[tec] = ranking.get(tec, 0) + r['qtd']
+    conn.close()
+    return dict(sorted(ranking.items(), key=lambda x: x[1], reverse=True))
+
+
+def atualizar_tela_inicial(usuario_id, tela):
+    conn = conectar()
+    conn.execute("UPDATE usuarios SET tela_inicial=? WHERE id=?", (tela, usuario_id))
+    conn.commit()
+    conn.close()
 
 
 def mover_pendente_para_homologado(id_pendente):

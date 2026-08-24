@@ -86,6 +86,7 @@ def api_atualizar_usuario(id_usuario):
             'tec': u.get('tecnico_vinculado') or '', 'tema': u.get('tema') or 'light',
             'sub': u['id'], 'mp': int(u.get('mudar_senha') or 0),
             'cor': u.get('cor') or '', 'setor': u.get('setor') or '',
+            'tela_inicial': u.get('tela_inicial') or 'home',
         })
         access, *_ = criar_tokens(u)
         resp = make_response(jsonify({'sucesso': True}))

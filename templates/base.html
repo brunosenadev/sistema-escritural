@@ -1011,6 +1011,11 @@
       {% set _eh_master = nivel_acesso == 'master' %}
       {% set _ta = telas_acesso %}
 
+      <a href="/home" class="nav-item {% if aba_ativa == 'home' %}ativo{% endif %}" title="Home" style="margin:1px 8px 10px;">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-item-texto">Home</span>
+      </a>
+
       <!-- ── PROCESSOS ── -->
       <div class="nav-grupo" id="nav-grupo-processos">
         <button class="nav-grupo-btn" onclick="toggleGrupo('processos')">

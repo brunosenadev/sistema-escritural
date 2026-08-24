@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, make_response
 import banco
 import sisplan_auth
-from utils import usuario_logado, criar_tokens
+from utils import usuario_logado, criar_tokens, tem_acesso_tela
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -34,14 +34,12 @@ _TELAS_ORDEM = [
 def inicio():
     if not usuario_logado():
         return redirect(url_for('auth.pagina_login'))
-    nivel = session.get('nivel_acesso', '')
-    if nivel == 'master':
-        return redirect(url_for('pendente.aba_pendente'))
-    telas = session.get('telas') or []
-    for chave, endpoint, kwargs in _TELAS_ORDEM:
-        if chave in telas:
-            return redirect(url_for(endpoint, **kwargs))
-    return render_template('sem_acesso.html')
+    tela_pref = session.get('tela_inicial') or 'home'
+    if tela_pref != 'home':
+        for chave, endpoint, kwargs in _TELAS_ORDEM:
+            if chave == tela_pref and tem_acesso_tela(chave):
+                return redirect(url_for(endpoint, **kwargs))
+    return redirect(url_for('home.pagina_home'))
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -103,6 +101,7 @@ def pagina_login():
             session['id_usuario']        = usuario['id']
             session['tema']              = usuario.get('tema') or 'light'
             session['cor']               = usuario.get('cor') or ''
+            session['tela_inicial']      = usuario.get('tela_inicial') or 'home'
             session['telas']             = '__all__' if usuario['nivel'] == 'master' else banco.listar_telas_usuario(usuario['id'])
 
             banco.registrar_log(

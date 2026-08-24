@@ -31,6 +31,7 @@ def criar_tokens(usuario_row: dict, jti: str | None = None) -> tuple[str, str, s
         'setor': usuario_row.get('setor') or '',
         'tema':  usuario_row.get('tema') or 'light',
         'cor':   usuario_row.get('cor') or '',
+        'tela_inicial': usuario_row.get('tela_inicial') or 'home',
         'mp':    int(usuario_row.get('mudar_senha') or 0),
         'jti':   jti,
         'type':  'access',
@@ -70,6 +71,7 @@ def _preencher_sessao(payload: dict):
     session['id_usuario']        = payload['sub']
     session['tema']              = payload.get('tema', 'light')
     session['cor']               = payload.get('cor', '')
+    session['tela_inicial']      = payload.get('tela_inicial', 'home')
     session['mudar_senha']       = int(payload.get('mp', 0))
 
 
