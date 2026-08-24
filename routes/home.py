@@ -38,13 +38,19 @@ def pagina_home():
 
     tipos_visiveis = [(tela, tabela, nome) for tela, tabela, nome in _HOMOLOGADOS if tem_acesso_tela(tela)]
     if tipos_visiveis:
+        contagens = [(nome, banco.contar_registros_homologado(tabela)) for _, tabela, nome in tipos_visiveis]
+        maior_tipo = max((qtd for _, qtd in contagens), default=1) or 1
         dados['homologados_por_tipo'] = [
-            {'tela': tela, 'nome': nome, 'qtd': banco.contar_registros_homologado(tabela)}
-            for tela, tabela, nome in tipos_visiveis
+            {'nome': nome, 'qtd': qtd, 'pct': round(qtd / maior_tipo * 100, 1)}
+            for nome, qtd in contagens
         ]
-        dados['total_homologadas'] = sum(h['qtd'] for h in dados['homologados_por_tipo'])
-        dados['ranking_tecnicos'] = banco.ranking_tecnicos_homologados([tabela for _, tabela, _ in tipos_visiveis])
-        dados['cores_tecnicos']   = banco.cores_por_tecnico()
+        dados['total_homologadas'] = sum(qtd for _, qtd in contagens)
+        ranking = banco.ranking_tecnicos_homologados([tabela for _, tabela, _ in tipos_visiveis])
+        maior_ranking = max(ranking.values()) if ranking else 1
+        dados['ranking_tecnicos'] = [
+            {'tecnico': tec, 'qtd': qtd, 'pct': round(qtd / maior_ranking * 100, 1)}
+            for tec, qtd in ranking.items()
+        ]
 
     if tem_acesso_tela('cancelados'):
         dados['total_cancelados'] = banco.contar_cancelados()
