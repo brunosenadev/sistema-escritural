@@ -846,8 +846,10 @@ def adicionar_usuario(dados):
 
 
 def atualizar_usuario(id_usuario, campos):
+    """Edição via tela de Usuários. Não mexe em 'cor' — isso é exclusivo do
+    autoatendimento em /api/minha-cor (atualizar_cor_usuario), pra não zerar
+    a cor de identificação do usuário a cada edição administrativa."""
     conn = conectar()
-    cor = campos.get('cor') or ''
     av_esc  = 1 if campos.get('recebe_aviso_escritural')  else 0
     av_mel  = 1 if campos.get('recebe_aviso_melhorias')   else 0
     av_cred = 1 if campos.get('recebe_aviso_credenciais') else 0
@@ -856,20 +858,20 @@ def atualizar_usuario(id_usuario, campos):
     usuario_sisplan = (campos.get('usuario_sisplan') or '').strip()
     if campos.get('senha'):
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=?,cor=?,"
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,senha=?,setor=?,"
             "recebe_aviso_escritural=?,recebe_aviso_melhorias=?,recebe_aviso_credenciais=?,"
             "pode_enviar_notificacao=?,pode_descriptografar=?,usuario_sisplan=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             _hash_senha(campos['senha']), campos.get('setor') or '', cor,
+             _hash_senha(campos['senha']), campos.get('setor') or '',
              av_esc, av_mel, av_cred, pode_env, pode_dec, usuario_sisplan, id_usuario)
         )
     else:
         conn.execute(
-            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,setor=?,cor=?,"
+            "UPDATE usuarios SET nome=?,nivel=?,tecnico_vinculado=?,setor=?,"
             "recebe_aviso_escritural=?,recebe_aviso_melhorias=?,recebe_aviso_credenciais=?,"
             "pode_enviar_notificacao=?,pode_descriptografar=?,usuario_sisplan=? WHERE id=?",
             (campos.get('nome'), campos.get('nivel'), campos.get('tecnico_vinculado') or None,
-             campos.get('setor') or '', cor, av_esc, av_mel, av_cred, pode_env, pode_dec, usuario_sisplan, id_usuario)
+             campos.get('setor') or '', av_esc, av_mel, av_cred, pode_env, pode_dec, usuario_sisplan, id_usuario)
         )
     conn.commit()
     conn.close()
