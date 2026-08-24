@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session, make_response
 import banco
-from utils import usuario_logado, tem_acesso_tela, criar_tokens
+from utils import usuario_logado, tem_acesso_tela, criar_tokens, _payload_access
 
 home_bp = Blueprint('home', __name__)
 
@@ -85,7 +85,8 @@ def api_minha_tela_inicial():
     session['tela_inicial'] = tela
 
     u = banco.buscar_usuario_por_id(id_usuario)
-    access, *_ = criar_tokens(u)
+    jti_atual = (_payload_access() or {}).get('jti')
+    access, *_ = criar_tokens(u, jti=jti_atual)
     resp = make_response(jsonify({'sucesso': True}))
     resp.set_cookie('access_token', access, max_age=60*60, httponly=True, samesite='Lax', path='/')
     return resp

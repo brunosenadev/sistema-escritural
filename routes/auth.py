@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, make_response
 import banco
 import sisplan_auth
-from utils import usuario_logado, criar_tokens, tem_acesso_tela
+from utils import usuario_logado, criar_tokens, tem_acesso_tela, _payload_access
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -173,7 +173,8 @@ def api_meu_tema():
     session['tema'] = tema
     u = banco.buscar_usuario_por_id(id_usuario)
     resp = make_response(jsonify({'sucesso': True}))
-    access, *_ = criar_tokens(u)
+    jti_atual = (_payload_access() or {}).get('jti')
+    access, *_ = criar_tokens(u, jti=jti_atual)
     resp.set_cookie('access_token', access, max_age=60*60, **_COOKIE_OPTS)
     return resp
 

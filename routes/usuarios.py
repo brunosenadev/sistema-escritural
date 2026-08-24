@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, jsonify, session, make_re
 import banco
 import os
 import uuid
-from utils import checar_master, checar_login, usuario_logado, criar_tokens, _preencher_sessao, tem_acesso_tela
+from utils import checar_master, checar_login, usuario_logado, criar_tokens, _preencher_sessao, tem_acesso_tela, _payload_access
 from flask import redirect, url_for
 
 usuarios_bp = Blueprint('usuarios', __name__)
@@ -88,7 +88,8 @@ def api_atualizar_usuario(id_usuario):
             'cor': u.get('cor') or '', 'setor': u.get('setor') or '',
             'tela_inicial': u.get('tela_inicial') or 'home',
         })
-        access, *_ = criar_tokens(u)
+        jti_atual = (_payload_access() or {}).get('jti')
+        access, *_ = criar_tokens(u, jti=jti_atual)
         resp = make_response(jsonify({'sucesso': True}))
         resp.set_cookie('access_token', access, max_age=60*60, httponly=True, samesite='Lax', path='/')
         return resp
