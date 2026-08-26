@@ -138,6 +138,20 @@
 
   .select-filtro:focus { border-color: #3b82f6; }
 
+  .opcao-inverter-filtro {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: #475569;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .opcao-inverter-filtro input { accent-color: #ef4444; cursor: pointer; }
+  [data-tema="dark"] .opcao-inverter-filtro { color: var(--z-text-2) !important; }
+
   .botao-primario {
     padding: 8px 16px;
     background: #2563eb;
@@ -693,6 +707,11 @@
         {% endfor %}
       </select>
 
+      <label class="opcao-inverter-filtro">
+        <input type="checkbox" id="chk-inverter-status" onchange="filtrarTabela()">
+        Desconsiderar status selecionado
+      </label>
+
       <button class="botao-secundario" onclick="limparFiltros()">
         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
@@ -1052,6 +1071,7 @@
     const termoBusca     = document.getElementById('campo-busca-texto').value.toLowerCase();
     const filtroTecnico  = document.getElementById('filtro-tecnico').value.toLowerCase();
     const filtroStatus   = document.getElementById('filtro-status').value.toLowerCase();
+    const inverterStatus = document.getElementById('chk-inverter-status').checked;
 
     const linhas = document.querySelectorAll('#corpo-tabela tr[data-id]');
     let visiveis = 0;
@@ -1063,7 +1083,7 @@
 
       const passaBusca   = termoBusca   === '' || textoBusca.includes(termoBusca);
       const passaTecnico = filtroTecnico === '' || tecnico.includes(filtroTecnico);
-      const passaStatus  = filtroStatus  === '' || status.includes(filtroStatus);
+      const passaStatus  = filtroStatus  === '' || (inverterStatus ? !status.includes(filtroStatus) : status.includes(filtroStatus));
 
       if (passaBusca && passaTecnico && passaStatus) {
         linha.style.display = '';
@@ -1127,6 +1147,7 @@
   function limparFiltros() {
     document.getElementById('filtro-status').value = '';
     document.getElementById('filtro-tecnico').value = '';
+    document.getElementById('chk-inverter-status').checked = false;
     filtrarTabela();
   }
 
