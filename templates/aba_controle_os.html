@@ -92,6 +92,18 @@
   }
   .select-filtro:focus { border-color: #3b82f6; }
 
+  .opcao-inverter-filtro {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #475569;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .opcao-inverter-filtro input { accent-color: #ef4444; cursor: pointer; }
+
   /* ── Tabela ───────────────────────────────── */
   .tabela-dados {
     width: 100%;
@@ -195,6 +207,10 @@
       <option value="CONCLUIDA">Concluída</option>
       <option value="BONIFICADA">Bonificada</option>
     </select>
+    <label class="opcao-inverter-filtro">
+      <input type="checkbox" id="chk-inverter-status" onchange="filtrarTabela()">
+      Desconsiderar status selecionado
+    </label>
   </div>
 
   <!-- Tabela -->
@@ -220,7 +236,7 @@
             data-status="{{ reg.status }}"
             data-busca="{{ (reg.empresa ~ ' ' ~ reg.banco ~ ' ' ~ (reg.tecnico or 'SEM TEC.')) | lower }}"
           >
-            <td class="celula-tecnico">
+            <td class="celula-tecnico" {% if reg.tecnico %}style="color: {{ cores_tecnicos.get(reg.tecnico, '#64748b') }};"{% endif %}>
               {% if reg.tecnico %}
                 {{ reg.tecnico }}
               {% elif ve_tudo %}
@@ -284,6 +300,7 @@
     const filtroTecnicoEl = document.getElementById('filtro-tecnico');
     const filtroTecnico  = filtroTecnicoEl ? filtroTecnicoEl.value.toLowerCase() : '';
     const filtroStatus  = document.getElementById('filtro-status').value;
+    const inverterStatus = document.getElementById('chk-inverter-status').checked;
     const linhas        = document.querySelectorAll('#corpo-tabela tr[data-id]');
     let visiveis = 0;
 
@@ -293,7 +310,7 @@
       const status     = linha.dataset.status || '';
       const passaBusca   = termoBusca === '' || textoBusca.includes(termoBusca);
       const passaTecnico = filtroTecnico === '' || tecnico.includes(filtroTecnico);
-      const passaStatus  = filtroStatus === '' || status === filtroStatus;
+      const passaStatus  = filtroStatus === '' || (inverterStatus ? status !== filtroStatus : status === filtroStatus);
 
       if (passaBusca && passaTecnico && passaStatus) {
         linha.style.display = '';

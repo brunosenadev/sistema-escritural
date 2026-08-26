@@ -43,6 +43,7 @@ def aba_controle_os():
         usuarios_lista=banco.listar_usuarios() if ve_tudo else [],
         nomes_aba=NOMES_ABA,
         tecnicos_distintos=tecnicos_distintos,
+        cores_tecnicos=banco.cores_por_tecnico(),
     )
 
 
