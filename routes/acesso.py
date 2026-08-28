@@ -41,6 +41,8 @@ def api_toggle_permissao(usuario_id):
     if tela not in telas_validas:
         return jsonify({'erro': 'Tela inválida'}), 400
     banco.toggle_permissao(usuario_id, tela, permitido)
+    if usuario_id != session.get('id_usuario'):
+        banco.encerrar_sessoes_usuario(usuario_id)
     nome = _nome_usuario(usuario_id)
     verbo = 'Liberou' if permitido else 'Bloqueou'
     _log('ACESSO', f'{verbo} tela "{tela}" para {nome}')
@@ -57,6 +59,8 @@ def api_salvar_permissoes(usuario_id):
     telas_validas = {t[0] for t in banco.TELAS_SISTEMA}
     telas = [t for t in telas if t in telas_validas]
     banco.salvar_permissoes_usuario(usuario_id, telas)
+    if usuario_id != session.get('id_usuario'):
+        banco.encerrar_sessoes_usuario(usuario_id)
     nome = _nome_usuario(usuario_id)
     _log('ACESSO', f'Salvou permissões de {nome}: {", ".join(telas) or "nenhuma"}')
     return jsonify({'sucesso': True})

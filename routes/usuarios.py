@@ -77,8 +77,13 @@ def api_atualizar_usuario(id_usuario):
     # Admins não podem elevar nível para master
     if not _eh_master() and (dados.get('nivel') or '') == 'master':
         dados['nivel'] = 'admin'
+    nivel_mudou = bool(alvo) and (dados.get('nivel') or '') != (alvo.get('nivel') or '')
     banco.atualizar_usuario(id_usuario, dados)
     _log('EDITOU', f'Editou usuário #{id_usuario} — {alvo.get("nome","") if alvo else "?"}')
+    if id_usuario != session.get('id_usuario') and nivel_mudou:
+        # Mudou o nível de outra pessoa — a sessão dela não se autoatualiza,
+        # força relogin pra já valer com o nível novo.
+        banco.encerrar_sessoes_usuario(id_usuario)
     if id_usuario == session.get('id_usuario'):
         u = banco.buscar_usuario_por_id(id_usuario)
         _preencher_sessao({

@@ -940,6 +940,21 @@ def resetar_senha_usuario(id_usuario):
         conn.close()
 
 
+def encerrar_sessoes_usuario(id_usuario):
+    """Derruba a(s) sessão(ões) ativa(s) de um usuário. Usado quando outra pessoa
+    (admin/master) muda nível ou permissões dele — a sessão em memória (Flask
+    session/JWT) não se autoatualiza sozinha, então isso força um relogin na
+    próxima requisição, que já vem com o nível/telas certos do banco."""
+    conn = conectar()
+    try:
+        conn.execute("DELETE FROM sessoes_ativas WHERE usuario_id=?", (id_usuario,))
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
 def migrar_senhas_plaintext():
     """Hasheia senhas em texto puro deixadas por versões anteriores."""
     conn = conectar()
