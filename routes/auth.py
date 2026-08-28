@@ -102,6 +102,7 @@ def pagina_login():
             session['tema']              = usuario.get('tema') or 'light'
             session['cor']               = usuario.get('cor') or ''
             session['tela_inicial']      = usuario.get('tela_inicial') or 'home'
+            session['bloqueado_usuarios'] = int(usuario.get('bloqueado_usuarios') or 0)
             session['telas']             = '__all__' if usuario['nivel'] == 'master' else banco.listar_telas_usuario(usuario['id'])
 
             banco.registrar_log(

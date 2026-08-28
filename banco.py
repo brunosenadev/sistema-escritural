@@ -714,6 +714,7 @@ def inicializar_banco():
         "ALTER TABLE melhorias ADD COLUMN criado_por_id INTEGER",
         "ALTER TABLE usuarios ADD COLUMN usuario_sisplan TEXT DEFAULT ''",
         "ALTER TABLE usuarios ADD COLUMN tela_inicial TEXT DEFAULT 'home'",
+        "ALTER TABLE usuarios ADD COLUMN bloqueado_usuarios INTEGER DEFAULT 0",
     ]:
         try:
             conn.execute(ddl)
@@ -938,6 +939,16 @@ def resetar_senha_usuario(id_usuario):
         conn.commit()
     finally:
         conn.close()
+
+
+def definir_bloqueio_usuarios(id_usuario, bloqueado: bool):
+    """Bloqueia/libera o acesso de um usuário master à tela de Cadastro de
+    Usuários — usado pelo 'master absoluto' pra restringir outro master sem
+    mexer no nível dele nem em mais nenhuma outra permissão."""
+    conn = conectar()
+    conn.execute("UPDATE usuarios SET bloqueado_usuarios=? WHERE id=?", (1 if bloqueado else 0, id_usuario))
+    conn.commit()
+    conn.close()
 
 
 def encerrar_sessoes_usuario(id_usuario):
@@ -3245,11 +3256,12 @@ def encerrar_sessao_por_id(id_sessao: int):
 
 def sessao_valida(jti: str):
     """Retorna dict com info da sessão ou None se inválida/encerrada.
-    O dict inclui mudar_senha atual do banco (não do JWT, para evitar bypass)."""
+    O dict inclui mudar_senha/bloqueado_usuarios atuais do banco (não do JWT,
+    para evitar bypass e pra revogações surtirem efeito quase na hora)."""
     conn = conectar()
     try:
         row = conn.execute(
-            """SELECT s.id, u.mudar_senha
+            """SELECT s.id, u.mudar_senha, u.bloqueado_usuarios
                FROM sessoes_ativas s
                JOIN usuarios u ON u.id = s.usuario_id
                WHERE s.jti=?""",
@@ -3259,7 +3271,10 @@ def sessao_valida(jti: str):
             agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             conn.execute("UPDATE sessoes_ativas SET ultimo_acesso=? WHERE jti=?", (agora, jti))
             conn.commit()
-            return {'mudar_senha': int(row['mudar_senha'] or 0)}
+            return {
+                'mudar_senha': int(row['mudar_senha'] or 0),
+                'bloqueado_usuarios': int(row['bloqueado_usuarios'] or 0),
+            }
         return None
     except Exception:
         return {}  # em caso de erro de I/O, não derruba o usuário

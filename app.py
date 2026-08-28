@@ -184,9 +184,10 @@ def _jwt_guard():
                     from flask import jsonify as _json
                     return _json({'erro': 'Sessão encerrada', 'redirect': '/login'}), 401
                 return redirect(url_for('auth.pagina_login'))
-            # sobrescreve mp com valor real do banco (evita bypass via JWT antigo)
+            # sobrescreve mp/bg com valor real do banco (evita bypass via JWT antigo)
             payload = dict(payload)
             payload['mp'] = info.get('mudar_senha', payload.get('mp', 0))
+            payload['bg'] = info.get('bloqueado_usuarios', payload.get('bg', 0))
         # só preenche session quando ainda não está populada
         if not session.get('usuario'):
             _preencher_sessao(payload)
@@ -215,6 +216,7 @@ def _jwt_guard():
                 'niv':  u['nivel'],   'tec':  u.get('tecnico_vinculado') or '',
                 'setor': u.get('setor') or '',
                 'tema': u.get('tema') or 'light', 'sub': u['id'], 'mp': int(u.get('mudar_senha') or 0),
+                'bg': int(u.get('bloqueado_usuarios') or 0),
                 'tela_inicial': u.get('tela_inicial') or 'home',
             })
             session['cor']   = u.get('cor') or ''
@@ -288,6 +290,7 @@ def injetar_globais():
         'pode_editar':   _pe,
         'setor_usuario': session.get('setor', ''),
         'telas_acesso':  telas,
+        'bloqueado_usuarios': bool(session.get('bloqueado_usuarios')),
     }
 
 

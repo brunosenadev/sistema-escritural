@@ -26,9 +26,11 @@ def _eh_master():
 
 
 def _pode_gerir():
-    """Master sempre pode. Admin com tela 'usuarios' também pode (exceto ações sobre masters)."""
+    """Master sempre pode, a não ser que tenha o acesso à gestão de usuários
+    explicitamente bloqueado por outro master. Admin com tela 'usuarios'
+    também pode (exceto ações sobre masters)."""
     if session.get('nivel_acesso') == 'master':
-        return True
+        return not session.get('bloqueado_usuarios')
     return session.get('nivel_acesso') == 'admin' and tem_acesso_tela('usuarios')
 
 
@@ -37,7 +39,10 @@ def pagina_usuarios():
     bloqueio = checar_login()
     if bloqueio:
         return bloqueio
-    if session.get('nivel_acesso') != 'master' and not tem_acesso_tela('usuarios'):
+    if session.get('nivel_acesso') == 'master':
+        if session.get('bloqueado_usuarios'):
+            return redirect(url_for('auth.inicio'))
+    elif not tem_acesso_tela('usuarios'):
         return redirect(url_for('auth.inicio'))
     return render_template(
         'gerenciar_usuarios.html',
@@ -90,6 +95,7 @@ def api_atualizar_usuario(id_usuario):
             'usr': u['usuario'], 'nome': u['nome'], 'niv': u['nivel'],
             'tec': u.get('tecnico_vinculado') or '', 'tema': u.get('tema') or 'light',
             'sub': u['id'], 'mp': int(u.get('mudar_senha') or 0),
+            'bg': int(u.get('bloqueado_usuarios') or 0),
             'cor': u.get('cor') or '', 'setor': u.get('setor') or '',
             'tela_inicial': u.get('tela_inicial') or 'home',
         })
@@ -110,6 +116,29 @@ def api_resetar_senha(id_usuario):
         return jsonify({'erro': 'Sem permissão'}), 403
     banco.resetar_senha_usuario(id_usuario)
     _log('SENHA', f'Resetou senha do usuário #{id_usuario} — {alvo.get("nome","") if alvo else "?"}')
+    return jsonify({'sucesso': True})
+
+
+@usuarios_bp.route('/api/usuarios/<int:id_usuario>/bloqueio-gestao', methods=['POST'])
+def api_bloqueio_gestao(id_usuario):
+    """Só um master (de verdade, não bloqueado) pode bloquear/liberar OUTRO
+    master no acesso ao Cadastro de Usuários. Não existe pra admin."""
+    if not _eh_master() or session.get('bloqueado_usuarios'):
+        return jsonify({'erro': 'Sem permissão'}), 403
+    try:
+        id_proprio = int(session.get('id_usuario') or 0)
+    except (TypeError, ValueError):
+        id_proprio = 0
+    if id_usuario == id_proprio:
+        return jsonify({'erro': 'Não é possível bloquear a si mesmo.'}), 400
+    alvo = banco.buscar_usuario_por_id(id_usuario)
+    if not alvo or alvo.get('nivel') != 'master':
+        return jsonify({'erro': 'Só é possível bloquear/liberar outro usuário master.'}), 400
+    bloqueado = bool((request.get_json() or {}).get('bloqueado'))
+    banco.definir_bloqueio_usuarios(id_usuario, bloqueado)
+    banco.encerrar_sessoes_usuario(id_usuario)
+    verbo = 'Bloqueou' if bloqueado else 'Liberou'
+    _log('BLOQUEIO_GESTAO', f'{verbo} acesso de {alvo.get("nome","")} ao Cadastro de Usuários')
     return jsonify({'sucesso': True})
 
 

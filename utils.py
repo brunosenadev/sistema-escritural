@@ -33,6 +33,7 @@ def criar_tokens(usuario_row: dict, jti: str | None = None) -> tuple[str, str, s
         'cor':   usuario_row.get('cor') or '',
         'tela_inicial': usuario_row.get('tela_inicial') or 'home',
         'mp':    int(usuario_row.get('mudar_senha') or 0),
+        'bg':    int(usuario_row.get('bloqueado_usuarios') or 0),
         'jti':   jti,
         'type':  'access',
         'exp':   agora + datetime.timedelta(minutes=ACCESS_TTL),
@@ -73,6 +74,7 @@ def _preencher_sessao(payload: dict):
     session['cor']               = payload.get('cor', '')
     session['tela_inicial']      = payload.get('tela_inicial', 'home')
     session['mudar_senha']       = int(payload.get('mp', 0))
+    session['bloqueado_usuarios'] = int(payload.get('bg', 0))
 
 
 def pode_editar() -> bool:

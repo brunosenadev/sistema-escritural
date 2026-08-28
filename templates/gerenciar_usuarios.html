@@ -380,6 +380,13 @@
               </svg>
             </button>
             {% endif %}
+            {% elif nivel_acesso == 'master' and not bloqueado_usuarios %}
+            <button class="btn-acao-mini" id="btn-bloqueio-{{ usuario.id }}"
+              style="background:{% if usuario.bloqueado_usuarios %}#fee2e2{% else %}#f1f5f9{% endif %};color:{% if usuario.bloqueado_usuarios %}#b91c1c{% else %}#64748b{% endif %};border:1.5px solid {% if usuario.bloqueado_usuarios %}#fecaca{% else %}#e2e8f0{% endif %};padding:5px 8px;font-size:10px;font-weight:600;white-space:nowrap;"
+              title="{% if usuario.bloqueado_usuarios %}Liberar acesso ao Cadastro de Usuários{% else %}Bloquear acesso ao Cadastro de Usuários{% endif %}"
+              onclick='toggleBloqueioGestao({{ usuario.id }}, {{ usuario.nome | tojson }}, {{ (not usuario.bloqueado_usuarios) | tojson }})'>
+              {% if usuario.bloqueado_usuarios %}Bloqueado{% else %}Bloquear{% endif %}
+            </button>
             {% else %}
             <span style="font-size:11px;color:#94a3b8;font-style:italic;">protegido</span>
             {% endif %}
@@ -712,6 +719,34 @@
               mostrarToast('erro', d.erro || 'Erro ao remover.');
             }
           });
+      }
+    });
+  }
+
+  function toggleBloqueioGestao(id, nome, bloquear) {
+    const acao = bloquear ? 'bloquear' : 'liberar';
+    abrirDialogo({
+      titulo: bloquear ? 'Bloquear Acesso' : 'Liberar Acesso',
+      mensagem: bloquear
+        ? `Bloquear o acesso de <strong>${nome}</strong> ao Cadastro de Usuários? Ele continua master em tudo o mais.`
+        : `Liberar o acesso de <strong>${nome}</strong> ao Cadastro de Usuários novamente?`,
+      tipo: bloquear ? 'aviso' : 'padrao',
+      textoBotao: bloquear ? 'Bloquear' : 'Liberar',
+      callback: () => {
+        fetch(`/api/usuarios/${id}/bloqueio-gestao`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bloqueado: bloquear }),
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.sucesso) {
+            mostrarToast('sucesso', `Acesso de ${nome} ${acao === 'bloquear' ? 'bloqueado' : 'liberado'}.`);
+            setTimeout(() => location.reload(), 600);
+          } else {
+            mostrarToast('erro', d.erro || 'Erro ao atualizar.');
+          }
+        });
       }
     });
   }
