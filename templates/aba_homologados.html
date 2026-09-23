@@ -490,6 +490,8 @@
           if (resp.sucesso) {
             mostrarToast('sucesso', 'Registro deletado.');
             _fadeRemoverLinha(idRegistro);
+          } else if (resp.pendente) {
+            mostrarToast('info', resp.mensagem);
           } else {
             mostrarToast('erro', resp.erro || 'Erro ao deletar.');
           }

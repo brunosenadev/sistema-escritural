@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 import banco
+import exclusoes
 import os
 import uuid
 from werkzeug.utils import secure_filename
@@ -9,6 +10,29 @@ _UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static',
 _EXTS_OK = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'}
 
 melhorias_bp = Blueprint('melhorias', __name__)
+
+
+def _executar_exclusao_melhoria(id_melhoria):
+    arquivos = banco.remover_melhoria(id_melhoria)
+    for arq in (arquivos or []):
+        caminho = os.path.join(_UPLOAD_DIR, arq)
+        if os.path.exists(caminho):
+            os.remove(caminho)
+
+
+def _executar_exclusao_imagem_melhoria(img_id):
+    nome = banco.remover_imagem_melhoria(img_id)
+    if nome:
+        caminho = os.path.join(_UPLOAD_DIR, nome)
+        if os.path.exists(caminho):
+            os.remove(caminho)
+
+
+# Sobrepõe os executores "crus" (que só apagam a linha do banco) por versões
+# que também limpam os arquivos em disco — precisa valer tanto pra exclusão
+# imediata (master) quanto pra aprovada depois via /solicitacoes-exclusao.
+banco.EXECUTORES_EXCLUSAO['melhoria']        = _executar_exclusao_melhoria
+banco.EXECUTORES_EXCLUSAO['melhoria_imagem'] = _executar_exclusao_imagem_melhoria
 
 _SETORES_VISUALIZACAO = {'PROGRAMAÇÃO', 'SUPORTE'}
 _SETORES_EDICAO       = {'PROGRAMAÇÃO'}
@@ -157,13 +181,10 @@ def api_deletar_melhoria(id_melhoria):
     err = _guard_mover()
     if err:
         return err
-    arquivos = banco.remover_melhoria(id_melhoria)
-    for arq in (arquivos or []):
-        caminho = os.path.join(_UPLOAD_DIR, arq)
-        if os.path.exists(caminho):
-            os.remove(caminho)
-    _log('DELETOU', f'Deletou melhoria #{id_melhoria}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'melhoria', id_melhoria, f'Melhoria #{id_melhoria}', 'Melhorias', _log
+    )
+    return jsonify(payload), status
 
 
 # ── API: Imagens ──────────────────────────────────────────
@@ -202,9 +223,7 @@ def api_remover_imagem(img_id):
     err = _guard_criar()
     if err:
         return err
-    nome = banco.remover_imagem_melhoria(img_id)
-    if nome:
-        caminho = os.path.join(_UPLOAD_DIR, nome)
-        if os.path.exists(caminho):
-            os.remove(caminho)
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'melhoria_imagem', img_id, f'Imagem #{img_id} de melhoria', 'Melhorias', _log
+    )
+    return jsonify(payload), status

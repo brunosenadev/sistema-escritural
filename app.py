@@ -36,6 +36,7 @@ from routes.notificacoes        import notificacoes_bp
 from routes.credenciais         import credenciais_bp, iniciar_checker as iniciar_checker_credenciais
 from routes.sla                 import sla_bp
 from routes.usuarios            import usuarios_bp
+from routes.solicitacoes_exclusao import solicitacoes_exclusao_bp
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'sisplan-escritural-chave-secreta-2026')
@@ -94,6 +95,7 @@ banco.migrar_senhas_plaintext()
 banco.migrar_flags_avisos()
 banco.migrar_hub_v2()
 banco.migrar_sla()
+banco.migrar_solicitacoes_exclusao()
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(pendente_bp)
@@ -120,6 +122,7 @@ app.register_blueprint(notificacoes_bp)
 app.register_blueprint(credenciais_bp)
 app.register_blueprint(sla_bp)
 app.register_blueprint(usuarios_bp)
+app.register_blueprint(solicitacoes_exclusao_bp)
 
 iniciar_polling()
 iniciar_checker_credenciais()

@@ -376,6 +376,8 @@
             if (d.sucesso) {
               mostrarToast('sucesso', 'Tópico removido.');
               setTimeout(() => location.reload(), 500);
+            } else if (d.pendente) {
+              mostrarToast('info', d.mensagem);
             } else {
               mostrarToast('erro', d.erro || 'Erro ao remover.');
             }
@@ -397,6 +399,8 @@
             if (d.sucesso) {
               mostrarToast('sucesso', 'Manual removido.');
               setTimeout(() => location.reload(), 500);
+            } else if (d.pendente) {
+              mostrarToast('info', d.mensagem);
             } else {
               mostrarToast('erro', d.erro || 'Erro ao remover.');
             }
@@ -458,6 +462,7 @@
         .then(r => r.json())
         .then(d => {
           if (d.sucesso) { mostrarToast('sucesso', 'Collection removida.'); setTimeout(() => location.reload(), 500); }
+          else if (d.pendente) mostrarToast('info', d.mensagem);
           else mostrarToast('erro', d.erro || 'Erro ao remover.');
         });
       }

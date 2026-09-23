@@ -1648,6 +1648,8 @@
             const linha = document.querySelector(`tr[data-id="${idRegistro}"]`);
             if (linha) linha.remove();
             atualizarContadorLinhas();
+          } else if (resp.pendente) {
+            mostrarToast('info', resp.mensagem);
           } else {
             mostrarToast('erro', resp.erro || 'Erro ao deletar.');
           }

@@ -3732,3 +3732,168 @@ def limpar_solicitacoes_expiradas():
         conn.commit()
     finally:
         conn.close()
+
+
+# ── Aprovação de exclusões por master ─────────────────────────────────────────
+
+def migrar_solicitacoes_exclusao():
+    conn = conectar()
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS solicitacoes_exclusao (
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                tipo             TEXT    NOT NULL,
+                chave            TEXT    NOT NULL,
+                descricao        TEXT    NOT NULL,
+                tela_origem      TEXT,
+                solicitante_id   INTEGER NOT NULL,
+                solicitante_nome TEXT    NOT NULL,
+                status           TEXT    NOT NULL DEFAULT 'pendente',
+                aprovado_por     TEXT,
+                motivo_negacao   TEXT,
+                criado_em        TEXT    NOT NULL,
+                respondido_em    TEXT
+            )
+        """)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def criar_solicitacao_exclusao(tipo: str, chave: str, descricao: str, tela_origem: str,
+                                solicitante_id: int, solicitante_nome: str) -> int:
+    agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    conn = conectar()
+    try:
+        cur = conn.execute(
+            "INSERT INTO solicitacoes_exclusao "
+            "(tipo,chave,descricao,tela_origem,solicitante_id,solicitante_nome,status,criado_em) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (tipo, chave, descricao, tela_origem, solicitante_id, solicitante_nome, 'pendente', agora)
+        )
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+def listar_solicitacoes_exclusao(status: str | None = None) -> list:
+    conn = conectar()
+    try:
+        if status:
+            rows = conn.execute(
+                "SELECT * FROM solicitacoes_exclusao WHERE status=? ORDER BY id DESC",
+                (status,)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM solicitacoes_exclusao ORDER BY id DESC LIMIT 100"
+            ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def contar_solicitacoes_exclusao_pendentes() -> int:
+    conn = conectar()
+    try:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM solicitacoes_exclusao WHERE status='pendente'"
+        ).fetchone()
+        return row[0] if row else 0
+    finally:
+        conn.close()
+
+
+def aprovar_solicitacao_exclusao(id_sol: int, aprovado_por: str):
+    """Executa a exclusão de fato e marca a solicitação como aprovada.
+    Retorna dict com solicitante_id, solicitante_nome e descricao, ou None se não encontrada/já respondida."""
+    conn = conectar()
+    try:
+        row = conn.execute(
+            "SELECT * FROM solicitacoes_exclusao WHERE id=? AND status='pendente'",
+            (id_sol,)
+        ).fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        executor = EXECUTORES_EXCLUSAO.get(d['tipo'])
+        if executor is None:
+            return None
+        executor(d['chave'])
+        agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        conn.execute(
+            "UPDATE solicitacoes_exclusao SET status='aprovado',aprovado_por=?,respondido_em=? WHERE id=?",
+            (aprovado_por, agora, id_sol)
+        )
+        conn.commit()
+        return {'solicitante_id': d['solicitante_id'], 'solicitante_nome': d['solicitante_nome'],
+                'descricao': d['descricao']}
+    finally:
+        conn.close()
+
+
+def negar_solicitacao_exclusao(id_sol: int, negado_por: str, motivo: str | None = None):
+    """Retorna dict com solicitante_id, solicitante_nome e descricao, ou None se não encontrada/já respondida."""
+    conn = conectar()
+    try:
+        row = conn.execute(
+            "SELECT * FROM solicitacoes_exclusao WHERE id=? AND status='pendente'",
+            (id_sol,)
+        ).fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        conn.execute(
+            "UPDATE solicitacoes_exclusao SET status='negado',aprovado_por=?,motivo_negacao=?,respondido_em=? WHERE id=?",
+            (negado_por, motivo, agora, id_sol)
+        )
+        conn.commit()
+        return {'solicitante_id': d['solicitante_id'], 'solicitante_nome': d['solicitante_nome'],
+                'descricao': d['descricao']}
+    finally:
+        conn.close()
+
+
+def listar_masters() -> list:
+    conn = conectar()
+    try:
+        rows = conn.execute("SELECT id, nome FROM usuarios WHERE nivel='master'").fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+# Registro de qual função executa a exclusão de fato para cada "tipo" de
+# solicitação. Definido no fim do arquivo pois depende de todas as funções
+# remover_*/deletar_* já estarem declaradas acima.
+EXECUTORES_EXCLUSAO = {
+    'tecnico':           remover_tecnico,
+    'usuario':           remover_usuario,
+    'status':            remover_status,
+    'status_escritural': remover_status_escritural,
+    'servico':           remover_servico,
+    'setor':             remover_setor,
+    'banco_cadastro':    remover_banco_cadastro,
+    'melhoria':          remover_melhoria,
+    'melhoria_imagem':   remover_imagem_melhoria,
+    'sla_servico':       remover_sla_servico,
+    'sla_aviso':         remover_sla_aviso,
+    'pendente':          deletar_pendente,
+    'escritural':        deletar_escritural,
+    'cancelado':         deletar_cancelado,
+    'hom_cobranca':      deletar_homologado_cobranca,
+    'hom_pagamentos':    deletar_homologado_pagamentos,
+    'hom_extrato':       deletar_homologado_extrato,
+    'hom_ext_bancario':  deletar_homologado_ext_bancario,
+    'ajuda_topico':      remover_ajuda_topico,
+    'ajuda_post':        remover_ajuda_post,
+    'ajuda_collection':  remover_collection,
+    'hub_banco':         hub_remover_banco,
+    'hub_instrucao':     hub_remover_instrucao,
+    'hub_categoria':     hub_remover_categoria,
+    'hub_servico':       hub_remover_servico,
+    'email_modelo':      remover_email_modelo,
+    'credencial':        deletar_credencial,
+}

@@ -732,6 +732,8 @@
               linha.style.opacity = '0';
               setTimeout(() => { linha.remove(); atualizarContadorLinhas(); }, 300);
             }
+          } else if (resp.pendente) {
+            mostrarToast('info', resp.mensagem);
           } else {
             mostrarToast('erro', resp.erro || 'Erro ao deletar.');
           }

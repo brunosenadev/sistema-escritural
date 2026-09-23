@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
+import exclusoes
 from utils import checar_tela, tem_acesso_tela
 
 hub_bp = Blueprint('hub', __name__)
@@ -94,9 +95,10 @@ def api_hub_atualizar_banco(banco_id):
 def api_hub_remover_banco(banco_id):
     if not _pode_editar():
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.hub_remover_banco(banco_id)
-    _log('remover_banco', f'Banco #{banco_id} removido')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'hub_banco', banco_id, f'Banco do Hub #{banco_id}', 'hub', _log
+    )
+    return jsonify(payload), status
 
 
 # ── API: Serviços por banco ───────────────────────────────
@@ -132,9 +134,10 @@ def api_hub_adicionar_instrucao(banco_id):
 def api_hub_remover_instrucao(instrucao_id):
     if not _pode_editar():
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.hub_remover_instrucao(instrucao_id)
-    _log('remover_instrucao', f'Instrução #{instrucao_id} removida')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'hub_instrucao', instrucao_id, f'Instrução do Hub #{instrucao_id}', 'hub', _log
+    )
+    return jsonify(payload), status
 
 
 # ── API: Categorias ───────────────────────────────────────
@@ -177,9 +180,10 @@ def api_hub_atualizar_categoria(cat_id):
 def api_hub_remover_categoria(cat_id):
     if not _pode_editar():
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.hub_remover_categoria(cat_id)
-    _log('remover_categoria', f'Categoria #{cat_id} removida (com seus serviços)')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'hub_categoria', cat_id, f'Categoria do Hub #{cat_id} (com seus serviços)', 'hub', _log
+    )
+    return jsonify(payload), status
 
 
 # ── API: Serviços (tipos) ─────────────────────────────────
@@ -230,6 +234,7 @@ def api_hub_atualizar_servico(serv_id):
 def api_hub_remover_servico(serv_id):
     if not _pode_editar():
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.hub_remover_servico(serv_id)
-    _log('remover_servico', f'Serviço #{serv_id} removido')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'hub_servico', serv_id, f'Serviço do Hub #{serv_id}', 'hub', _log
+    )
+    return jsonify(payload), status

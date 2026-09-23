@@ -761,7 +761,13 @@
   async function deletar() {
     const id = $('mel-id').value;
     if (!id || !confirm('Excluir esta melhoria permanentemente?')) return;
-    await fetch(`${_B}/deletar/${id}`, {method:'DELETE'});
+    const r = await fetch(`${_B}/deletar/${id}`, {method:'DELETE'});
+    const resp = await r.json().catch(() => ({}));
+    if (resp.pendente) {
+      mostrarToast('info', resp.mensagem);
+      fecharMel();
+      return;
+    }
     fecharMel();
     location.reload();
   }

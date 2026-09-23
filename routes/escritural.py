@@ -5,6 +5,7 @@ from collections import defaultdict
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
+import exclusoes
 from planilha import ler_escritural_do_excel
 from utils import checar_tela
 
@@ -237,9 +238,11 @@ def deletar_escritural(id_registro):
     if checar_tela('escritural'):
         return jsonify({'erro': 'Sem permissão'}), 403
     empresa = banco.buscar_empresa_log('escritural', id_registro)
-    banco.deletar_escritural(id_registro)
-    _log('Escritural', 'DELETOU', f'Deletou escritural #{id_registro} — {empresa}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'escritural', id_registro, f'Escritural #{id_registro} — {empresa}', 'Escritural',
+        lambda a, d: _log('Escritural', a, d)
+    )
+    return jsonify(payload), status
 
 
 @escritural_bp.route('/escritural/status/<int:id_registro>', methods=['PATCH'])

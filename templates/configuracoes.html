@@ -1265,6 +1265,8 @@
             if (d.sucesso) {
               mostrarToast('sucesso', 'Técnico removido.');
               setTimeout(() => location.reload(), 600);
+            } else if (d.pendente) {
+              mostrarToast('info', d.mensagem);
             } else {
               mostrarToast('erro', d.erro || 'Erro ao remover.');
             }
@@ -1306,6 +1308,8 @@
             if (d.sucesso) {
               mostrarToast('sucesso', 'Status removido.');
               setTimeout(() => location.reload(), 500);
+            } else if (d.pendente) {
+              mostrarToast('info', d.mensagem);
             } else {
               mostrarToast('erro', d.erro || 'Erro.');
             }
@@ -1352,6 +1356,8 @@
             if (d.sucesso) {
               mostrarToast('sucesso', 'Status removido.');
               setTimeout(() => location.reload(), 500);
+            } else if (d.pendente) {
+              mostrarToast('info', d.mensagem);
             } else {
               mostrarToast('erro', d.erro || 'Erro.');
             }
@@ -1397,6 +1403,8 @@
             if (d.sucesso) {
               mostrarToast('sucesso', 'Serviço removido.');
               setTimeout(() => location.reload(), 500);
+            } else if (d.pendente) {
+              mostrarToast('info', d.mensagem);
             } else {
               mostrarToast('erro', d.erro || 'Erro.');
             }
@@ -1461,6 +1469,8 @@
             if (d.sucesso) {
               mostrarToast('sucesso', 'Setor removido.');
               setTimeout(() => location.reload(), 500);
+            } else if (d.pendente) {
+              mostrarToast('info', d.mensagem);
             } else {
               mostrarToast('erro', d.erro || 'Erro.');
             }
@@ -1561,7 +1571,10 @@
     if (!confirm(`Remover "${nome}"?`)) return;
     fetch(`/api/bancos-cadastro/${id}`, { method: 'DELETE' })
       .then(r => r.json())
-      .then(() => carregarBancos());
+      .then(d => {
+        if (d.pendente) mostrarToast('info', d.mensagem);
+        carregarBancos();
+      });
   }
 
   // carrega a tab de bancos ao clicar
@@ -1648,6 +1661,7 @@
     fetch(`/api/sla-config/${id}`, {method: 'DELETE'})
       .then(r => r.json()).then(d => {
         if (d.sucesso) btn.closest('tr').remove();
+        else if (d.pendente) mostrarToast('info', d.mensagem);
         else mostrarToast('erro', d.erro || 'Erro ao remover.');
       }).catch(() => mostrarToast('erro', 'Falha de comunicação com o servidor.'));
   }

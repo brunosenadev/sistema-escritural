@@ -3,6 +3,7 @@ from collections import Counter
 from html import escape
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 import banco
+import exclusoes
 from utils import checar_tela
 
 ajuda_bp = Blueprint('ajuda', __name__)
@@ -252,9 +253,10 @@ def api_atualizar_topico(id_topico):
 def api_remover_topico(id_topico):
     if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.remover_ajuda_topico(id_topico)
-    _log('DELETOU', f'Removeu tópico Ajuda #{id_topico}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'ajuda_topico', id_topico, f'Tópico Ajuda #{id_topico}', 'Ajuda', _log
+    )
+    return jsonify(payload), status
 
 
 # ── API: Posts ─────────────────────────────────────────────
@@ -291,9 +293,10 @@ def api_atualizar_post(id_post):
 def api_remover_post(id_post):
     if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.remover_ajuda_post(id_post)
-    _log('DELETOU', f'Removeu post Ajuda #{id_post}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'ajuda_post', id_post, f'Post Ajuda #{id_post}', 'Ajuda', _log
+    )
+    return jsonify(payload), status
 
 
 # ── API: Collections ──────────────────────────────────────
@@ -330,9 +333,10 @@ def api_atualizar_collection(id_col):
 def api_remover_collection(id_col):
     if checar_tela('ajuda_gerenciar'):
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.remover_collection(id_col)
-    _log('DELETOU', f'Removeu collection #{id_col}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'ajuda_collection', id_col, f'Collection #{id_col}', 'Ajuda', _log
+    )
+    return jsonify(payload), status
 
 
 # ── API: Upload de PDF (converte para HTML) ───────────────

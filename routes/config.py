@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
+import exclusoes
 from utils import checar_admin, checar_login, usuario_logado, tem_acesso_tela
 
 config_bp = Blueprint('config', __name__)
@@ -22,6 +23,8 @@ def api_contadores():
     d = banco.contar_todos()
     uid = None if session.get('nivel_acesso') in ('admin', 'master') else session.get('id_usuario')
     d['os_pendentes'] = banco.contar_os_pendentes(uid)
+    if session.get('nivel_acesso') == 'master':
+        d['exclusoes_pendentes'] = banco.contar_solicitacoes_exclusao_pendentes()
     return jsonify(d)
 
 
@@ -83,9 +86,11 @@ def api_atualizar_tecnico(nome):
 def api_remover_tecnico(nome):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.remover_tecnico(nome)
-    _log('Configurações', 'DELETOU', f'Removeu técnico: {nome}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'tecnico', nome, f'Técnico: {nome}', 'Configurações',
+        lambda a, d: _log('Configurações', a, d)
+    )
+    return jsonify(payload), status
 
 
 # ── API Status ────────────────────────────────────────────
@@ -105,9 +110,11 @@ def api_adicionar_status():
 def api_remover_status(texto):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.remover_status(texto)
-    _log('Configurações', 'DELETOU', f'Removeu status: {texto}')
-    return jsonify({'sucesso': True})
+    payload, status_http = exclusoes.processar_exclusao(
+        'status', texto, f'Status: {texto}', 'Configurações',
+        lambda a, d: _log('Configurações', a, d)
+    )
+    return jsonify(payload), status_http
 
 
 # ── API Status (Novos Escriturais) ────────────────────────
@@ -127,9 +134,11 @@ def api_adicionar_status_escritural():
 def api_remover_status_escritural(texto):
     if not usuario_logado() or not tem_acesso_tela('escritural'):
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.remover_status_escritural(texto)
-    _log('Configurações', 'DELETOU', f'Removeu status escritural: {texto}')
-    return jsonify({'sucesso': True})
+    payload, status_http = exclusoes.processar_exclusao(
+        'status_escritural', texto, f'Status escritural: {texto}', 'Configurações',
+        lambda a, d: _log('Configurações', a, d)
+    )
+    return jsonify(payload), status_http
 
 
 # ── API Serviços ──────────────────────────────────────────
@@ -160,9 +169,11 @@ def api_atualizar_servico(texto):
 def api_remover_servico(texto):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.remover_servico(texto)
-    _log('Configurações', 'DELETOU', f'Removeu serviço: {texto}')
-    return jsonify({'sucesso': True})
+    payload, status_http = exclusoes.processar_exclusao(
+        'servico', texto, f'Serviço: {texto}', 'Configurações',
+        lambda a, d: _log('Configurações', a, d)
+    )
+    return jsonify(payload), status_http
 
 
 # ── API Setores ───────────────────────────────────────────
@@ -182,9 +193,11 @@ def api_adicionar_setor():
 def api_remover_setor(texto):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.remover_setor(texto)
-    _log('Configurações', 'DELETOU', f'Removeu setor: {texto}')
-    return jsonify({'sucesso': True})
+    payload, status_http = exclusoes.processar_exclusao(
+        'setor', texto, f'Setor: {texto}', 'Configurações',
+        lambda a, d: _log('Configurações', a, d)
+    )
+    return jsonify(payload), status_http
 
 
 # ── API Bancos Cadastro ───────────────────────────────────
@@ -229,9 +242,11 @@ def api_atualizar_banco_cadastro(id_banco):
 def api_remover_banco_cadastro(id_banco):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.remover_banco_cadastro(id_banco)
-    _log('Configurações', 'DELETOU', f'Removeu banco #{id_banco}')
-    return jsonify({'sucesso': True})
+    payload, status_http = exclusoes.processar_exclusao(
+        'banco_cadastro', id_banco, f'Banco cadastrado #{id_banco}', 'Configurações',
+        lambda a, d: _log('Configurações', a, d)
+    )
+    return jsonify(payload), status_http
 
 
 # ── API Config Geral ─────────────────────────────────────
@@ -295,9 +310,11 @@ def api_salvar_sla_servico():
 def api_remover_sla_servico(id_sla):
     if not usuario_logado() or session.get('nivel_acesso') not in ('admin', 'master'):
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.remover_sla_servico(id_sla)
-    _log('Configurações', 'DELETOU', f'SLA config removido: #{id_sla}')
-    return jsonify({'sucesso': True})
+    payload, status_http = exclusoes.processar_exclusao(
+        'sla_servico', id_sla, f'SLA config #{id_sla}', 'Configurações',
+        lambda a, d: _log('Configurações', a, d)
+    )
+    return jsonify(payload), status_http
 
 
 @config_bp.route('/api/recalcular-vencimentos', methods=['POST'])
@@ -339,9 +356,11 @@ def api_adicionar_sla_aviso():
 def api_remover_sla_aviso(id_aviso):
     if not usuario_logado() or session.get('nivel_acesso') not in ('admin', 'master'):
         return jsonify({'erro': 'Sem permissão'}), 403
-    banco.remover_sla_aviso(id_aviso)
-    _log('Configurações', 'DELETOU', f'Aviso SLA removido: #{id_aviso}')
-    return jsonify({'sucesso': True})
+    payload, status_http = exclusoes.processar_exclusao(
+        'sla_aviso', id_aviso, f'Aviso SLA #{id_aviso}', 'Configurações',
+        lambda a, d: _log('Configurações', a, d)
+    )
+    return jsonify(payload), status_http
 
 
 @config_bp.route('/api/sla-notif-pref', methods=['GET'])

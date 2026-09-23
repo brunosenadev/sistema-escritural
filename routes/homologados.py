@@ -1,6 +1,7 @@
 import os
 from flask import Blueprint, render_template, request, jsonify, session, send_file
 import banco
+import exclusoes
 from planilha import exportar_pendentes_para_excel
 from utils import usuario_logado, pode_editar, checar_tela
 
@@ -118,9 +119,11 @@ def deletar_hom_cobranca(id_registro):
     err = _sem_permissao()
     if err: return err
     empresa = banco.buscar_empresa_log('homologados_cobranca', id_registro)
-    banco.deletar_homologado_cobranca(id_registro)
-    _log('cobranca', 'DELETOU', f'Deletou Hom. Cobrança #{id_registro} — {empresa}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'hom_cobranca', id_registro, f'Hom. Cobrança #{id_registro} — {empresa}', 'Hom. Cobrança',
+        lambda a, d: _log('cobranca', a, d)
+    )
+    return jsonify(payload), status
 
 
 # ── Pagamentos ────────────────────────────────────────────
@@ -152,9 +155,11 @@ def deletar_hom_pagamentos(id_registro):
     err = _sem_permissao()
     if err: return err
     empresa = banco.buscar_empresa_log('homologados_pagamentos', id_registro)
-    banco.deletar_homologado_pagamentos(id_registro)
-    _log('pagamentos', 'DELETOU', f'Deletou Hom. Pagamentos #{id_registro} — {empresa}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'hom_pagamentos', id_registro, f'Hom. Pagamentos #{id_registro} — {empresa}', 'Hom. Pagamentos',
+        lambda a, d: _log('pagamentos', a, d)
+    )
+    return jsonify(payload), status
 
 
 # ── Extrato ───────────────────────────────────────────────
@@ -186,9 +191,11 @@ def deletar_hom_extrato(id_registro):
     err = _sem_permissao()
     if err: return err
     empresa = banco.buscar_empresa_log('homologados_extrato', id_registro)
-    banco.deletar_homologado_extrato(id_registro)
-    _log('extrato', 'DELETOU', f'Deletou Hom. Extrato Cartão #{id_registro} — {empresa}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'hom_extrato', id_registro, f'Hom. Extrato Cartão #{id_registro} — {empresa}', 'Hom. Extrato Cartão',
+        lambda a, d: _log('extrato', a, d)
+    )
+    return jsonify(payload), status
 
 
 # ── Extrato Bancário ──────────────────────────────────────
@@ -220,9 +227,11 @@ def deletar_hom_ext_bancario(id_registro):
     err = _sem_permissao()
     if err: return err
     empresa = banco.buscar_empresa_log('homologados_ext_bancario', id_registro)
-    banco.deletar_homologado_ext_bancario(id_registro)
-    _log('ext-bancario', 'DELETOU', f'Deletou Hom. Extrato Bancário #{id_registro} — {empresa}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'hom_ext_bancario', id_registro, f'Hom. Extrato Bancário #{id_registro} — {empresa}', 'Hom. Extrato Bancário',
+        lambda a, d: _log('ext-bancario', a, d)
+    )
+    return jsonify(payload), status
 
 
 # ── Exportar para Excel ────────────────────────────────────

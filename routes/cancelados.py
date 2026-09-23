@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
+import exclusoes
 from utils import usuario_logado, pode_editar, checar_tela
 
 
@@ -75,6 +76,7 @@ def deletar_cancelado(id_registro):
     err = _checar_edicao()
     if err: return err
     empresa = banco.buscar_empresa_log('cancelados', id_registro)
-    banco.deletar_cancelado(id_registro)
-    _log('DELETOU', f'Deletou cancelado #{id_registro} — {empresa}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'cancelado', id_registro, f'Cancelado #{id_registro} — {empresa}', 'Cancelados', _log
+    )
+    return jsonify(payload), status

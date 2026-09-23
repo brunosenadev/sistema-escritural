@@ -11,6 +11,7 @@ from datetime import date, datetime
 
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
+import exclusoes
 from utils import checar_login, usuario_logado, checar_admin, checar_tela, tem_acesso_tela
 
 credenciais_bp = Blueprint('credenciais', __name__)
@@ -220,9 +221,11 @@ def api_deletar(cid):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
     c = banco.buscar_credencial(cid)
-    banco.deletar_credencial(cid)
-    _log('DELETOU', f'Removeu credencial #{cid} — {c.get("nome","?") if c else "?"}')
-    return jsonify({'sucesso': True})
+    nome = c.get('nome', '?') if c else '?'
+    payload, status = exclusoes.processar_exclusao(
+        'credencial', cid, f'Credencial #{cid} — {nome}', 'Credenciais', _log
+    )
+    return jsonify(payload), status
 
 
 @credenciais_bp.route('/api/credenciais/<int:cid>/silenciar', methods=['POST'])

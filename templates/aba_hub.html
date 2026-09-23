@@ -681,6 +681,7 @@ async function removerBancoModal() {
   if (!confirm('Remover este banco? Todas as suas instruções também serão removidas.')) return;
   const d = await req(`/api/hub/bancos/${id}`, 'DELETE');
   if (d.sucesso) { fecharModal('ov-banco'); location.reload(); }
+  else if (d.pendente) toast(d.mensagem, 'info');
   else toast(d.erro || 'Erro ao remover.', 'erro');
 }
 
@@ -688,6 +689,7 @@ async function removerBanco(id, nome) {
   if (!confirm(`Remover "${nome}"? Todas as suas instruções também serão removidas.`)) return;
   const d = await req(`/api/hub/bancos/${id}`, 'DELETE');
   if (d.sucesso) location.reload();
+  else if (d.pendente) toast(d.mensagem, 'info');
   else toast(d.erro || 'Erro ao remover.', 'erro');
 }
 
@@ -766,6 +768,7 @@ async function removerInstrucao(id) {
   if (!confirm('Remover esta instrução?')) return;
   const d = await req(`/api/hub/instrucoes/${id}`, 'DELETE');
   if (d.sucesso) { const row = document.getElementById('instr-row-' + id); if (row) row.remove(); }
+  else if (d.pendente) toast(d.mensagem, 'info');
   else toast(d.erro || 'Erro ao remover.', 'erro');
 }
 
@@ -814,6 +817,7 @@ async function removerCategoria(id, nome) {
   if (!confirm(`Remover categoria "${nome}"? Todos os serviços desta categoria também serão removidos.`)) return;
   const d = await req(`/api/hub/categorias/${id}`, 'DELETE');
   if (d.sucesso) { location.reload(); }
+  else if (d.pendente) toast(d.mensagem, 'info');
   else toast(d.erro || 'Erro ao remover.', 'erro');
 }
 
@@ -874,6 +878,7 @@ async function removerServico(id, nome) {
   if (!confirm(`Remover serviço "${nome}"? Será removido de todos os bancos.`)) return;
   const d = await req(`/api/hub/servicos/${id}`, 'DELETE');
   if (d.sucesso) location.reload();
+  else if (d.pendente) toast(d.mensagem, 'info');
   else toast(d.erro || 'Erro ao remover.', 'erro');
 }
 

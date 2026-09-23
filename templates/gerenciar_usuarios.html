@@ -715,6 +715,8 @@
             if (d.sucesso) {
               mostrarToast('sucesso', 'Usuário removido.');
               setTimeout(() => location.reload(), 600);
+            } else if (d.pendente) {
+              mostrarToast('info', d.mensagem);
             } else {
               mostrarToast('erro', d.erro || 'Erro ao remover.');
             }

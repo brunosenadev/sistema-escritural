@@ -1,6 +1,7 @@
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
+import exclusoes
 from utils import checar_tela, usuario_logado
 
 email_modelos_bp = Blueprint('email_modelos', __name__)
@@ -70,9 +71,11 @@ def api_remover_email_modelo(id_modelo):
     if not _tem_acesso():
         return jsonify({'erro': 'Sem permissão'}), 403
     modelo = banco.buscar_email_modelo(id_modelo)
-    banco.remover_email_modelo(id_modelo)
-    _log('DELETOU', f'Removeu modelo de e-mail #{id_modelo} — {modelo.get("nome","") if modelo else "?"}')
-    return jsonify({'sucesso': True})
+    nome = modelo.get('nome', '') if modelo else '?'
+    payload, status = exclusoes.processar_exclusao(
+        'email_modelo', id_modelo, f'Modelo de e-mail #{id_modelo} — {nome}', 'Modelos de E-mail', _log
+    )
+    return jsonify(payload), status
 
 
 @email_modelos_bp.route('/api/email-modelos/por-servico/<path:servico>')

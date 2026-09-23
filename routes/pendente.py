@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session
 import banco
+import exclusoes
 from utils import usuario_logado, pode_editar, checar_tela
 
 pendente_bp = Blueprint('pendente', __name__)
@@ -131,9 +132,10 @@ def deletar_pendente(id_registro):
     err = _sem_permissao()
     if err: return err
     empresa = banco.buscar_empresa_log('pendentes', id_registro)
-    banco.deletar_pendente(id_registro)
-    _log('DELETOU', f'Deletou pendente #{id_registro} — {empresa}')
-    return jsonify({'sucesso': True})
+    payload, status = exclusoes.processar_exclusao(
+        'pendente', id_registro, f'Pendente #{id_registro} — {empresa}', 'Pendentes', _log
+    )
+    return jsonify(payload), status
 
 
 @pendente_bp.route('/pendente/cancelar/<int:id_registro>', methods=['POST'])

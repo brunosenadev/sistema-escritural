@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block titulo %}Solicitações de Exclusão{% endblock %}
+{% block titulo_pagina %}Solicitações de Exclusão{% endblock %}
+{% block breadcrumb %}Sistema / Solicitações de Exclusão{% endblock %}
+
+{% set aba_ativa = 'solicitacoes_exclusao' %}
+
+{% block estilos_extras %}
+<style>
+  .dc-layout { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 720px; }
+
+  .dc-card {
+    background: var(--z-surface, #fff);
+    border: 1px solid var(--z-border, #e2e8f0);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .dc-card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--z-border, #e2e8f0);
+    background: var(--z-elevated, #f8fafc);
+  }
+  .dc-card-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    background: #fef2f2; color: #dc2626;
+  }
+  .dc-card-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .dc-card-titulo { font-size: 14px; font-weight: 700; color: var(--z-text-1, #0f172a); }
+  .dc-card-sub    { font-size: 12px; color: var(--z-text-2, #64748b); margin-top: 1px; }
+
+  .dc-solicitacoes { display: flex; flex-direction: column; gap: 0; }
+  .dc-sol-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--z-border, #e2e8f0);
+    animation: dc-fade-in 0.25s ease;
+  }
+  .dc-sol-item:last-child { border-bottom: none; }
+  @keyframes dc-fade-in { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+
+  .dc-sol-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .dc-sol-meta { font-size: 11px; color: var(--z-text-2, #64748b); margin-top: 4px; }
+  .dc-sol-nome { font-size: 13px; font-weight: 700; color: var(--z-text-1, #0f172a); }
+  .dc-sol-desc {
+    margin: 10px 0;
+    background: var(--z-elevated, #f8fafc);
+    border-radius: 8px; padding: 10px 12px;
+    font-size: 12.5px; color: var(--z-text-1, #334155); line-height: 1.4;
+  }
+  .dc-sol-tela { font-size: 10.5px; color: var(--z-text-2, #94a3b8); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 4px; }
+
+  .dc-sol-acoes { display: flex; gap: 8px; margin-top: 12px; }
+  .dc-btn-aprovar, .dc-btn-negar {
+    flex: 1; padding: 8px 12px; border-radius: 8px; border: none;
+    font-size: 12px; font-weight: 600; font-family: inherit;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
+    transition: background 0.15s, opacity 0.15s;
+  }
+  .dc-btn-aprovar svg, .dc-btn-negar svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+  .dc-btn-aprovar { background: #16a34a; color: #fff; }
+  .dc-btn-aprovar:hover { background: #15803d; }
+  .dc-btn-negar   { background: #ef4444; color: #fff; }
+  .dc-btn-negar:hover   { background: #dc2626; }
+  .dc-btn-aprovar:disabled, .dc-btn-negar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .dc-vazio { padding: 36px 20px; text-align: center; color: var(--z-text-2, #94a3b8); font-size: 13px; }
+  .dc-vazio svg { width: 36px; height: 36px; stroke: var(--z-border, #cbd5e1); fill: none; stroke-width: 1.5; display: block; margin: 0 auto 10px; }
+
+  .dc-badge-pendente {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #fef9c3; color: #854d0e; border-radius: 99px;
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .dc-badge-pendente::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #ca8a04; display: inline-block; }
+  [data-tema="dark"] .dc-badge-pendente { background: rgba(202,138,4,0.15); color: #fde68a; }
+  [data-tema="dark"] .dc-sol-desc { background: rgba(255,255,255,0.04); }
+
+  @media (prefers-color-scheme: dark) {
+    .dc-badge-pendente { background: rgba(202,138,4,0.15); color: #fde68a; }
+    .dc-sol-desc { background: rgba(255,255,255,0.04); }
+  }
+</style>
+{% endblock %}
+
+{% block acoes_header %}{% endblock %}
+
+{% block conteudo %}
+<div class="dc-layout">
+  <div>
+    <div class="dc-card">
+      <div class="dc-card-header">
+        <div class="dc-card-icon">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </div>
+        <div>
+          <div class="dc-card-titulo">Solicitações de Exclusão</div>
+          <div class="dc-card-sub">Aprove ou negue os pedidos de exclusão de usuários não-master</div>
+        </div>
+        <span id="dc-badge-count" style="margin-left:auto;background:#dc2626;color:#fff;font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;display:none;"></span>
+      </div>
+      <div class="dc-solicitacoes" id="dc-lista-aprovacoes">
+        {% if pendentes %}
+          {% for sol in pendentes %}
+          <div class="dc-sol-item" id="sol-{{ sol.id }}">
+            <div class="dc-sol-header">
+              <div>
+                <div class="dc-sol-nome">{{ sol.solicitante_nome }}</div>
+                <div class="dc-sol-meta">{{ sol.criado_em }}</div>
+              </div>
+              <span class="dc-badge-pendente">Pendente</span>
+            </div>
+            <div class="dc-sol-desc">{{ sol.descricao }}</div>
+            {% if sol.tela_origem %}<div class="dc-sol-tela">Origem: {{ sol.tela_origem }}</div>{% endif %}
+            <div class="dc-sol-acoes">
+              <button class="dc-btn-aprovar" onclick="_aprovar({{ sol.id }}, this)">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Aprovar
+              </button>
+              <button class="dc-btn-negar" onclick="_negar({{ sol.id }}, this)">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Negar
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="dc-vazio" id="dc-vazio-msg">
+            <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+            Nenhuma solicitação pendente
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+  let _idsConhecidos = new Set([{% for sol in pendentes %}{{ sol.id }},{% endfor %}]);
+  _atualizarVazio();
+
+  function _aprovar(id, btn) {
+    btn.disabled = btn.nextElementSibling.disabled = true;
+    fetch(`/api/solicitacoes-exclusao/${id}/aprovar`, { method: 'POST' })
+      .then(r => r.json())
+      .then(resp => {
+        if (resp.sucesso) {
+          mostrarToast('sucesso', 'Exclusão aprovada.');
+          _removerSolicitacao(id);
+        } else {
+          mostrarToast('erro', resp.erro || 'Erro ao aprovar.');
+          btn.disabled = btn.nextElementSibling.disabled = false;
+        }
+      })
+      .catch(() => { mostrarToast('erro', 'Erro de comunicação.'); });
+  }
+
+  function _negar(id, btn) {
+    const motivo = prompt('Motivo da negação (opcional):') || '';
+    btn.disabled = btn.previousElementSibling.disabled = true;
+    fetch(`/api/solicitacoes-exclusao/${id}/negar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ motivo }),
+    })
+      .then(r => r.json())
+      .then(resp => {
+        if (resp.sucesso) {
+          mostrarToast('aviso', 'Solicitação negada.');
+          _removerSolicitacao(id);
+        } else {
+          mostrarToast('erro', resp.erro || 'Erro ao negar.');
+          btn.disabled = btn.previousElementSibling.disabled = false;
+        }
+      })
+      .catch(() => { mostrarToast('erro', 'Erro de comunicação.'); });
+  }
+
+  function _removerSolicitacao(id) {
+    const el = document.getElementById(`sol-${id}`);
+    if (!el) return;
+    el.style.transition = 'opacity 0.3s, transform 0.3s';
+    el.style.opacity    = '0';
+    el.style.transform  = 'translateX(12px)';
+    setTimeout(() => { el.remove(); _atualizarVazio(); }, 300);
+  }
+
+  function _atualizarVazio() {
+    const lista = document.getElementById('dc-lista-aprovacoes');
+    if (!lista) return;
+    const items = lista.querySelectorAll('.dc-sol-item');
+    const badge = document.getElementById('dc-badge-count');
+    if (items.length === 0) {
+      const vazio = document.getElementById('dc-vazio-msg');
+      if (!vazio) {
+        lista.insertAdjacentHTML('beforeend',
+          '<div class="dc-vazio" id="dc-vazio-msg"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>Nenhuma solicitação pendente</div>');
+      }
+      if (badge) badge.style.display = 'none';
+    } else {
+      if (badge) { badge.textContent = items.length; badge.style.display = ''; }
+    }
+  }
+
+  setInterval(function _poll() {
+    fetch('/api/solicitacoes-exclusao')
+      .then(r => r.json())
+      .then(lista => {
+        if (!Array.isArray(lista)) return;
+        const novos = lista.filter(s => !_idsConhecidos.has(s.id));
+        novos.forEach(sol => {
+          _idsConhecidos.add(sol.id);
+          const vazio = document.getElementById('dc-vazio-msg');
+          if (vazio) vazio.remove();
+          document.getElementById('dc-lista-aprovacoes').insertAdjacentHTML('afterbegin', _renderSolicitacao(sol));
+          _atualizarVazio();
+        });
+        const idsAtivos = new Set(lista.map(s => s.id));
+        _idsConhecidos.forEach(id => {
+          if (!idsAtivos.has(id)) {
+            _idsConhecidos.delete(id);
+            const el = document.getElementById(`sol-${id}`);
+            if (el) el.remove();
+          }
+        });
+        _atualizarVazio();
+      })
+      .catch(() => {});
+  }, 4000);
+
+  function _renderSolicitacao(sol) {
+    const nome   = _esc(sol.solicitante_nome || '');
+    const criado = _esc(sol.criado_em || '');
+    const desc   = _esc(sol.descricao || '');
+    const tela   = _esc(sol.tela_origem || '');
+    return `<div class="dc-sol-item" id="sol-${sol.id}">
+      <div class="dc-sol-header">
+        <div>
+          <div class="dc-sol-nome">${nome}</div>
+          <div class="dc-sol-meta">${criado}</div>
+        </div>
+        <span class="dc-badge-pendente">Pendente</span>
+      </div>
+      <div class="dc-sol-desc">${desc}</div>
+      ${tela ? `<div class="dc-sol-tela">Origem: ${tela}</div>` : ''}
+      <div class="dc-sol-acoes">
+        <button class="dc-btn-aprovar" onclick="_aprovar(${sol.id},this)">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Aprovar
+        </button>
+        <button class="dc-btn-negar" onclick="_negar(${sol.id},this)">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Negar
+        </button>
+      </div>
+    </div>`;
+  }
+
+  function _esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+{% endblock %}

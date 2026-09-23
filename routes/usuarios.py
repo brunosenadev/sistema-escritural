@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session, make_response, current_app
 import banco
+import exclusoes
 import os
 import uuid
 from utils import checar_master, checar_login, usuario_logado, criar_tokens, _preencher_sessao, tem_acesso_tela, _payload_access
@@ -56,7 +57,9 @@ def pagina_usuarios():
 
 @usuarios_bp.route('/api/usuarios', methods=['POST'])
 def api_adicionar_usuario():
-    if not _pode_gerir():
+    # Criar usuário novo é restrito ao master absoluto (bruno) — nem outro
+    # master, nem admin com tela 'usuarios', podem incluir usuário.
+    if not (session.get('nivel_acesso') == 'master' and session.get('usuario') == 'bruno'):
         return jsonify({'erro': 'Sem permissão'}), 403
     d  = request.get_json()
     # Admins (não-master) não podem criar usuários master
@@ -157,10 +160,16 @@ def api_remover_usuario(id_usuario):
     alvo = banco.buscar_usuario_por_id(id_usuario)
     if alvo and alvo.get('nivel') == 'master':
         return jsonify({'erro': 'Usuário master não pode ser removido.'}), 403
-    ok = banco.remover_usuario(id_usuario)
-    if ok:
-        _log('DELETOU', f'Removeu usuário #{id_usuario} — {alvo.get("nome","") if alvo else "?"}')
-    return jsonify({'sucesso': True}) if ok else (jsonify({'erro': 'Não é possível remover o único administrador.'}), 400)
+    nome_alvo = alvo.get('nome', '') if alvo else '?'
+    if exclusoes.eh_master():
+        ok = banco.remover_usuario(id_usuario)
+        if ok:
+            _log('DELETOU', f'Removeu usuário #{id_usuario} — {nome_alvo}')
+        return jsonify({'sucesso': True}) if ok else (jsonify({'erro': 'Não é possível remover o único administrador.'}), 400)
+    payload, status = exclusoes.processar_exclusao(
+        'usuario', id_usuario, f'Usuário #{id_usuario} — {nome_alvo}', 'Usuários', _log
+    )
+    return jsonify(payload), status
 
 
 @usuarios_bp.route('/api/upload-assinatura', methods=['POST'])

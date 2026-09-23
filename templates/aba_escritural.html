@@ -1097,7 +1097,8 @@
             mostrarToast('sucesso', 'Registro excluído.');
             const tr = document.querySelector(`tr[data-id="${id}"]`);
             if (tr) { tr.style.transition = 'opacity 0.3s'; tr.style.opacity = '0'; setTimeout(() => { tr.remove(); filtrarTabelaEs(); }, 300); }
-          } else { mostrarToast('erro', resp.erro || 'Erro ao excluir.'); }
+          } else if (resp.pendente) { mostrarToast('info', resp.mensagem); }
+          else { mostrarToast('erro', resp.erro || 'Erro ao excluir.'); }
         });
       }
     });

@@ -217,6 +217,7 @@
         fetch(`/api/ajuda/collections/${_COL_ID}`, { method: 'DELETE' })
           .then(r => r.json()).then(d => {
             if (d.sucesso) { mostrarToast('sucesso', 'Collection removida.'); setTimeout(() => location.href = '/ajuda?aba=collections', 500); }
+            else if (d.pendente) mostrarToast('info', d.mensagem);
             else mostrarToast('erro', d.erro || 'Erro.');
           });
       }
