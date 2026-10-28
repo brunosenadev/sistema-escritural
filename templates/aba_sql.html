@@ -87,14 +87,6 @@
     min-width: 0;
   }
 
-  /* ── Dark mode sidebar ──────────── */
-  [data-tema="dark"] .sql-sidebar { background: var(--z-surface) !important; border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] .sql-sidebar-header { background: var(--z-elevated) !important; border-color: var(--z-border-s) !important; color: var(--z-text-2) !important; }
-  [data-tema="dark"] .tabela-item-header { color: var(--z-text-1) !important; }
-  [data-tema="dark"] .tabela-item-header:hover { background: var(--z-elevated) !important; }
-  [data-tema="dark"] .col-item { color: var(--z-text-2) !important; }
-  [data-tema="dark"] .col-item .col-tipo { color: var(--z-text-3) !important; }
-
   .sql-editor-card {
     background: #fff;
     border: 1px solid #e2e8f0;
@@ -156,8 +148,6 @@
   .btn-limpar:hover { background: #fef2f2; }
   .btn-exportar { background: #fff; color: #16a34a; border-color: #86efac; }
   .btn-exportar:hover { background: #f0fdf4; border-color: #4ade80; }
-  [data-tema="dark"] .btn-exportar { background: var(--z-elevated) !important; border-color: #166534 !important; color: #86efac !important; }
-  [data-tema="dark"] .btn-exportar:hover { background: rgba(22,163,74,0.12) !important; }
 
   .kbd-hint {
     font-size: 10px;
@@ -311,23 +301,6 @@
   }
   .placeholder-sql svg { width: 32px; height: 32px; stroke: #cbd5e1; fill: none; stroke-width: 1.5; margin: 0 auto 10px; display: block; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* ── Dark mode ─────────────────────────── */
-  [data-tema="dark"] .sql-editor-card,
-  [data-tema="dark"] .resultado-bloco { background: var(--z-surface) !important; border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] .sql-toolbar,
-  [data-tema="dark"] .resultado-header { background: var(--z-elevated) !important; border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] #sql-input { background: var(--z-surface) !important; color: var(--z-text-1) !important; }
-  [data-tema="dark"] .sql-toolbar-title { color: var(--z-text-1) !important; }
-  [data-tema="dark"] .btn-formatar { background: var(--z-elevated) !important; color: var(--z-text-2) !important; border-color: var(--z-border) !important; }
-  [data-tema="dark"] .btn-formatar:hover { background: var(--z-border-s) !important; }
-  [data-tema="dark"] .btn-limpar { background: var(--z-elevated) !important; border-color: #7f1d1d !important; }
-  [data-tema="dark"] .tabela-sql thead th { background: var(--z-elevated) !important; color: var(--z-text-2) !important; border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] .tabela-sql tbody td { color: var(--z-text-1) !important; border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] .tabela-sql tbody tr:hover td { background: var(--z-elevated) !important; }
-  [data-tema="dark"] .resultado-sql-preview { color: var(--z-text-3) !important; }
-  [data-tema="dark"] .kbd-hint { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-3) !important; }
-  [data-tema="dark"] .dml-msg { color: #86efac !important; }
-  [data-tema="dark"] .placeholder-sql { color: var(--z-text-3) !important; }
 </style>
 {% endblock %}
 
@@ -423,6 +396,7 @@ function executarSQL() {
         </div>
         <div class="erro-msg">${escHtml(data.erro)}</div>
       </div>`;
+      Fx.tremer(area.firstElementChild);
       return;
     }
     if (!data.resultados || !data.resultados.length) {
@@ -451,6 +425,7 @@ function executarSQL() {
           ).join('') + '</tr>'
         ).join('') + '</tbody>';
         bloco.innerHTML = header + `<div class="resultado-wrap"><table class="tabela-sql">${thead}${tbody}</table></div>`;
+        Fx.linhasEntrando(bloco.querySelector('tbody'));
       } else {
         const header = `<div class="resultado-header">
           <span class="resultado-badge badge-dml">DML</span>

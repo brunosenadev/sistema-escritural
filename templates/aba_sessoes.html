@@ -80,15 +80,6 @@
 
   .linha-vazia td { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; }
 
-  /* Dark mode */
-  [data-tema="dark"] .sessoes-card { background: var(--z-surface) !important; border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] .sessoes-toolbar { background: var(--z-elevated) !important; border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] .sessoes-titulo { color: var(--z-text-1) !important; }
-  [data-tema="dark"] .btn-refresh { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-2) !important; }
-  [data-tema="dark"] .tabela-sessoes thead th { background: var(--z-elevated) !important; color: var(--z-text-2) !important; border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] .tabela-sessoes tbody td { color: var(--z-text-1) !important; border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] .tabela-sessoes tbody tr:hover td { background: var(--z-elevated) !important; }
-  [data-tema="dark"] .tabela-sessoes tbody tr.minha-sessao td { background: rgba(22,163,74,0.08) !important; }
 </style>
 {% endblock %}
 
@@ -142,6 +133,7 @@ function carregar() {
         tbody.innerHTML = '<tr class="linha-vazia"><td colspan="6">Nenhuma sessão ativa.</td></tr>';
         return;
       }
+      setTimeout(() => Fx.linhasEntrando(tbody));
       tbody.innerHTML = lista.map(s => `
         <tr class="${s.sou_eu ? 'minha-sessao' : ''}">
           <td class="td-nome">
@@ -174,7 +166,7 @@ function derrubar(id, btn) {
         .then(r => r.json())
         .then(d => {
           if (d.sucesso) {
-            carregar();
+            Fx.removerLinha(btn.closest('tr'), carregar);
           } else {
             mostrarToast('erro', d.erro || 'Erro ao encerrar sessão.');
             btn.disabled = false;

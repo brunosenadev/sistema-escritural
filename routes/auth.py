@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, make_response
 import banco
 import sisplan_auth
-from utils import usuario_logado, criar_tokens, tem_acesso_tela, _payload_access
+from utils import usuario_logado, criar_tokens, tem_acesso_tela
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -160,24 +160,6 @@ def trocar_senha():
             _set_tokens(resp, u)
             return resp
     return render_template('trocar_senha.html', erro=erro)
-
-
-@auth_bp.route('/api/meu-tema', methods=['PUT'])
-def api_meu_tema():
-    if not usuario_logado():
-        return jsonify({'erro': 'Não autenticado'}), 401
-    tema = (request.get_json() or {}).get('tema', 'light')
-    if tema not in ('light', 'dark'):
-        return jsonify({'erro': 'Tema inválido'}), 400
-    id_usuario = session.get('id_usuario') or banco.buscar_id_usuario(session.get('usuario', ''))
-    banco.atualizar_tema(id_usuario, tema)
-    session['tema'] = tema
-    u = banco.buscar_usuario_por_id(id_usuario)
-    resp = make_response(jsonify({'sucesso': True}))
-    jti_atual = (_payload_access() or {}).get('jti')
-    access, *_ = criar_tokens(u, jti=jti_atual)
-    resp.set_cookie('access_token', access, max_age=60*60, **_COOKIE_OPTS)
-    return resp
 
 
 @auth_bp.route('/api/minha-senha', methods=['PUT'])

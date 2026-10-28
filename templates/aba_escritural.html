@@ -192,7 +192,6 @@
   .es-preview-label { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; }
   .es-preview-valor { font-size: 13.5px; color: #1e293b; white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
 
-  /* ── Chat de e-mail ── */
   /* Layout do modal de chat: flex-column, sem overflow externo */
   #overlay-chat-email .card-modal { display: flex; flex-direction: column; overflow: hidden; max-height: 90vh; }
   #overlay-chat-email .modal-header { flex-shrink: 0; }
@@ -223,39 +222,6 @@
   .chat-resposta-area { border-top: 1px solid #f1f5f9; padding-top: 14px; }
   .chat-resposta-area textarea { resize: vertical; min-height: 72px; }
 
-  [data-tema="dark"] .chat-iframe-wrap { border-color: var(--z-border); background: #fff; }
-
-  /* ── Dark mode ── */
-  [data-tema="dark"] .card-tabela     { background: var(--z-surface); border-color: var(--z-border-s); }
-  [data-tema="dark"] .card-resumo     { background: var(--z-surface); border-color: var(--z-border-s); }
-  [data-tema="dark"] .card-resumo-header { background: var(--z-elevated); border-color: var(--z-border-s); }
-  [data-tema="dark"] .item-resumo:hover { background: var(--z-elevated); }
-  [data-tema="dark"] .item-resumo-nome { color: var(--z-text-2); }
-  [data-tema="dark"] .tabela-es th   { background: var(--z-elevated); border-color: var(--z-border-s); color: var(--z-text-3); }
-  [data-tema="dark"] .tabela-es td   { border-color: var(--z-border-s); color: var(--z-text-2); }
-  [data-tema="dark"] .tabela-es tbody tr:hover td { background: var(--z-elevated); }
-  [data-tema="dark"] .celula-empresa  { color: var(--z-text-1); }
-  [data-tema="dark"] .barra-ferramentas { border-color: var(--z-border-s); }
-  [data-tema="dark"] .campo-busca    { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .select-filtro  { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .rodape-tabela  { border-color: var(--z-border-s); color: var(--z-text-3); }
-  [data-tema="dark"] .card-modal     { background: var(--z-surface); }
-  [data-tema="dark"] .modal-titulo   { color: var(--z-text-1); }
-  [data-tema="dark"] .secao-form-titulo { color: var(--z-accent-t); border-color: var(--z-border-s); }
-  [data-tema="dark"] .grupo-form label { color: var(--z-text-3); }
-  [data-tema="dark"] .input-form, [data-tema="dark"] .select-form { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .botao-cancelar { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .rodape-modal   { border-color: var(--z-border-s); }
-  [data-tema="dark"] .es-id-btn      { background: var(--z-elevated); border-color: var(--z-border); }
-  [data-tema="dark"] .es-dropdown-menu { background: var(--z-surface); border-color: var(--z-border); }
-  [data-tema="dark"] .es-dropdown-menu button { color: var(--z-text-1); }
-  [data-tema="dark"] .es-dropdown-menu button:hover { background: var(--z-elevated); }
-  [data-tema="dark"] .es-preview-linha { border-color: var(--z-border-s); }
-  [data-tema="dark"] .es-preview-label { color: var(--z-text-3); }
-  [data-tema="dark"] .es-preview-valor { color: var(--z-text-1); }
-  [data-tema="dark"] .chat-balao.enviado { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.2); color: #93c5fd; }
-  [data-tema="dark"] .chat-balao.recebido { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .chat-resposta-area { border-color: var(--z-border-s); }
 </style>
 {% endblock %}
 
@@ -838,7 +804,7 @@
   const LINK_FORMULARIO_PUBLICO = {{ link_publico | tojson }};
   function copiarLinkFormulario() {
     navigator.clipboard.writeText(LINK_FORMULARIO_PUBLICO)
-      .then(() => mostrarToast('sucesso', 'Link copiado!'))
+      .then(() => { mostrarToast('sucesso', 'Link copiado!'); Fx.confirmar(document.querySelector('[onclick="copiarLinkFormulario()"]')); })
       .catch(() => window.prompt('Copie o link manualmente:', LINK_FORMULARIO_PUBLICO));
   }
 

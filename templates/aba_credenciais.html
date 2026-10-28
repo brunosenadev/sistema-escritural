@@ -63,7 +63,11 @@
     font-family: inherit;
     transition: all 0.12s;
   }
-  .btn-filtro.ativo, .btn-filtro:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .btn-filtro:hover { background: #eef2ff; border-color: #c7d2fe; }
+  /* pílula azul desliza até o filtro ativo (Fx.abas) */
+  .btn-filtro { position: relative; z-index: 1; }
+  .btn-filtro.ativo { background: transparent; color: #fff; border-color: transparent; }
+  .cred-filtro-indicador { background: #2563eb; border-radius: 99px; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
 
   /* ── Tabela ── */
   .cred-tabela-wrap {
@@ -216,39 +220,9 @@
     margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;
   }
 
-  /* Dark mode */
-  [data-tema="dark"] .cred-stat { background: var(--z-surface); border-color: var(--z-border); }
-  [data-tema="dark"] .cred-stat-val { color: var(--z-text-1); }
-  [data-tema="dark"] .cred-stat-label { color: var(--z-text-2); }
-  [data-tema="dark"] .btn-filtro { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .btn-filtro.ativo, [data-tema="dark"] .btn-filtro:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
-  [data-tema="dark"] .cred-tabela-wrap { background: var(--z-surface); border-color: var(--z-border); }
-  [data-tema="dark"] .cred-tabela th { background: var(--z-elevated); border-bottom-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .cred-tabela td { border-bottom-color: var(--z-border-s); color: var(--z-text-1); }
-  [data-tema="dark"] .cred-tabela tr:hover td { background: var(--z-elevated); }
-  [data-tema="dark"] .btn-cred-acao { background: transparent; color: var(--z-text-2); }
-  [data-tema="dark"] .btn-cred-acao:hover { background: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .cred-tabela tr:hover .btn-cred-acao { background: var(--z-border-s); }
-  [data-tema="dark"] .cred-vazio { color: var(--z-text-3); }
-  [data-tema="dark"] .cred-vazio svg { stroke: var(--z-text-3); }
-
   /* células da tabela */
   .cred-cel-principal { font-weight: 600; color: #0f172a; }
   .cred-cel-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
-  [data-tema="dark"] .cred-cel-principal { color: var(--z-text-1); }
-  [data-tema="dark"] .cred-cel-sub { color: var(--z-text-3); }
-  [data-tema="dark"] .cred-tipo-check { border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .cred-tipo-check.checked { border-color: #3b82f6; background: rgba(59,130,246,0.15); color: #93c5fd; }
-  /* modal dark */
-  [data-tema="dark"] .modal-cred-box { background: var(--z-surface); }
-  [data-tema="dark"] .modal-cred-titulo { color: var(--z-text-1); }
-  [data-tema="dark"] .modal-cred-titulo button:hover { background: var(--z-border-s); color: var(--z-text-2); }
-  [data-tema="dark"] .modal-cred-rodape { border-top-color: var(--z-border-s); }
-  [data-tema="dark"] .grupo-modal label { color: var(--z-text-3); }
-  [data-tema="dark"] .input-modal { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .input-modal:focus { border-color: #3b82f6; background: var(--z-surface); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
-  [data-tema="dark"] .btn-cancelar-modal { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .btn-cancelar-modal:hover { background: var(--z-border-s); }
 
   /* chips de fase do simulador */
   .sim-fase {
@@ -259,10 +233,6 @@
   .sim-fase-err { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
   .sim-fase.selecionado { background: #f59e0b; color: #fff; border-color: #f59e0b; }
   .sim-fase-err.selecionado { background: #dc2626; color: #fff; border-color: #dc2626; }
-  [data-tema="dark"] .sim-fase { background: rgba(245,158,11,.12); border-color: #d97706; color: #fbbf24; }
-  [data-tema="dark"] .sim-fase-err { background: rgba(220,38,38,.12); border-color: #dc2626; color: #f87171; }
-  [data-tema="dark"] .sim-fase.selecionado { background: #f59e0b; color: #fff; }
-  [data-tema="dark"] .sim-fase-err.selecionado { background: #dc2626; color: #fff; }
 </style>
 {% endblock %}
 
@@ -275,20 +245,20 @@
   {% set n_alerta  = credenciais | selectattr('dias', 'ge', 0) | selectattr('dias', 'lt', 30) | list | length %}
   {% set n_vencido = credenciais | selectattr('dias', 'lt', 0) | list | length %}
   {% set n_silenc  = credenciais | selectattr('silenciado', 'equalto', 1) | list | length %}
-  <div class="cred-stats">
-    <div class="cred-stat ok">
+  <div class="cred-stats" data-fx-cascata>
+    <div class="cred-stat ok fx-luz">
       <span class="cred-stat-val">{{ n_ok }}</span>
       <span class="cred-stat-label">Em dia (≥ 30 dias)</span>
     </div>
-    <div class="cred-stat alerta">
+    <div class="cred-stat alerta fx-luz">
       <span class="cred-stat-val">{{ n_alerta }}</span>
       <span class="cred-stat-label">Atenção (< 30 dias)</span>
     </div>
-    <div class="cred-stat critico">
+    <div class="cred-stat critico fx-luz">
       <span class="cred-stat-val">{{ n_vencido }}</span>
       <span class="cred-stat-label">Vencidas</span>
     </div>
-    <div class="cred-stat silenc">
+    <div class="cred-stat silenc fx-luz">
       <span class="cred-stat-val">{{ n_silenc }}</span>
       <span class="cred-stat-label">Silenciadas</span>
     </div>
@@ -500,12 +470,17 @@
 {% block scripts_extras %}
 <script>
   // ── Filtro ──
+  const _posicionarFiltro = Fx.abas(document.querySelector('.cred-filtros'), '.btn-filtro.ativo', 'cred-filtro-indicador');
+  document.querySelectorAll('.cred-stat-val').forEach(el => Fx.contar(el, el.textContent.trim()));
+
   function filtrar(cat, btn) {
     document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('ativo'));
     btn.classList.add('ativo');
+    if (_posicionarFiltro) _posicionarFiltro();
     document.querySelectorAll('#cred-tbody tr').forEach(tr => {
       tr.style.display = (cat === 'todos' || tr.dataset.cat === cat) ? '' : 'none';
     });
+    Fx.linhasEntrando(document.getElementById('cred-tbody'));
   }
 
   // ── Máscara CNPJ ──

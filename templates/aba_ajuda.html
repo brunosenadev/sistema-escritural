@@ -92,24 +92,6 @@
   }
   .col-banco-titulo svg { width: 15px; height: 15px; stroke: #16a34a; fill: none; stroke-width: 2; stroke-linecap: round; }
 
-  /* ── Dark mode ── */
-  [data-tema="dark"] .aj-tabs         { border-color: var(--z-border-s); }
-  [data-tema="dark"] .aj-tab-btn      { color: var(--z-text-3); }
-  [data-tema="dark"] .aj-tab-btn.ativo { color: #60a5fa; border-bottom-color: #60a5fa; }
-  [data-tema="dark"] .aj-tab-btn:hover:not(.ativo) { color: var(--z-text-1); }
-  [data-tema="dark"] .aj-card        { background: var(--z-surface); border-color: var(--z-border-s); }
-  [data-tema="dark"] .aj-card:hover  { border-color: var(--z-accent); }
-  [data-tema="dark"] .aj-card-titulo { color: var(--z-text-1); }
-  [data-tema="dark"] .aj-card-desc   { color: var(--z-text-2); }
-  [data-tema="dark"] .aj-card-rodape { color: var(--z-text-3); border-color: var(--z-border-s); }
-  [data-tema="dark"] .aj-card-icone  { background: rgba(99,102,241,0.12); }
-  [data-tema="dark"] .aj-card-icone svg { stroke: var(--z-accent-t); }
-  [data-tema="dark"] .aj-card-icone.col { background: rgba(22,163,74,0.12); }
-  [data-tema="dark"] .aj-card-icone.col svg { stroke: #4ade80; }
-  [data-tema="dark"] .aj-card-banco  { color: #60a5fa; }
-  [data-tema="dark"] .aj-topico-titulo { color: var(--z-text-1); }
-  [data-tema="dark"] .col-banco-titulo { color: var(--z-text-1); }
-  [data-tema="dark"] .aj-empty       { background: var(--z-surface); border-color: var(--z-border-s); color: var(--z-text-3); }
 </style>
 {% endblock %}
 
@@ -146,9 +128,9 @@
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         {{ topico.nome }}
       </div>
-      <div class="aj-grid">
+      <div class="aj-grid" data-fx-cascata>
         {% for post in topico.posts %}
-        <a class="aj-card" href="/ajuda/post/{{ post.id }}">
+        <a class="aj-card fx-luz" href="/ajuda/post/{{ post.id }}">
           <div class="aj-card-icone">
             <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           </div>
@@ -182,9 +164,9 @@
         <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
         {{ banco_nome }}
       </div>
-      <div class="aj-grid">
+      <div class="aj-grid" data-fx-cascata>
         {% for col in cols %}
-        <a class="aj-card" href="/ajuda/collections/{{ col.id }}">
+        <a class="aj-card fx-luz" href="/ajuda/collections/{{ col.id }}">
           <div class="aj-card-icone col">
             <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
           </div>
@@ -207,11 +189,15 @@
 
 {% block scripts_extras %}
 <script>
+  const _posicionarAba = Fx.abas(document.querySelector('.aj-tabs'), '.aj-tab-btn.ativo', '', true);
+
   function trocarAba(aba) {
     document.querySelectorAll('.aj-tab-btn').forEach(b => b.classList.remove('ativo'));
     document.querySelectorAll('.aj-tab-painel').forEach(p => p.classList.remove('ativo'));
     document.getElementById('tab-' + aba).classList.add('ativo');
     document.getElementById('painel-' + aba).classList.add('ativo');
+    if (_posicionarAba) _posicionarAba();
+    Fx.retocar(document.getElementById('painel-' + aba), 'fx-painel-entra');
   }
 
   // Abre na aba certa se vier com ?aba=collections

@@ -150,7 +150,6 @@
     white-space: nowrap;
   }
   .opcao-inverter-filtro input { accent-color: #ef4444; cursor: pointer; }
-  [data-tema="dark"] .opcao-inverter-filtro { color: var(--z-text-2) !important; }
 
   .botao-primario {
     padding: 8px 16px;
@@ -210,20 +209,6 @@
   stroke-linejoin: round;
 }
 
-[data-tema="dark"] .botao-acao.duplicar { color: #a78bfa !important; }
-[data-tema="dark"] .botao-acao.duplicar:hover { background: rgba(139,92,246,0.12) !important; }
-
-[data-tema="dark"] .botao-secundario {
-  color: var(--z-text-2) !important;
-  border-color: var(--z-border) !important;
-  background: var(--z-elevated) !important;
-}
-[data-tema="dark"] .botao-secundario:hover {
-  color: var(--z-text-1) !important;
-  border-color: var(--z-text-2) !important;
-  background: var(--z-border-s) !important;
-}
-
   /* ── Card envolvendo a tabela ────────────────── */
   .card-tabela {
     background: #fff;
@@ -272,12 +257,6 @@
   .tabela-pendente tbody tr {
     border-bottom: 1px solid #f1f5f9;
     transition: background 0.15s;
-    animation: linha-entrar 0.25s ease forwards;
-  }
-
-  @keyframes linha-entrar {
-    from { opacity: 0; transform: translateX(-6px); }
-    to   { opacity: 1; transform: translateX(0);    }
   }
 
   .tabela-pendente tbody tr:hover {
@@ -612,17 +591,6 @@
   }
 
   .botao-salvar:hover { background: #1d4ed8; }
-
-  /* ── Dark mode modal ── */
-  [data-tema="dark"] .overlay-modal { background: rgba(0,0,0,.65); }
-  [data-tema="dark"] .modal { background: var(--z-surface); }
-  [data-tema="dark"] .modal-titulo { color: var(--z-text-1); }
-  [data-tema="dark"] .botao-fechar-modal:hover { background: var(--z-border-s); color: var(--z-text-2); }
-  [data-tema="dark"] .grupo-form label { color: var(--z-text-3); }
-  [data-tema="dark"] .input-form, [data-tema="dark"] .select-form { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .input-form:focus, [data-tema="dark"] .select-form:focus { border-color: #3b82f6; background: var(--z-surface); }
-  [data-tema="dark"] .botao-cancelar { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .botao-cancelar:hover { background: var(--z-border-s); }
 
   /* ── Responsivo básico ────────────────────────── */
   @media (max-width: 900px) {
@@ -1050,7 +1018,7 @@
 
   // ─── Reload parcial do tbody ─────────────────────────────────
   function recarregarTabela() {
-    fetch(window.location.href)
+    return fetch(window.location.href)
       .then(r => r.text())
       .then(html => {
         const doc  = new DOMParser().parseFromString(html, 'text/html');
@@ -1203,7 +1171,7 @@
     const _tec = document.getElementById('campo-tecnico').value;
     if (!_tec || !_tec.trim()) {
       mostrarToast('erro', 'Selecione um técnico antes de salvar.');
-      document.getElementById('campo-tecnico').focus();
+      Fx.marcarErro(document.getElementById('campo-tecnico'));
       return;
     }
 
@@ -1343,13 +1311,7 @@
           .then(d => {
             if (d.sucesso) {
               mostrarToast('sucesso', 'Registro movido para Cancelados.');
-              const tr = document.querySelector(`tr[data-id="${id}"]`);
-              if (tr) {
-                tr.style.transition = 'opacity 0.3s';
-                tr.style.opacity = '0';
-                setTimeout(() => tr.remove(), 300);
-              }
-              atualizarContadorLinhas();
+              Fx.removerLinha(document.querySelector(`tr[data-id="${id}"]`), atualizarContadorLinhas);
             } else {
               mostrarToast('erro', d.erro || 'Erro ao cancelar registro.');
             }
@@ -1379,13 +1341,7 @@
           .then(d => {
             if (d.sucesso) {
               mostrarToast('sucesso', `Registro movido para ${d.nome_aba}!`);
-              const lin = document.querySelector(`tr[data-id="${id}"]`);
-              if (lin) {
-                lin.style.transition = 'opacity 0.3s';
-                lin.style.opacity = '0';
-                setTimeout(() => lin.remove(), 300);
-              }
-              atualizarContadorLinhas();
+              Fx.removerLinha(document.querySelector(`tr[data-id="${id}"]`), atualizarContadorLinhas);
             } else {
               mostrarToast('erro', d.erro || 'Erro ao homologar.');
             }
@@ -1413,7 +1369,7 @@
     .then(d => {
       if (d.sucesso) {
         mostrarToast('sucesso', 'Status atualizado!');
-        recarregarTabela();
+        recarregarTabela().then(() => Fx.piscarLinha(document.querySelector(`#corpo-tabela tr[data-id="${id}"]`)));
       } else {
         mostrarToast('erro', d.erro || 'Erro ao atualizar status.');
       }
@@ -1645,9 +1601,7 @@
         .then(resp => {
           if (resp.sucesso) {
             mostrarToast('sucesso', 'Registro deletado.');
-            const linha = document.querySelector(`tr[data-id="${idRegistro}"]`);
-            if (linha) linha.remove();
-            atualizarContadorLinhas();
+            Fx.removerLinha(document.querySelector(`tr[data-id="${idRegistro}"]`), atualizarContadorLinhas);
           } else if (resp.pendente) {
             mostrarToast('info', resp.mensagem);
           } else {
@@ -1722,7 +1676,8 @@
             else if (diff < 0) msg = 'Registros foram removidos ou movidos';
             else msg = 'Registros foram atualizados';
             document.getElementById('banner-texto').textContent = msg;
-            document.getElementById('banner-atualizacao').style.display = 'flex';
+            const banner = document.getElementById('banner-atualizacao');
+            if (banner.style.display !== 'flex') { banner.style.display = 'flex'; Fx.surgir(banner); }
             _bannerVisto = true;
           }
         })

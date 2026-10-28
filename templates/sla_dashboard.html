@@ -208,30 +208,6 @@
 .btn-ghost   { background:transparent; border:1.5px solid var(--border-color,#ccc); color:inherit; } .btn-ghost:hover{ border-color:#6366f1; color:#6366f1; }
 .btn-sm { padding:.26rem .65rem; font-size:.74rem; }
 
-/* ── Dark mode ── */
-@media(prefers-color-scheme:dark){
-  .sla-alert-bar.critico  { background:#3b0a0a; color:#fca5a5; border-color:#7f1d1d; }
-  .sla-alert-bar.atrasado { background:#341810; color:#fdba74; border-color:#7c2d12; }
-  .chart-card,.health-panel,.sla-table-card,.modal-box { background:#1e2030; }
-  .rank-card,.notif-faixa-row { background:#252840; border-color:#353855; }
-  .tec-track,.srv-track,.emp-track,.taxa-bar,.health-track,.srv2-track { background:#2a2d45; }
-  .sla-table th { color:#9ca3af; }
-  .sla-table td { border-color:#2a2d45; }
-  .sla-table tr.row-crit td { background:rgba(220,38,38,.09); }
-  .sla-table tr.row-atr  td { background:rgba(234,88,12,.09); }
-  .sla-table tr.row-ven  td { background:rgba(124,58,237,.09); }
-}
-[data-tema="dark"] .sla-alert-bar.critico  { background:#3b0a0a; color:#fca5a5; border-color:#7f1d1d; }
-[data-tema="dark"] .sla-alert-bar.atrasado { background:#341810; color:#fdba74; border-color:#7c2d12; }
-[data-tema="dark"] .chart-card,[data-tema="dark"] .health-panel,[data-tema="dark"] .sla-table-card,[data-tema="dark"] .modal-box { background:#1e2030; }
-[data-tema="dark"] .rank-card,[data-tema="dark"] .notif-faixa-row { background:#252840; border-color:#353855; }
-[data-tema="dark"] .tec-track,[data-tema="dark"] .srv-track,[data-tema="dark"] .emp-track,[data-tema="dark"] .taxa-bar,[data-tema="dark"] .health-track,[data-tema="dark"] .srv2-track { background:#2a2d45; }
-[data-tema="dark"] .sla-table th { color:#9ca3af; }
-[data-tema="dark"] .sla-table td { border-color:#2a2d45; }
-[data-tema="dark"] .sla-table tr.row-crit td { background:rgba(220,38,38,.09); }
-[data-tema="dark"] .sla-table tr.row-atr  td { background:rgba(234,88,12,.09); }
-[data-tema="dark"] .sla-table tr.row-ven  td { background:rgba(124,58,237,.09); }
-[data-tema="dark"] .hist-outer { border-color:#353855; }
 </style>
 
 <div class="sla-wrap">
@@ -261,7 +237,7 @@
   </div>
 
   <!-- KPI CARDS -->
-  <div class="sla-kpis">
+  <div class="sla-kpis" data-fx-cascata>
     <div class="kpi-card kpi-critico">
       <div class="kpi-label">🔴 Crítico</div>
       <div class="kpi-val" id="kpi-critico">—</div>
@@ -620,12 +596,12 @@ function _renderTudo() {
   const extras    = _computarExtras(pendentes);
 
   /* KPIs */
-  document.getElementById('kpi-critico').textContent  = t.critico  ?? 0;
-  document.getElementById('kpi-atrasado').textContent = t.atrasado ?? 0;
-  document.getElementById('kpi-vencido').textContent  = t.vencido  ?? 0;
-  document.getElementById('kpi-atencao').textContent  = t.atencao  ?? 0;
-  document.getElementById('kpi-ok').textContent       = t.ok       ?? 0;
-  document.getElementById('kpi-total').textContent    = t.total    ?? 0;
+  _contarKpi('kpi-critico', t.critico);
+  _contarKpi('kpi-atrasado', t.atrasado);
+  _contarKpi('kpi-vencido', t.vencido);
+  _contarKpi('kpi-atencao', t.atencao);
+  _contarKpi('kpi-ok', t.ok);
+  _contarKpi('kpi-total', t.total);
   const taxa = _dados.taxa_ok ?? 0;
   document.getElementById('kpi-taxa-sub').textContent = taxa + '% no prazo';
 
@@ -937,6 +913,7 @@ function _renderTabela(pendentes, filtro) {
     return;
   }
 
+  setTimeout(() => Fx.linhasEntrando(tbody));
   tbody.innerHTML = lista.map(p => {
     const f = p.sla_faixa || 'ok';
     const rowCls = f === 'critico' ? ' class="row-crit"' : f === 'atrasado' ? ' class="row-atr"' : f === 'vencido' ? ' class="row-ven"' : '';
@@ -952,6 +929,11 @@ function _renderTabela(pendentes, filtro) {
       '<td><span class="chip '+_CHIP_CLASS[f]+'">'+_FAIXA_NOMES[f]+'</span></td>' +
     '</tr>';
   }).join('');
+}
+
+function _contarKpi(id, valor) {
+  const el = document.getElementById(id);
+  Fx.contar(el, valor ?? 0, { de: Number(el.textContent) || 0, duracao: 900 });
 }
 
 /* ════════════════ MODAL NOTIF ════════════════ */

@@ -288,7 +288,6 @@ def injetar_globais():
     return {
         'nivel_acesso':  nivel,
         'nome_usuario':  session.get('nome', ''),
-        'tema_usuario':  session.get('tema', 'light'),
         'cor_usuario':   session.get('cor', ''),
         'pode_editar':   _pe,
         'setor_usuario': session.get('setor', ''),

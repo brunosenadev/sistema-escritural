@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="pt-BR" data-tema="{{ tema_usuario }}" id="html-root">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +7,9 @@
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icon.ico') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/animacoes.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/paleta.css') }}">
+  <script src="{{ url_for('static', filename='js/animacoes.js') }}"></script>
   <style>
     /* ── Reset ─────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -384,8 +387,6 @@
       text-decoration: none; display: inline-flex; align-items: center;
     }
     .btn-header-pill:hover { color: #1e293b; background: #f1f5f9; border-color: #cbd5e1; }
-    [data-tema="dark"] .btn-header-pill { color: var(--z-text-1) !important; border-color: var(--z-border) !important; background: var(--z-elevated) !important; }
-    [data-tema="dark"] .btn-header-pill:hover { color: var(--z-text-1) !important; background: var(--z-border-s) !important; border-color: var(--z-text-2) !important; }
 
     .btn-header-action svg {
       width: 16px; height: 16px;
@@ -433,8 +434,6 @@
       stroke: currentColor; fill: none;
       stroke-width: 2; stroke-linecap: round;
     }
-    [data-tema="dark"] .btn-toggle-sidebar { color: var(--z-text-2); }
-    [data-tema="dark"] .btn-toggle-sidebar:hover { color: var(--z-text-1) !important; background: rgba(255,255,255,0.10) !important; }
 
     /* ── Topo fixo (barra de abas + header) ─────── */
     .topo-fixo {
@@ -442,65 +441,6 @@
       top: 0;
       z-index: 50;
     }
-
-    /* ── Barra de abas abertas ───────────────────── */
-    .barra-abas-nav {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px 0;
-      overflow-x: auto;
-      scrollbar-width: none;
-      background: rgba(255, 255, 255, 0.88);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .barra-abas-nav:empty { padding: 0; }
-    .barra-abas-nav::-webkit-scrollbar { display: none; }
-
-    .aba-nav-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 8px 7px 13px;
-      border-radius: 9px 9px 0 0;
-      background: #eef2fb;
-      color: #64748b;
-      font-size: 12px;
-      font-weight: 500;
-      text-decoration: none;
-      white-space: nowrap;
-      flex-shrink: 0;
-      max-width: 180px;
-      transition: background 0.15s, color 0.15s;
-    }
-    .aba-nav-item:hover { background: #e2e8f0; color: #1e293b; }
-    .aba-nav-item.ativa { background: var(--fundo-card); color: #1e293b; font-weight: 600; box-shadow: 0 -1px 0 var(--borda) inset; }
-
-    .aba-nav-titulo {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .aba-nav-fechar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      color: inherit;
-      opacity: 0.55;
-      flex-shrink: 0;
-    }
-    .aba-nav-fechar:hover { opacity: 1; background: rgba(0,0,0,0.10); }
-
-    [data-tema="dark"] .barra-abas-nav { background: var(--z-bg) !important; }
-    [data-tema="dark"] .aba-nav-item { background: var(--z-elevated); color: var(--z-text-2); }
-    [data-tema="dark"] .aba-nav-item:hover { background: var(--z-border-s); color: var(--z-text-1); }
-    [data-tema="dark"] .aba-nav-item.ativa { background: var(--z-surface); color: var(--z-text-1); box-shadow: 0 -1px 0 var(--z-border-s) inset; }
-    [data-tema="dark"] .aba-nav-fechar:hover { background: rgba(255,255,255,0.12); }
 
     /* Header da página */
     .header-pagina {
@@ -540,54 +480,7 @@
       flex: 1;
     }
 
-    /* ── Toasts de notificação ───────────────── */
-    #area-toasts {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      pointer-events: none;
-    }
-
-    .toast {
-      padding: 12px 16px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 500;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      pointer-events: all;
-      animation: toast-entrar 0.3s ease forwards;
-      max-width: 320px;
-    }
-
-    .toast.sucesso { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
-    .toast.erro    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-    .toast.info    { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-
-    .toast svg {
-      width: 15px;
-      height: 15px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 2;
-      flex-shrink: 0;
-    }
-
-    @keyframes toast-entrar {
-      from { opacity: 0; transform: translateX(20px); }
-      to   { opacity: 1; transform: translateX(0);    }
-    }
-
-    @keyframes toast-sair {
-      from { opacity: 1; transform: translateX(0);    }
-      to   { opacity: 0; transform: translateX(20px); }
-    }
+    /* Toasts: estilos em static/css/animacoes.css */
 
     /* ── Diálogo de Confirmação ──────────────── */
     @keyframes dialogo-entrar {
@@ -640,161 +533,6 @@
   {% block estilos_extras %}{% endblock %}
 
   <style>
-    /* DARK MODE — Zinc palette */
-
-    [data-tema="dark"] {
-      --z-bg:       #09090b;
-      --z-surface:  #18181b;
-      --z-elevated: #27272a;
-      --z-border:   #3f3f46;
-      --z-border-s: #27272a;
-      --z-text-1:   #f4f4f5;
-      --z-text-2:   #a1a1aa;
-      --z-text-3:   #52525b;
-      --z-accent:   #6366f1;
-      --z-accent-t: #818cf8;
-      --fundo-pagina: #09090b;
-      --fundo-card:   #18181b;
-      --texto-escuro: #f4f4f5;
-      --texto-medio:  #a1a1aa;
-      --texto-leve:   #52525b;
-      --borda:        #3f3f46;
-    }
-
-    [data-tema="dark"]                      { background: #09090b; }
-    [data-tema="dark"] body                { background: transparent; color: var(--z-text-1); }
-    [data-tema="dark"] .conteudo-principal { background: transparent; }
-    [data-tema="dark"] .header-pagina      { background: rgba(9,9,11,0.82) !important; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom-color: var(--z-border-s) !important; }
-
-    /* Sidebar semitransparente em dark mode */
-    [data-tema="dark"] .sidebar { background: transparent !important; backdrop-filter: blur(2px) !important; -webkit-backdrop-filter: blur(2px) !important; border-right: none !important; }
-    [data-tema="dark"] .area-upload    { border-bottom-color: rgba(255,255,255,0.06) !important; }
-    [data-tema="dark"] .sidebar-rodape { border-top-color:    rgba(255,255,255,0.06) !important; }
-    [data-tema="dark"] .nav-secao-titulo { color: rgba(255,255,255,0.40) !important; }
-    [data-tema="dark"] .botao-upload { background: rgba(255,255,255,0.04) !important; border-color: rgba(255,255,255,0.08) !important; color: var(--z-text-2) !important; }
-    [data-tema="dark"] .botao-upload:hover { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.14) !important; }
-    [data-tema="dark"] .nav-item       { color: rgba(255,255,255,0.70) !important; }
-    [data-tema="dark"] .nav-item.ativo { color: #ffffff !important; background: #2563eb !important; }
-    [data-tema="dark"] .nav-item:hover { color: #ffffff !important; background: rgba(255,255,255,0.09) !important; }
-    [data-tema="dark"] .botao-sair     { color: rgba(255,255,255,0.50) !important; }
-    [data-tema="dark"] .botao-sair:hover { color: #f87171 !important; background: rgba(248,113,113,0.08) !important; }
-
-    /* Header */
-    [data-tema="dark"] .header-pagina { background: var(--z-bg) !important; border-bottom: 1px solid var(--z-border-s) !important; }
-    [data-tema="dark"] .titulo-pagina { color: var(--z-text-1); }
-    [data-tema="dark"] .breadcrumb    { color: rgba(255,255,255,0.45); }
-
-    /* Tabelas (tag) */
-    [data-tema="dark"] table          { border-color: var(--z-border-s) !important; }
-    [data-tema="dark"] thead th       { background: var(--z-elevated) !important; color: var(--z-text-1) !important; border-color: var(--z-border-s) !important; letter-spacing: 0.5px; }
-    [data-tema="dark"] tbody tr       { background: var(--z-surface) !important; }
-    [data-tema="dark"] tbody tr:hover { background: var(--z-elevated) !important; }
-    [data-tema="dark"] tbody td:not(.celula-tecnico) { color: var(--z-text-1) !important; border-color: var(--z-border-s) !important; }
-    [data-tema="dark"] tbody td.celula-tecnico        { border-color: var(--z-border-s) !important; }
-
-    /* Cards e toolbars */
-    [data-tema="dark"] .card-tabela { background: var(--z-surface) !important; border-color: var(--z-border-s) !important; box-shadow: none !important; }
-    [data-tema="dark"] .barra-ferramentas { background: var(--z-surface) !important; border-bottom-color: var(--z-border-s) !important; }
-
-    /* Tabelas (classe) */
-    [data-tema="dark"] .tabela-dados th { background: var(--z-elevated) !important; color: var(--z-text-1) !important; border-bottom-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .tabela-dados td:not(.celula-tecnico) { color: var(--z-text-1) !important; border-bottom-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .tabela-dados td.celula-tecnico       { border-bottom-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .tabela-dados tr:hover td { background: var(--z-elevated) !important; }
-    [data-tema="dark"] .rodape-tabela  { color: var(--z-text-3) !important; border-top-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .celula-obs     { color: var(--z-text-3) !important; }
-    [data-tema="dark"] .linha-vazia td { color: var(--z-text-3) !important; }
-
-    /* Inputs */
-    [data-tema="dark"] input:not([type="checkbox"]):not([type="radio"]),
-    [data-tema="dark"] select:not(.select-status-inline),
-    [data-tema="dark"] textarea,
-    [data-tema="dark"] .campo-busca,
-    [data-tema="dark"] .select-filtro,
-    [data-tema="dark"] .input-busca,
-    [data-tema="dark"] .input-form,
-    [data-tema="dark"] .select-form { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-1) !important; }
-    [data-tema="dark"] input::placeholder,
-    [data-tema="dark"] .campo-busca::placeholder,
-    [data-tema="dark"] .input-busca::placeholder { color: var(--z-text-3) !important; }
-    [data-tema="dark"] select option,
-    [data-tema="dark"] .select-form option { background: var(--z-surface); color: var(--z-text-1); }
-
-    /* Status badges */
-    [data-tema="dark"] .status-aguardando-banco,
-    [data-tema="dark"] .select-status-inline.status-aguardando-banco       { background-color: rgba(99,102,241,0.25)  !important; color: #818cf8 !important; }
-    [data-tema="dark"] .status-aguardando-cliente,
-    [data-tema="dark"] .select-status-inline.status-aguardando-cliente     { background-color: rgba(234,88,12,0.25)   !important; color: #fb923c !important; }
-    [data-tema="dark"] .status-aguardando-comercial,
-    [data-tema="dark"] .select-status-inline.status-aguardando-comercial   { background-color: rgba(202,138,4,0.25)   !important; color: #fbbf24 !important; }
-    [data-tema="dark"] .status-aguardando-atualizacao,
-    [data-tema="dark"] .select-status-inline.status-aguardando-atualizacao { background-color: rgba(124,58,237,0.25)  !important; color: #c4b5fd !important; }
-    [data-tema="dark"] .status-homologado,
-    [data-tema="dark"] .select-status-inline.status-homologado             { background-color: rgba(22,163,74,0.25)   !important; color: #4ade80 !important; }
-    [data-tema="dark"] .status-falta-cadastrar,
-    [data-tema="dark"] .select-status-inline.status-falta-cadastrar        { background-color: rgba(220,38,38,0.25)   !important; color: #f87171 !important; }
-    [data-tema="dark"] .status-pendente-treinamento,
-    [data-tema="dark"] .select-status-inline.status-pendente-treinamento   { background-color: rgba(217,119,6,0.25)   !important; color: #fcd34d !important; }
-    [data-tema="dark"] .status-pendencia-em-prog,
-    [data-tema="dark"] .select-status-inline.status-pendencia-em-prog      { background-color: rgba(219,39,119,0.25)  !important; color: #f472b6 !important; }
-    [data-tema="dark"] .status-em-processo,
-    [data-tema="dark"] .select-status-inline.status-em-processo            { background-color: rgba(13,148,136,0.25)  !important; color: #2dd4bf !important; }
-    [data-tema="dark"] .status-cancelado,
-    [data-tema="dark"] .select-status-inline.status-cancelado              { background-color: rgba(185,28,28,0.30)   !important; color: #fca5a5 !important; }
-    [data-tema="dark"] .status-padrao,
-    [data-tema="dark"] .select-status-inline.status-padrao                 { background-color: rgba(63,63,70,0.50)    !important; color: #a1a1aa !important; }
-
-    /* HOMOLOGADO (select sem classe de status explicitada) */
-    [data-tema="dark"] .select-status-inline  { background-color: rgba(22,163,74,0.25) !important; color: #4ade80 !important; }
-    [data-tema="dark"] .badge-homologado      { background-color: rgba(22,163,74,0.25) !important; color: #4ade80 !important; }
-    [data-tema="dark"] .select-status-inline option { background: var(--z-surface); color: var(--z-text-1); }
-
-    /* Resumo lateral */
-    [data-tema="dark"] .card-resumo        { background: var(--z-surface) !important; border-color: var(--z-border-s) !important; box-shadow: none !important; }
-    [data-tema="dark"] .card-resumo-header { background: var(--z-elevated) !important; color: var(--z-text-1) !important; border-bottom-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .item-resumo:hover  { background: var(--z-elevated) !important; }
-    [data-tema="dark"] .item-resumo-cont   { background: var(--z-elevated) !important; color: var(--z-text-1) !important; }
-
-    /* Containers brancos */
-    [data-tema="dark"] .bloco-config,
-    [data-tema="dark"] .card-config { background: var(--z-surface) !important; border-color: var(--z-border-s) !important; }
-    [data-tema="dark"] [style*="background:#fff"],
-    [data-tema="dark"] [style*="background: #fff"],
-    [data-tema="dark"] [style*="background:white"],
-    [data-tema="dark"] [style*="background: white"],
-    [data-tema="dark"] [style*="background:#f8fafc"],
-    [data-tema="dark"] [style*="background: #f8fafc"] { background: var(--z-surface) !important; }
-
-    /* Modais */
-    [data-tema="dark"] #card-dialogo,
-    [data-tema="dark"] #overlay-minha-senha > div,
-    [data-tema="dark"] .card-modal { background: var(--z-surface) !important; border: 1px solid var(--z-border-s) !important; box-shadow: 0 24px 64px rgba(0,0,0,0.70) !important; }
-    [data-tema="dark"] #dialogo-titulo,
-    [data-tema="dark"] .modal-titulo    { color: var(--z-text-1) !important; }
-    [data-tema="dark"] #dialogo-mensagem { color: var(--z-text-2) !important; }
-    [data-tema="dark"] .modal-header    { border-bottom-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .rodape-modal    { border-top-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .grupo-form label,
-    [data-tema="dark"] #overlay-minha-senha label { color: var(--z-text-3) !important; }
-    [data-tema="dark"] #overlay-minha-senha span[style*="font-size:16px"] { color: var(--z-text-1) !important; }
-
-    /* Botoes secundarios */
-    [data-tema="dark"] .botao-cancelar,
-    [data-tema="dark"] button[style*="background:#fff"],
-    [data-tema="dark"] button[style*="background: #fff"],
-    [data-tema="dark"] button[style*="background:#f8fafc"],
-    [data-tema="dark"] button[style*="background: #f8fafc"] { background: var(--z-elevated) !important; color: var(--z-text-2) !important; border-color: var(--z-border) !important; }
-    [data-tema="dark"] .botao-acao.editar:hover  { background: rgba(99,102,241,0.12) !important; }
-    [data-tema="dark"] .botao-acao.deletar:hover { background: rgba(248,113,113,0.10) !important; }
-
-    /* Toasts */
-    [data-tema="dark"] .toast.sucesso { background: #052e16; color: #4ade80; border-color: #14532d; }
-    [data-tema="dark"] .toast.erro    { background: #450a0a; color: #f87171; border-color: #7f1d1d; }
-    [data-tema="dark"] .toast.info    { background: #1e1b4b; color: #818cf8; border-color: #312e81; }
-
-    /* Botões de ação no header em dark mode */
-    [data-tema="dark"] .btn-header-action { color: var(--z-text-1) !important; }
-    [data-tema="dark"] .btn-header-action:hover { color: var(--z-text-1) !important; background: rgba(255,255,255,0.10) !important; }
 
     /* ── Notificações ─────────────────────────── */
     .btn-sino { position: relative; }
@@ -889,93 +627,339 @@
       from { opacity:1; transform:translateX(0); }
       to   { opacity:0; transform:translateX(-18px); }
     }
-    /* Dark overrides */
-    [data-tema="dark"] .badge-sino { border-color: var(--z-surface); }
-    [data-tema="dark"] #dropdown-notif { background:var(--z-surface);border-color:var(--z-border); }
-    [data-tema="dark"] .nd-header { color:var(--z-text-1);border-bottom-color:var(--z-border-s); }
-    [data-tema="dark"] .nd-item { border-bottom-color:var(--z-border-s); }
-    [data-tema="dark"] .nd-item:hover { background:var(--z-elevated); }
-    [data-tema="dark"] .nd-item.nao-lida { background:rgba(37,99,235,0.15); }
-    [data-tema="dark"] .nd-item.nao-lida:hover { background:rgba(37,99,235,0.25); }
-    [data-tema="dark"] .nd-titulo { color:var(--z-text-1); }
-    [data-tema="dark"] .nd-msg { color:var(--z-text-2); }
-    [data-tema="dark"] .nd-msg-full { color:var(--z-text-1); }
-    [data-tema="dark"] .nd-item.expandido .nd-titulo-txt { color:var(--z-text-2); }
-    [data-tema="dark"] .nd-footer { border-top-color:var(--z-border-s); }
-    [data-tema="dark"] .nf-toast { background:var(--z-surface);border-color:var(--z-border);border-left-color:var(--z-accent); }
-    [data-tema="dark"] .nf-toast-titulo { color:var(--z-text-1); }
-    [data-tema="dark"] .nf-toast-msg { color:var(--z-text-2); }
-    [data-tema="dark"] .nf-toast-ico { background:rgba(99,102,241,0.15); }
-    [data-tema="dark"] .nf-toast-ico svg { stroke:var(--z-accent-t); }
-
-    /* ── Configuracoes: tabs ──────────────────── */
-    [data-tema="dark"] .tabs-config { border-bottom-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .tab-btn { color: var(--z-text-3) !important; }
-    [data-tema="dark"] .tab-btn:hover { color: var(--z-text-1) !important; background: rgba(255,255,255,0.04) !important; }
-    [data-tema="dark"] .tab-btn.ativo { color: var(--z-accent-t) !important; border-bottom-color: var(--z-accent) !important; }
-
-    /* ── Configuracoes: card config ───────────── */
-    [data-tema="dark"] .card-config { background: var(--z-surface) !important; border-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .card-config-header { background: var(--z-surface) !important; border-bottom-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .card-config-titulo { color: var(--z-text-1) !important; }
-    [data-tema="dark"] .card-config-body { background: var(--z-surface) !important; }
-
-    /* ── Configuracoes: tabela-config ─────────── */
-    [data-tema="dark"] .tabela-config th { background: var(--z-elevated) !important; color: var(--z-text-1) !important; border-bottom-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .tabela-config td:not(.celula-tecnico) { color: var(--z-text-1) !important; border-bottom-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .tabela-config td.celula-tecnico       { border-bottom-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .tabela-config tr:hover td { background: var(--z-elevated) !important; }
-    [data-tema="dark"] .tabela-config tr:last-child td { border-bottom: none !important; }
-
-    /* ── Configuracoes: badges ────────────────── */
-    [data-tema="dark"] .badge-admin  { background: rgba(99,102,241,0.15) !important; color: var(--z-accent-t) !important; }
-    [data-tema="dark"] .badge-normal { background: var(--z-elevated) !important; color: var(--z-text-2) !important; }
-
-    /* ── Configuracoes: botoes ação ───────────── */
-    [data-tema="dark"] .btn-editar-mini  { background: rgba(99,102,241,0.10) !important; color: var(--z-accent-t) !important; border-color: rgba(99,102,241,0.25) !important; }
-    [data-tema="dark"] .btn-editar-mini:hover  { background: rgba(99,102,241,0.20) !important; }
-    [data-tema="dark"] .btn-deletar-mini { background: rgba(248,113,113,0.10) !important; color: #f87171 !important; border-color: rgba(248,113,113,0.25) !important; }
-    [data-tema="dark"] .btn-deletar-mini:hover { background: rgba(248,113,113,0.20) !important; }
-    [data-tema="dark"] .btn-acao-mini[style*="background:#fefce8"],
-    [data-tema="dark"] .btn-acao-mini[style*="background: #fefce8"] { background: rgba(202,138,4,0.10) !important; color: #fbbf24 !important; border-color: rgba(202,138,4,0.25) !important; }
-
-    /* ── Pendente: tabela ─────────────────────── */
-    [data-tema="dark"] .tabela-pendente thead tr { background: var(--z-surface) !important; }
-    [data-tema="dark"] .tabela-pendente tbody tr { border-bottom-color: var(--z-border-s) !important; }
-    [data-tema="dark"] .tabela-pendente tbody tr:hover { background: var(--z-elevated) !important; }
-    [data-tema="dark"] .tabela-pendente td:not(.celula-tecnico) { color: var(--z-text-1) !important; }
-    [data-tema="dark"] .rodape-tabela { background: var(--z-surface) !important; }
-
-    /* ── Pendente: resumo inline highlight ────── */
-    [data-tema="dark"] .item-resumo-nome { color: inherit !important; }
 
     /* ── Sidebar: scrollbar oculta ──────────── */
     .sidebar::-webkit-scrollbar { display: none !important; }
 
-    /* ── Pills em dark mode ──────────────────── */
-    [data-tema="dark"] .pill-item { border-color: transparent !important; }
-    [data-tema="dark"] .pill-item:not(.badge-status) { background: var(--z-elevated) !important; color: var(--z-text-2) !important; }
-
-    /* ── Bordas inline light em dark mode ────── */
-    [data-tema="dark"] [style*="border-top:1px solid #f1f5f9"],
-    [data-tema="dark"] [style*="border-top: 1px solid #f1f5f9"],
-    [data-tema="dark"] [style*="border-bottom:1px solid #f1f5f9"],
-    [data-tema="dark"] [style*="border-bottom: 1px solid #f1f5f9"] { border-color: var(--z-border-s) !important; }
-    [data-tema="dark"] [style*="border:1px solid #e2e8f0"],
-    [data-tema="dark"] [style*="border: 1px solid #e2e8f0"] { border-color: var(--z-border-s) !important; }
-
-    /* ── Upload area em dark mode ────────────── */
-    [data-tema="dark"] .area-drop-upload { border-color: var(--z-border) !important; background: transparent !important; }
-    [data-tema="dark"] .area-drop-upload:hover { background: rgba(255,255,255,0.03) !important; border-color: var(--z-accent) !important; }
-    [data-tema="dark"] .area-drop-upload p { color: var(--z-text-2) !important; }
-    [data-tema="dark"] .area-drop-upload small { color: var(--z-text-3) !important; }
-
-    /* ── Select destino (config Serviços) ────── */
-    [data-tema="dark"] .select-destino { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-1) !important; }
-
     /* ── Cabeçalhos de tabela no light mode ──── */
     thead th { color: #0f172a !important; }
 
+  </style>
+
+  <style>
+    /* ══ Layout Sisplan WEB: barra superior + menu lateral ══════════════ */
+    :root {
+      --topo-altura:  46px;
+      --sidebar-larg: 260px;
+      --sidebar-mini: 4.6rem;
+      /* mesmo degradê do Sisplan WEB; "fixed" faz barra e menu formarem um fundo só */
+      --sp-fundo-menu: linear-gradient(#20273d, #511b26) fixed;
+    }
+
+    .barra-topo {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--topo-altura);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      background: var(--sp-fundo-menu);
+      color: #f6eff9;
+    }
+
+    .marca-sisplan {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      height: 38px;
+      padding: 0 6px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #7cc3ff;
+    }
+    .marca-sisplan__logo { height: 32px; width: auto; }
+    .marca-sisplan__divisor { width: 1px; height: 28px; margin: 0 2px; background: rgba(246,239,249,0.2); }
+    .marca-sisplan__nome {
+      font-size: 20.8px;
+      font-weight: 800;
+      letter-spacing: -0.52px;
+      line-height: 1;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .barra-topo__direita { margin-left: auto; display: flex; align-items: center; }
+
+    .banco-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: 12px;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      border: 1px solid rgba(246,239,249,0.14);
+      background: rgba(246,239,249,0.1);
+      color: #f6eff9;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .banco-chip__ponto { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+
+    .menu-usuario { position: relative; }
+    .menu-usuario__botao {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 38px;
+      padding: 0 6px;
+      border: none;
+      border-radius: 8px;
+      background: none;
+      color: rgba(246,239,249,0.8);
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .menu-usuario__botao:hover { background: rgba(255,255,255,0.08); }
+    .menu-usuario__avatar {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: #7cc3ff;
+      color: #511b26;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .menu-usuario__avatar--grande { width: 40px; height: 40px; font-size: 16px; }
+    .menu-usuario__nome { font-size: 14px; font-weight: 500; letter-spacing: 0.2px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .menu-usuario__seta { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+    .menu-usuario__dropdown {
+      position: absolute;
+      top: 100%; right: 0;
+      margin-top: 6px;
+      min-width: 260px;
+      padding: 6px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      animation: perfil-popup-in 0.18s cubic-bezier(.34,1.3,.64,1);
+    }
+    .menu-usuario__cabecalho { display: flex; align-items: center; gap: 12px; padding: 8px 10px; }
+    .menu-usuario__identificacao { display: flex; flex-direction: column; min-width: 0; }
+    .menu-usuario__nome-completo { font-size: 13px; font-weight: 600; color: #4a5568; }
+    .menu-usuario__codigo { font-size: 12px; color: #a0aec0; text-transform: capitalize; }
+    .menu-usuario__divisor { height: 1px; margin: 6px 0; background: #e9ecef; }
+    .menu-usuario__cor { padding: 6px 14px 8px; }
+    .menu-usuario__rotulo { font-size: 12px; color: #64748b; margin-bottom: 6px; }
+    .menu-usuario__item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      background: none;
+      color: #4a5568;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      text-align: left;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .menu-usuario__item:hover { background: #f1f5f9; color: #1e293b; }
+    .menu-usuario__item svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .menu-usuario__item--sair { color: #e53e3e; }
+    .menu-usuario__item--sair:hover { background: #fff5f5; color: #c53030; }
+
+    /* Menu lateral abaixo da barra superior */
+    .sidebar {
+      top: var(--topo-altura);
+      min-height: 0;
+      background: var(--sp-fundo-menu) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+      overflow: hidden; /* quem rola é só a lista de telas; busca e "Recolher menu" ficam fixos */
+    }
+    .sidebar-nav { padding: 8px 0; flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+    .sidebar-nav::-webkit-scrollbar { display: none; }
+    .sidebar-rodape { flex-shrink: 0; }
+
+    .nav-item {
+      margin: 1px 10px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.72) !important;
+    }
+    .nav-item svg { color: rgba(255,255,255,0.45); transition: color 0.2s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07) !important; color: #ffffff !important; }
+    .nav-item.ativo, .sidebar-mini .nav-item.ativo { background: rgba(255,255,255,0.13) !important; color: #ffffff !important; font-weight: 600; }
+    .nav-item:hover svg,
+    .nav-item.ativo svg { color: #ffffff; }
+
+    .sidebar-rodape { padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.08); }
+    .btn-recolher-menu { width: calc(100% - 20px); border: none; background: none; font-family: inherit; text-align: left; cursor: pointer; }
+    .sidebar-mini .btn-recolher-menu { width: auto; }
+    .sidebar-mini #banco-info-pendentes { display: inline !important; } /* o indicador saiu do menu, não deve sumir com ele */
+
+    /* ── Logo gira no hover (igual ao Sisplan WEB) ── */
+    .marca-sisplan__logo { transition: transform 0.7s ease-in-out; }
+    .marca-sisplan:hover .marca-sisplan__logo { transform: rotate(360deg); }
+
+    /* ── Faixa de telas abertas (padrão do Sisplan WEB) ── */
+    :root { --altura-abas: 34px; --fundo-tela: #ffffff; }
+    .topo-fixo { background: var(--sp-fundo-menu); }
+    .faixa-abas {
+      display: flex;
+      align-items: center;
+      height: var(--altura-abas);
+      padding: 0 8px 0 4px;
+    }
+    .faixa-abas .btn-toggle-sidebar,
+    .btn-faixa-abas {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 28px;
+      padding: 0;
+      border: none;
+      border-radius: 8px;
+      background: none;
+      color: rgba(246,239,249,0.75);
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+    }
+    .faixa-abas .btn-toggle-sidebar:hover,
+    .btn-faixa-abas:hover { color: #fff; background: rgba(255,255,255,0.12); }
+    .faixa-abas .btn-toggle-sidebar svg,
+    .btn-faixa-abas svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .barra-abas-nav {
+      display: flex;
+      align-items: flex-end;
+      flex: 1 1 auto;
+      min-width: 0;
+      height: var(--altura-abas);
+      padding: 0 10px;
+      gap: 2px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+    }
+    .barra-abas-nav::-webkit-scrollbar { display: none; }
+
+    .aba-nav-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      height: calc(var(--altura-abas) - 6px);
+      margin-bottom: 3px;
+      padding: 0 28px 0 10px;
+      max-width: 220px;
+      border-radius: 10px;
+      color: rgba(246,239,249,0.75);
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      text-decoration: none;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+    .aba-nav-item:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    .aba-nav-item.ativa {
+      height: var(--altura-abas);
+      margin-bottom: 0;
+      border-radius: 10px 10px 0 0;
+      background: var(--fundo-tela);
+      color: #071942;
+      font-weight: 600;
+    }
+    /* cantos curvos que fundem a aba ativa com o conteúdo */
+    .aba-nav-item.ativa::before,
+    .aba-nav-item.ativa::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      width: 10px;
+      height: 10px;
+      pointer-events: none;
+    }
+    .aba-nav-item.ativa::before { left: -10px; background: radial-gradient(circle at 0 0, transparent 9.5px, var(--fundo-tela) 10px); }
+    .aba-nav-item.ativa::after { right: -10px; background: radial-gradient(circle at 100% 0, transparent 9.5px, var(--fundo-tela) 10px); }
+    .aba-nav-icone { display: flex; flex-shrink: 0; }
+    .aba-nav-icone svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .aba-nav-titulo { overflow: hidden; text-overflow: ellipsis; }
+    .aba-nav-fechar {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      opacity: 0.6;
+      transition: all 0.15s ease;
+    }
+    .aba-nav-item:hover .aba-nav-fechar,
+    .aba-nav-item.ativa .aba-nav-fechar { opacity: 1; }
+    .aba-nav-item.ativa .aba-nav-fechar { color: #94a3b8; }
+    .aba-nav-fechar:hover { color: #ef4444 !important; background: rgba(229,62,62,0.12); }
+    .aba-nav-item.aba-nova { animation: aba-entra 0.32s var(--fx-saida, ease-out); }
+    @keyframes aba-entra { from { opacity: 0; transform: translateY(6px); } }
+
+    /* conteúdo com o canto superior esquerdo arredondado, encaixado na moldura escura */
+    .header-pagina { background: var(--fundo-tela); backdrop-filter: none; -webkit-backdrop-filter: none; border-top-left-radius: 16px; }
+
+    /* menu do botão direito nas abas */
+    .menu-contexto-abas {
+      position: fixed;
+      z-index: 1090;
+      min-width: 13rem;
+      padding: 6px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 12px 32px -8px rgba(0,0,0,0.35), 0 4px 12px -4px rgba(0,0,0,0.2);
+      animation: menu-contexto-abas-entrada 0.12s ease-out;
+      font-family: 'Inter', sans-serif;
+    }
+    .menu-contexto-abas__item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 9px 12px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #4a5568;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .menu-contexto-abas__item svg { width: 14px; height: 14px; stroke: #a0aec0; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .menu-contexto-abas__item:hover:not(:disabled),
+    .menu-contexto-abas__item:focus-visible { background: #f7fafc; color: #1e4486; outline: none; }
+    .menu-contexto-abas__item:hover:not(:disabled) svg { stroke: #1e4486; }
+    .menu-contexto-abas__item:disabled { opacity: 0.45; cursor: not-allowed; }
+    .menu-contexto-abas__separador { height: 1px; margin: 4px 0; background: #edf2f7; }
+    @keyframes menu-contexto-abas-entrada { from { opacity: 0; transform: translateY(-4px); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .marca-sisplan__logo { transition: none; }
+      .marca-sisplan:hover .marca-sisplan__logo { transform: none; }
+    }
+
+    /* Conteúdo abaixo da barra superior */
+    .conteudo-principal { padding-top: var(--topo-altura); }
+    .topo-fixo { top: var(--topo-altura); }
+    #dropdown-notif { top: calc(var(--topo-altura) + 52px); }
   </style>
 </head>
 <body>
@@ -983,28 +967,89 @@
 
   <canvas id="canvas-fundo"></canvas>
 
-  <!-- ═══ Sidebar ═══════════════════════════════ -->
-  <aside class="sidebar">
+  <!-- ═══ Barra superior (mesmo layout do Sisplan WEB) ═══ -->
+  <nav class="barra-topo" aria-label="Barra superior">
+    <a href="/home" class="marca-sisplan" aria-label="Escritural WEB - página inicial">
+      <img src="{{ url_for('static', filename='img/icon.png') }}" alt="" class="marca-sisplan__logo">
+      <span class="marca-sisplan__divisor" aria-hidden="true"></span>
+      <span class="marca-sisplan__nome">Escritural WEB</span>
+    </a>
 
-    <!-- Logo -->
-    <div class="sidebar-logo">
-      <div class="logo-linha">
-        <div class="logo-icone">
-          <img class="marca-sisplan__logo" src="{{ url_for('static', filename='icon.ico') }}" alt="Sisplan" style="width:28px;height:28px;object-fit:contain;">
-        </div>
-        <div>
-          <div class="logo-nome">Sisplan</div>
-          <div class="logo-subtitulo">Escriturais</div>
+    <div class="barra-topo__direita">
+      <!-- Indicador do banco de dados (no lugar da empresa logada do Sisplan WEB) -->
+      <div class="banco-chip" title="Banco de dados">
+        <span class="banco-chip__ponto"></span>
+        <span id="banco-info-pendentes">Banco ativo</span>
+      </div>
+
+      <div class="menu-usuario">
+        <button type="button" class="menu-usuario__botao" onclick="togglePerfilPopup(event)" aria-haspopup="true" aria-label="Menu do usuário">
+          <span class="menu-usuario__avatar" id="perfil-avatar"
+            {% if cor_usuario %}style="background:{{ cor_usuario }};"{% endif %}>{{ session.nome[0] | upper }}</span>
+          <span class="menu-usuario__nome">{{ session.nome }}</span>
+          <svg class="menu-usuario__seta" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+
+        <!-- Menu do usuário (id mantido: o JS do perfil usa #perfil-popup) -->
+        <div id="perfil-popup" class="menu-usuario__dropdown" role="menu" style="display:none;">
+          <div class="menu-usuario__cabecalho">
+            <span class="menu-usuario__avatar menu-usuario__avatar--grande"
+              {% if cor_usuario %}style="background:{{ cor_usuario }};"{% endif %}>{{ session.nome[0] | upper }}</span>
+            <div class="menu-usuario__identificacao">
+              <span class="menu-usuario__nome-completo">{{ session.nome }}</span>
+              <span class="menu-usuario__codigo">{{ session.nivel_acesso }}</span>
+            </div>
+          </div>
+
+          <div class="menu-usuario__divisor"></div>
+
+          <div class="menu-usuario__cor">
+            <div class="menu-usuario__rotulo">Cor de identificação</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <input type="color" id="perfil-cor" value="{{ cor_usuario or '#2563eb' }}"
+                style="width:34px;height:30px;border:1.5px solid #e2e8f0;border-radius:7px;padding:2px;background:#fff;cursor:pointer;flex-shrink:0;">
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#64748b;cursor:pointer;">
+                <input type="checkbox" id="perfil-sem-cor" {% if not cor_usuario %}checked{% endif %}
+                  style="accent-color:#2563eb;" onchange="_perfilToggleSemCor(this)">
+                Sem cor
+              </label>
+              <button onclick="salvarMinhaCor()" style="
+                margin-left:auto;padding:5px 12px;background:#2563eb;color:#fff;
+                border:none;border-radius:7px;font-size:12px;font-weight:600;
+                font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;
+              ">Salvar</button>
+            </div>
+          </div>
+
+          <div class="menu-usuario__divisor"></div>
+
+          <button type="button" class="menu-usuario__item" onclick="fecharPerfilPopup();abrirModalMinhaSenha();">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Alterar Senha
+          </button>
+
+          <div class="menu-usuario__divisor"></div>
+
+          <a href="/sair" class="menu-usuario__item menu-usuario__item--sair">
+            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sair
+          </a>
         </div>
       </div>
     </div>
+  </nav>
 
-    <!-- Indicador do banco de dados -->
-    <div class="banco-status-area" style="padding:6px 16px 10px;">
-      <div class="banco-status-inner" style="display:flex;align-items:center;gap:6px;">
-        <span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#22c55e;"></span>
-        <span id="banco-info-pendentes" style="font-size:11px;color:#86efac;">Banco ativo</span>
-      </div>
+  <!-- ═══ Sidebar ═══════════════════════════════ -->
+  <aside class="sidebar">
+
+    <!-- Busca de telas (paleta Ctrl+K, mesmo componente do Sisplan WEB) -->
+    <div class="busca-telas-sidebar">
+      <button type="button" id="btn-paleta-telas" class="busca-telas" aria-haspopup="dialog"
+        aria-label="Buscar telas (Ctrl K)" title="Buscar telas (Ctrl+K)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <span class="busca-telas__rotulo">Buscar telas</span>
+        <kbd class="busca-telas__tecla">Ctrl K</kbd>
+      </button>
     </div>
 
     <!-- Navegação -->
@@ -1255,70 +1300,12 @@
 
     </nav>
 
-    <!-- Rodapé: info do usuário -->
-    <div class="sidebar-rodape" style="position:relative;">
-
-      <!-- Popup de perfil -->
-      <div id="perfil-popup" style="
-        display:none; position:absolute; bottom:100%; left:0; right:0;
-        background:#0d2144; border-top:1px solid rgba(255,255,255,0.10);
-        padding:14px 16px 16px; z-index:200;
-        border-radius:10px 10px 0 0;
-        box-shadow:0 -8px 24px rgba(0,0,0,0.28);
-        animation:perfil-popup-in 0.18s cubic-bezier(.34,1.3,.64,1);
-      ">
-        <div style="font-size:10px;color:rgba(255,255,255,0.40);font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;">Meu Perfil</div>
-
-        <div style="margin-bottom:10px;">
-          <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-bottom:6px;">Cor de identificação</div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <input type="color" id="perfil-cor" value="{{ cor_usuario or '#2563eb' }}"
-              style="width:34px;height:30px;border:1.5px solid rgba(255,255,255,0.18);border-radius:7px;padding:2px;background:rgba(255,255,255,0.06);cursor:pointer;flex-shrink:0;">
-            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,0.50);cursor:pointer;">
-              <input type="checkbox" id="perfil-sem-cor" {% if not cor_usuario %}checked{% endif %}
-                style="accent-color:#2563eb;" onchange="_perfilToggleSemCor(this)">
-              Sem cor
-            </label>
-            <button onclick="salvarMinhaCor()" style="
-              margin-left:auto;padding:5px 12px;background:#2563eb;color:#fff;
-              border:none;border-radius:7px;font-size:12px;font-weight:600;
-              font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;
-            ">Salvar</button>
-          </div>
-        </div>
-
-        <div style="border-top:1px solid rgba(255,255,255,0.08);margin:10px 0;"></div>
-
-        <button onclick="fecharPerfilPopup();abrirModalMinhaSenha();" style="
-          width:100%;padding:7px 10px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.75);
-          border:1px solid rgba(255,255,255,0.10);border-radius:8px;
-          font-size:12px;font-weight:500;font-family:'Inter',sans-serif;
-          cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;
-          transition:background 0.15s;
-        " onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
-          <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0;">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          Alterar senha
-        </button>
-      </div>
-
-      <div class="info-usuario">
-        <div class="avatar-usuario" id="perfil-avatar"
-          {% if cor_usuario %}style="background:{{ cor_usuario }};cursor:pointer;"{% else %}style="cursor:pointer;"{% endif %}
-          onclick="togglePerfilPopup(event)" title="Meu perfil">
-          {{ session.nome[0] | upper }}
-        </div>
-        <div onclick="togglePerfilPopup(event)" style="cursor:pointer;flex:1;min-width:0;" title="Meu perfil">
-          <div class="nome-usuario">{{ session.nome }}</div>
-          <div class="nivel-usuario">{{ session.nivel_acesso }}</div>
-        </div>
-        <a href="/sair" class="botao-sair" title="Sair" style="margin-left:auto;">
-          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-        </a>
-      </div>
+    <!-- Rodapé: recolher menu (o usuário foi para a barra superior) -->
+    <div class="sidebar-rodape">
+      <button type="button" class="nav-item btn-recolher-menu" onclick="toggleSidebar()" title="Recolher menu">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        <span class="nav-item-texto">Recolher menu</span>
+      </button>
     </div>
 
   </aside>
@@ -1365,12 +1352,17 @@
   <main class="conteudo-principal">
 
     <div class="topo-fixo">
-      <div class="barra-abas-nav" id="barra-abas-nav"></div>
-
-      <div class="header-pagina">
+      <div class="faixa-abas">
         <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Recolher/expandir menu" onclick="toggleSidebar()">
           <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
+        <div class="barra-abas-nav" id="barra-abas-nav"></div>
+        <button class="btn-faixa-abas" id="btn-tela-cheia" title="Tela cheia" onclick="alternarTelaCheia()">
+          <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+      </div>
+
+      <div class="header-pagina">
         <div>
           <h1 class="titulo-pagina">{% block titulo_pagina %}{% endblock %}</h1>
           <div class="breadcrumb">{% block breadcrumb %}{% endblock %}</div>
@@ -1385,10 +1377,6 @@
             <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
-          </button>
-          <button class="btn-header-action" id="btn-tema" title="Alternar tema" onclick="alternarTema()">
-            <svg id="icone-tema-sol" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            <svg id="icone-tema-lua" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </button>
         </div>
       </div>
@@ -1481,23 +1469,7 @@
 
     // ─── Sistema de toasts ───────────────────────────────────
     function mostrarToast(tipo, mensagem, duracao = 3500) {
-      const area  = document.getElementById('area-toasts');
-      const toast = document.createElement('div');
-      toast.className = `toast ${tipo}`;
-
-      const icones = {
-        sucesso: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-        erro:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-        info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-      };
-
-      toast.innerHTML = `${icones[tipo] || ''} <span>${mensagem}</span>`;
-      area.appendChild(toast);
-
-      setTimeout(() => {
-        toast.style.animation = 'toast-sair 0.3s ease forwards';
-        setTimeout(() => toast.remove(), 300);
-      }, duracao);
+      window.Fx.toast(tipo, mensagem, duracao);
     }
 
     // Expor globalmente para uso nas abas
@@ -1584,13 +1556,13 @@
       e.stopPropagation();
       const p = document.getElementById('perfil-popup');
       if (p.style.display === 'none' || !p.style.display) {
-        p.style.display = 'block';
+        Fx.abrirMenu(p, p.querySelectorAll('.menu-usuario__cabecalho, .menu-usuario__cor, .menu-usuario__item'));
       } else {
-        p.style.display = 'none';
+        Fx.fecharMenu(p);
       }
     }
     function fecharPerfilPopup() {
-      document.getElementById('perfil-popup').style.display = 'none';
+      Fx.fecharMenu(document.getElementById('perfil-popup'));
     }
     function _perfilToggleSemCor(cb) {
       document.getElementById('perfil-cor').disabled = cb.checked;
@@ -1645,8 +1617,8 @@
     function salvarMinhaSenha() {
       const nova     = document.getElementById('ms-nova').value.trim();
       const confirma = document.getElementById('ms-confirma').value.trim();
-      if (nova.length < 6) { mostrarToast('erro', 'A senha deve ter pelo menos 6 caracteres.'); return; }
-      if (nova !== confirma) { mostrarToast('erro', 'As senhas não coincidem.'); return; }
+      if (nova.length < 6) { Fx.marcarErro(document.getElementById('ms-nova')); mostrarToast('erro', 'A senha deve ter pelo menos 6 caracteres.'); return; }
+      if (nova !== confirma) { Fx.marcarErro(document.getElementById('ms-confirma')); mostrarToast('erro', 'As senhas não coincidem.'); return; }
       fetch('/api/minha-senha', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1686,6 +1658,7 @@
     }, true);
 
     function _setBadge(n) {
+      if (n > _naoLidas) Fx.retocar(document.getElementById('btn-sino'), 'ia-go', 900);
       _naoLidas = n;
       var b = document.getElementById('badge-sino');
       if (b) { b.textContent = n > 99 ? '99+' : n; b.style.display = n > 0 ? '' : 'none'; }
@@ -1903,21 +1876,121 @@
       return texto || document.title || 'Página';
     }
 
-    function _renderAbas(abas) {
+    // ícone da aba = ícone da tela no menu lateral (como no Sisplan WEB)
+    function _iconeDaTela(url) {
+      var caminho = url.split('?')[0];
+      var links = document.querySelectorAll('.sidebar-nav a.nav-item');
+      for (var i = 0; i < links.length; i++) {
+        if (links[i].getAttribute('href') === caminho) {
+          var svg = links[i].querySelector('svg');
+          return svg ? svg.outerHTML : '';
+        }
+      }
+      return '';
+    }
+
+    function _renderAbas(abas, urlNova) {
       var barra = document.getElementById('barra-abas-nav');
       if (!barra) return;
       var atual = _urlAtual();
       barra.innerHTML = abas.map(function(aba) {
         var ativa = aba.url === atual;
         var urlAttr = _esc(aba.url);
-        return '<a href="' + urlAttr + '" class="aba-nav-item' + (ativa ? ' ativa' : '') + '" data-url="' + urlAttr + '" title="' + _esc(aba.titulo) + '">' +
+        var icone = _iconeDaTela(aba.url);
+        return '<a href="' + urlAttr + '" class="aba-nav-item' + (ativa ? ' ativa' : '') + (aba.url === urlNova ? ' aba-nova' : '') + '" data-url="' + urlAttr + '" title="' + _esc(aba.titulo) + '">' +
+          (icone ? '<span class="aba-nav-icone">' + icone + '</span>' : '') +
           '<span class="aba-nav-titulo">' + _esc(aba.titulo) + '</span>' +
-          '<span class="aba-nav-fechar" onclick="_fecharAbaNav(event, this)">' +
-            '<svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+          '<span class="aba-nav-fechar" onclick="_fecharAbaNav(event, this)" title="Fechar">' +
+            '<svg viewBox="0 0 24 24" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
           '</span>' +
         '</a>';
       }).join('');
+      var ativaEl = barra.querySelector('.aba-nav-item.ativa');
+      if (ativaEl) ativaEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
+
+    // fecha várias abas; se a tela atual sair, vai para a última que sobrou (ou Home)
+    function _fecharAbas(manter) {
+      var abas = _carregarAbas().filter(manter);
+      _salvarAbas(abas);
+      var atual = _urlAtual();
+      if (abas.some(function(a) { return a.url === atual; })) _renderAbas(abas);
+      else window.location.href = abas.length ? abas[abas.length - 1].url : '/home';
+    }
+
+    // ── Menu do botão direito: fechar outras / à direita / todas (padrão do Sisplan WEB) ──
+    var _menuAbas = null;
+    function _fecharMenuAbas() {
+      if (_menuAbas) { _menuAbas.remove(); _menuAbas = null; }
+    }
+    function _abrirMenuAbas(x, y, url) {
+      _fecharMenuAbas();
+      var abas = _carregarAbas();
+      var idx = abas.findIndex(function(a) { return a.url === url; });
+      var itens = [
+        ['fechar', 'Fechar', '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>', false],
+        ['outras', 'Fechar outras', '<circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/>', abas.length < 2],
+        ['direita', 'Fechar à direita', '<path d="M5 12h14M13 6l6 6-6 6"/>', idx === abas.length - 1],
+        null,
+        ['todas', 'Fechar todas', '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m15 9-6 6M9 9l6 6"/>', false]
+      ];
+      _menuAbas = document.createElement('div');
+      _menuAbas.className = 'menu-contexto-abas';
+      _menuAbas.setAttribute('role', 'menu');
+      _menuAbas.innerHTML = itens.map(function(it) {
+        if (!it) return '<div class="menu-contexto-abas__separador"></div>';
+        return '<button type="button" class="menu-contexto-abas__item" role="menuitem" data-acao="' + it[0] + '"' + (it[3] ? ' disabled' : '') + '>' +
+          '<svg viewBox="0 0 24 24">' + it[2] + '</svg>' + it[1] + '</button>';
+      }).join('');
+      document.body.appendChild(_menuAbas);
+      // não deixa o menu sair da tela
+      var r = _menuAbas.getBoundingClientRect();
+      _menuAbas.style.left = Math.min(x, window.innerWidth - r.width - 8) + 'px';
+      _menuAbas.style.top = Math.min(y, window.innerHeight - r.height - 8) + 'px';
+      _menuAbas.addEventListener('click', function(e) {
+        var botao = e.target.closest('.menu-contexto-abas__item');
+        if (!botao || botao.disabled) return;
+        var acao = botao.dataset.acao;
+        _fecharMenuAbas();
+        if (acao === 'fechar') _fecharAbas(function(a) { return a.url !== url; });
+        else if (acao === 'outras') _fecharAbas(function(a) { return a.url === url; });
+        else if (acao === 'direita') _fecharAbas(function(a, i) { return i <= idx; });
+        else if (acao === 'todas') _fecharAbas(function() { return false; });
+      });
+      var primeiro = _menuAbas.querySelector('.menu-contexto-abas__item:not(:disabled)');
+      if (primeiro) primeiro.focus();
+    }
+
+    var _barraAbas = document.getElementById('barra-abas-nav');
+    if (_barraAbas) {
+      _barraAbas.addEventListener('contextmenu', function(e) {
+        var aba = e.target.closest('.aba-nav-item');
+        if (!aba) return;
+        e.preventDefault();
+        _abrirMenuAbas(e.clientX, e.clientY, aba.dataset.url);
+      });
+      // roda do mouse rola as abas na horizontal
+      _barraAbas.addEventListener('wheel', function(e) {
+        if (!e.deltaY || _barraAbas.scrollWidth <= _barraAbas.clientWidth) return;
+        e.preventDefault();
+        _barraAbas.scrollLeft += e.deltaY;
+      }, { passive: false });
+      // botão do meio fecha a aba
+      _barraAbas.addEventListener('auxclick', function(e) {
+        var fechar = e.button === 1 && e.target.closest('.aba-nav-item');
+        if (fechar) _fecharAbaNav(e, fechar.querySelector('.aba-nav-fechar'));
+      });
+    }
+    document.addEventListener('mousedown', function(e) {
+      if (_menuAbas && !_menuAbas.contains(e.target)) _fecharMenuAbas();
+    });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') _fecharMenuAbas(); });
+    window.addEventListener('blur', _fecharMenuAbas);
+
+    window.alternarTelaCheia = function() {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+    };
 
     function _registrarAbaAtual() {
       var abas = _carregarAbas();
@@ -1934,7 +2007,7 @@
         if (abas.length > MAX_ABAS) abas.shift();
       }
       _salvarAbas(abas);
-      _renderAbas(abas);
+      _renderAbas(abas, existente ? null : atual);
     }
 
     window._fecharAbaNav = function(e, el) {
@@ -1963,6 +2036,7 @@
   })();
   </script>
 
+  <script src="{{ url_for('static', filename='js/paleta.js') }}"></script>
   {% block scripts_extras %}{% endblock %}
 
   <script>
@@ -2007,36 +2081,6 @@
   </script>
 
   <script>
-    // ─── Tema claro/escuro ───────────────────────────────────
-    (function() {
-      var tema = document.getElementById('html-root').getAttribute('data-tema') || 'light';
-      var sol  = document.getElementById('icone-tema-sol');
-      var lua  = document.getElementById('icone-tema-lua');
-      if (sol && lua) {
-        sol.style.display = tema === 'dark' ? '' : 'none';
-        lua.style.display = tema === 'dark' ? 'none' : '';
-      }
-    })();
-
-    function alternarTema() {
-      var root = document.getElementById('html-root');
-      var atual = root.getAttribute('data-tema') || 'light';
-      var novo  = atual === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-tema', novo);
-      var sol = document.getElementById('icone-tema-sol');
-      var lua = document.getElementById('icone-tema-lua');
-      if (sol && lua) {
-        sol.style.display = novo === 'dark' ? '' : 'none';
-        lua.style.display = novo === 'dark' ? 'none' : '';
-      }
-      try { localStorage.setItem('sisplan_tema', novo); } catch(e) {}
-      fetch('/api/meu-tema', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tema: novo }),
-      });
-    }
-
     // ─── Toggle sidebar (3 estados: aberta → mini → recolhida) ──
     (function() {
       try {
@@ -2143,10 +2187,6 @@
       var largura, altura, particulas;
       var posicaoMouse = { x: -999, y: -999 };
 
-      var isDark = function() {
-        return document.getElementById('html-root').getAttribute('data-tema') === 'dark';
-      };
-
       function redimensionarCanvas() {
         largura = canvas.width  = window.innerWidth;
         altura  = canvas.height = window.innerHeight;
@@ -2169,7 +2209,7 @@
 
       function animarParticulas() {
         ctx.clearRect(0, 0, largura, altura);
-        var cor = isDark() ? '148, 163, 184' : '59, 130, 246';
+        var cor = '59, 130, 246';
 
         particulas.forEach(function(p) {
           var dx = p.x - posicaoMouse.x;

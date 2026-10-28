@@ -244,42 +244,6 @@
 
   .hub-empty { text-align:center;padding:60px 20px;color:#94a3b8;font-size:.88rem; }
 
-  /* ── Dark mode ── */
-  [data-tema="dark"] .hub-card       { background:var(--z-surface);border-color:var(--z-border-s); }
-  [data-tema="dark"] .hub-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.3); }
-  [data-tema="dark"] .hub-card.selecionado { border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.2); }
-  [data-tema="dark"] .hub-card-header { border-color:var(--z-border-s); }
-  [data-tema="dark"] .hub-banco-nome  { color:var(--z-text-1); }
-  [data-tema="dark"] .hub-secao-titulo { color:var(--z-text-3); }
-  [data-tema="dark"] .hub-instrucoes-tabela th { color:var(--z-text-3);border-color:var(--z-border-s); }
-  [data-tema="dark"] .hub-instrucoes-tabela td { color:var(--z-text-2);border-color:var(--z-border-s); }
-  [data-tema="dark"] .hub-busca     { background:var(--z-elevated);border-color:var(--z-border);color:var(--z-text-1); }
-  [data-tema="dark"] .hub-busca:focus { background:var(--z-elevated);border-color:#6366f1; }
-  [data-tema="dark"] .hub-sel-info  { color:var(--z-text-3); }
-  [data-tema="dark"] .hbtn-icon:hover { background:var(--z-elevated);color:var(--z-text-2); }
-  [data-tema="dark"] .hbtn-icon.del:hover { background:rgba(220,38,38,.15);color:#f87171; }
-  [data-tema="dark"] .hbtn-cfg { background:var(--z-elevated);color:var(--z-text-2);border-color:var(--z-border); }
-  [data-tema="dark"] .hbtn-cfg:hover { background:var(--z-border); }
-  [data-tema="dark"] .mod-hub, [data-tema="dark"] .painel-cfg { background:var(--z-surface); }
-  [data-tema="dark"] .mod-hub-titulo, [data-tema="dark"] .pcfg-header h3 { color:var(--z-text-1); }
-  [data-tema="dark"] .pcfg-header, [data-tema="dark"] .pcfg-tabs { background:var(--z-surface);border-color:var(--z-border-s); }
-  [data-tema="dark"] .hub-fg label  { color:var(--z-text-2); }
-  [data-tema="dark"] .hub-fg input, [data-tema="dark"] .hub-fg select,
-  [data-tema="dark"] .instr-add-row input { background:var(--z-elevated);border-color:var(--z-border);color:var(--z-text-1); }
-  [data-tema="dark"] .mod-hub-actions, [data-tema="dark"] .mod-hub-titulo { border-color:var(--z-border-s); }
-  [data-tema="dark"] .mbtn-cancel { background:var(--z-elevated);border-color:var(--z-border);color:var(--z-text-2); }
-  [data-tema="dark"] .mbtn-del    { background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.3);color:#f87171; }
-  [data-tema="dark"] .cod-badge   { background:rgba(99,102,241,.15);color:#a5b4fc; }
-  [data-tema="dark"] .pcfg-item   { background:var(--z-elevated);border-color:var(--z-border-s); }
-  [data-tema="dark"] .pcfg-item-nome { color:var(--z-text-1); }
-  [data-tema="dark"] .pcfg-item-sub  { color:var(--z-text-3); }
-  [data-tema="dark"] .pcfg-add-form  { background:var(--z-elevated);border-color:var(--z-border); }
-  [data-tema="dark"] .pcfg-add-form h4 { color:var(--z-text-2); }
-  [data-tema="dark"] .cor-campo label { color:var(--z-text-3); }
-  [data-tema="dark"] .cor-campo input[type=color] { background:var(--z-elevated);border-color:var(--z-border); }
-  [data-tema="dark"] .serv-check-item { border-color:var(--z-border);color:var(--z-text-2); }
-  [data-tema="dark"] .pcfg-tab { color:var(--z-text-3); }
-  [data-tema="dark"] .pcfg-tab:hover:not(.ativo) { color:var(--z-text-2); }
 </style>
 {% endblock %}
 
@@ -296,9 +260,9 @@
   </div>
 
   {% if bancos %}
-  <div class="hub-grid" id="hub-grid">
+  <div class="hub-grid" id="hub-grid" data-fx-cascata>
     {% for b in bancos %}
-    <div class="hub-card" id="hcard-{{ b.id }}" data-nome="{{ b.nome | lower }}">
+    <div class="hub-card fx-luz" id="hcard-{{ b.id }}" data-nome="{{ b.nome | lower }}">
 
       <div class="hub-card-header">
         <input type="checkbox" class="hub-check" id="hchk-{{ b.id }}" onchange="onSelecionarBanco()">
@@ -773,14 +737,19 @@ async function removerInstrucao(id) {
 }
 
 /* ── Painel Configurar ── */
-function abrirPainelConfig()  { abrirModal('ov-cfg'); }
+function abrirPainelConfig()  { abrirModal('ov-cfg'); abrirPainelConfigAnimado(); }
 function fecharPainelConfig() { fecharModal('ov-cfg'); }
+
+const _posicionarAbaCfg = Fx.abas(document.querySelector('.pcfg-tabs'), '.pcfg-tab.ativo', '', true);
+function abrirPainelConfigAnimado() { if (_posicionarAbaCfg) setTimeout(() => _posicionarAbaCfg()); }
 
 function trocarTabCfg(tab, btn) {
   document.querySelectorAll('.pcfg-tab').forEach(b => b.classList.remove('ativo'));
   document.querySelectorAll('.pcfg-panel').forEach(p => p.classList.remove('ativo'));
   btn.classList.add('ativo');
   document.getElementById('pcfg-' + tab).classList.add('ativo');
+  if (_posicionarAbaCfg) _posicionarAbaCfg();
+  Fx.retocar(document.getElementById('pcfg-' + tab), 'fx-painel-entra');
 }
 
 /* ── Categorias ── */

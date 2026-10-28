@@ -673,7 +673,7 @@
     const _tec = document.getElementById('campo-tecnico').value;
     if (!_tec || !_tec.trim()) {
       mostrarToast('erro', 'Selecione um técnico antes de salvar.');
-      document.getElementById('campo-tecnico').focus();
+      Fx.marcarErro(document.getElementById('campo-tecnico'));
       return;
     }
 
@@ -726,12 +726,7 @@
         .then(resp => {
           if (resp.sucesso) {
             mostrarToast('sucesso', 'Registro deletado.');
-            const linha = document.querySelector(`tr[data-id="${idRegistro}"]`);
-            if (linha) {
-              linha.style.transition = 'opacity 0.3s';
-              linha.style.opacity = '0';
-              setTimeout(() => { linha.remove(); atualizarContadorLinhas(); }, 300);
-            }
+            Fx.removerLinha(document.querySelector(`tr[data-id="${idRegistro}"]`), atualizarContadorLinhas);
           } else if (resp.pendente) {
             mostrarToast('info', resp.mensagem);
           } else {

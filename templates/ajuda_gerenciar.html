@@ -78,25 +78,6 @@
   .modal-col-config { background: #fff; border-radius: 16px; padding: 28px; width: 100%; max-width: 600px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(10,22,40,0.25); animation: modal-entrar 0.2s ease; }
   .textarea-col-config { width: 100%; padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-family: 'Consolas','Monaco','Courier New',monospace; background: #0f172a; color: #e2e8f0; outline: none; resize: vertical; min-height: 200px; box-sizing: border-box; }
   .textarea-col-config:focus { border-color: #3b82f6; }
-
-  [data-tema="dark"] .ger-tabs { border-color: var(--z-border-s); }
-  [data-tema="dark"] .ger-tab-btn { color: var(--z-text-3); }
-  [data-tema="dark"] .ger-tab-btn.ativo { color: #60a5fa; border-bottom-color: #60a5fa; }
-  [data-tema="dark"] .modal-col-config { background: var(--z-surface); border: 1px solid var(--z-border-s); }
-  [data-tema="dark"] .textarea-col-config { border-color: var(--z-border); }
-
-  [data-tema="dark"] .card-config        { background: var(--z-surface); border-color: var(--z-border-s); }
-  [data-tema="dark"] .card-config-header { background: var(--z-surface); border-color: var(--z-border-s); }
-  [data-tema="dark"] .card-config-titulo { color: var(--z-text-1); }
-  [data-tema="dark"] .tabela-config th   { background: var(--z-elevated); color: var(--z-text-1); border-color: var(--z-border-s); }
-  [data-tema="dark"] .tabela-config td   { color: var(--z-text-1); border-color: var(--z-border-s); }
-  [data-tema="dark"] .tabela-config tr:hover td { background: var(--z-elevated); }
-  [data-tema="dark"] .btn-secundario-mini { background: var(--z-elevated); color: var(--z-text-2); border-color: var(--z-border); }
-  [data-tema="dark"] .modal-config       { background: var(--z-surface); border: 1px solid var(--z-border-s); }
-  [data-tema="dark"] .modal-titulo       { color: var(--z-text-1); }
-  [data-tema="dark"] .input-modal        { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .grupo-modal label  { color: var(--z-text-3); }
-  [data-tema="dark"] .btn-cancelar-modal { background: var(--z-elevated); color: var(--z-text-2); border-color: var(--z-border); }
 </style>
 {% endblock %}
 
@@ -312,11 +293,15 @@
     if (e.key === 'Escape') document.querySelectorAll('.overlay-modal.aberto').forEach(m => m.classList.remove('aberto'));
   });
 
+  const _posicionarAba = Fx.abas(document.querySelector('.ger-tabs'), '.ger-tab-btn.ativo', '', true);
+
   function trocarGerAba(aba) {
     document.querySelectorAll('.ger-tab-btn').forEach(b => b.classList.remove('ativo'));
     document.querySelectorAll('.ger-painel').forEach(p => p.classList.remove('ativo'));
     document.getElementById('gtab-' + aba).classList.add('ativo');
     document.getElementById('gpainel-' + aba).classList.add('ativo');
+    if (_posicionarAba) _posicionarAba();
+    Fx.retocar(document.getElementById('gpainel-' + aba), 'fx-painel-entra');
   }
   const _paramAba = new URLSearchParams(location.search).get('aba');
   if (_paramAba === 'collections') trocarGerAba('collections');

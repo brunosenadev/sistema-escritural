@@ -420,7 +420,7 @@
     const _tec = document.getElementById('campo-tecnico').value;
     if (!_tec || !_tec.trim()) {
       mostrarToast('erro', 'Selecione um técnico antes de salvar.');
-      document.getElementById('campo-tecnico').focus();
+      Fx.marcarErro(document.getElementById('campo-tecnico'));
       return;
     }
     const dados = {
@@ -502,15 +502,10 @@
   }
 
   function _fadeRemoverLinha(id) {
-    const tr = document.querySelector(`tr[data-id="${id}"]`);
-    if (!tr) return;
-    tr.style.transition = 'opacity 0.4s';
-    tr.style.opacity = '0';
-    setTimeout(() => {
-      tr.remove();
+    Fx.removerLinha(document.querySelector(`tr[data-id="${id}"]`), () => {
       const vis = document.querySelectorAll('#corpo-tabela tr[data-id]').length;
       document.getElementById('contador-linhas').textContent = `${vis} registros`;
-    }, 400);
+    });
   }
 
   function alterarStatusHom(el) {

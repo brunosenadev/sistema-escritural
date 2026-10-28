@@ -142,7 +142,8 @@
     margin-top: 5px;
     flex-shrink: 0;
   }
-  .notif-row-dot.nao-lida { background: #2563eb; }
+  .notif-row-dot.nao-lida { background: #2563eb; animation: notif-radar 1.8s ease-out infinite; }
+  @keyframes notif-radar { 0% { box-shadow: 0 0 0 0 rgba(37,99,235,0.55); } 100% { box-shadow: 0 0 0 7px rgba(37,99,235,0); } }
   .notif-row-dot.lida { background: #e2e8f0; }
 
   .notif-row-corpo { flex: 1; min-width: 0; }
@@ -231,37 +232,6 @@
   .notif-row-btn.perigo:hover { background:#fef2f2;color:#dc2626; }
   .notif-row-btn svg { width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2; }
 
-  /* Dark mode */
-  [data-tema="dark"] .notif-enviar-card,
-  [data-tema="dark"] .notif-lista-card { background: var(--z-surface); border-color: var(--z-border); }
-  [data-tema="dark"] .notif-enviar-titulo,
-  [data-tema="dark"] .notif-lista-titulo { color: var(--z-text-1); }
-  [data-tema="dark"] .notif-campo label { color: var(--z-text-2); }
-  [data-tema="dark"] .notif-campo input,
-  [data-tema="dark"] .notif-campo select,
-  [data-tema="dark"] .notif-campo textarea { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .notif-campo input:focus,
-  [data-tema="dark"] .notif-campo select:focus,
-  [data-tema="dark"] .notif-campo textarea:focus { border-color: var(--z-accent); background: var(--z-elevated); }
-  [data-tema="dark"] .notif-lista-header { border-bottom-color: var(--z-border-s); }
-  [data-tema="dark"] .btn-notif-acao { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .btn-notif-acao:hover { background: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .notif-row { border-bottom-color: var(--z-border-s); }
-  [data-tema="dark"] .notif-row:hover { background: var(--z-elevated); }
-  [data-tema="dark"] .notif-row.nao-lida { background: rgba(37,99,235,0.12); }
-  [data-tema="dark"] .notif-row.nao-lida:hover { background: rgba(37,99,235,0.22); }
-  [data-tema="dark"] .notif-row.expandida { background: var(--z-elevated) !important; }
-  [data-tema="dark"] .notif-row.nao-lida.expandida { background: rgba(37,99,235,0.22) !important; }
-  [data-tema="dark"] .notif-row-titulo { color: var(--z-text-1); }
-  [data-tema="dark"] .notif-row.lida .notif-row-titulo { color: var(--z-text-2); }
-  [data-tema="dark"] .notif-row-msg { color: var(--z-text-2); }
-  [data-tema="dark"] .notif-msg-completa { background: var(--z-border-s); color: var(--z-text-1); border-color: var(--z-accent,#3b82f6); }
-  [data-tema="dark"] .notif-row-meta { color: var(--z-text-3); }
-  [data-tema="dark"] .notif-row-dot.lida { background: var(--z-border); }
-  [data-tema="dark"] .notif-row-btn { background: var(--z-elevated); color: var(--z-text-2); }
-  [data-tema="dark"] .notif-row-btn:hover { background: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .notif-lista-empty { color: var(--z-text-3); }
-  [data-tema="dark"] .notif-lista-empty svg { stroke: var(--z-text-3); }
 </style>
 {% endblock %}
 
@@ -336,7 +306,7 @@
         <button class="btn-notif-acao perigo" onclick="_limparLidas()">Excluir lidas</button>
       </div>
     </div>
-    <div id="notif-lista-conteudo">
+    <div id="notif-lista-conteudo" data-fx-cascata>
       {% if not notificacoes %}
       <div class="notif-lista-empty">
         <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="1" y1="1" x2="23" y2="23"/></svg>

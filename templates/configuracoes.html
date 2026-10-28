@@ -484,27 +484,6 @@
   }
   .secao-email-titulo:first-child { margin-top: 0; }
 
-  /* ── Dark mode do modal de usuário ─────────── */
-  [data-tema="dark"] .modal-config       { background: var(--z-surface); }
-  [data-tema="dark"] .modal-titulo       { color: var(--z-text-1); }
-  [data-tema="dark"] .btn-fechar-modal:hover { background: var(--z-border-s); }
-  [data-tema="dark"] .grupo-modal label  { color: var(--z-text-3); }
-  [data-tema="dark"] .input-modal,
-  [data-tema="dark"] .select-modal       { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-1); }
-  [data-tema="dark"] .input-modal:focus,
-  [data-tema="dark"] .select-modal:focus { border-color: #3b82f6; background: var(--z-surface); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
-  [data-tema="dark"] .dica-campo         { color: var(--z-text-3); }
-  [data-tema="dark"] .btn-cancelar-modal { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .btn-cancelar-modal:hover { background: var(--z-border-s); }
-  [data-tema="dark"] .rodape-modal       { border-top-color: var(--z-border-s); }
-  [data-tema="dark"] .preview-cor-nome   { background: var(--z-elevated); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] input[type="color"] { background: var(--z-elevated); border-color: var(--z-border); }
-  [data-tema="dark"] .wrapper-cor label  { color: var(--z-text-3); }
-  [data-tema="dark"] .modal-tabs         { border-color: var(--z-border-s); }
-  [data-tema="dark"] .modal-tab-btn      { color: var(--z-text-3); }
-  [data-tema="dark"] .modal-tab-btn:hover { color: var(--z-text-1); }
-  [data-tema="dark"] .modal-tab-btn.ativo { color: #3b82f6; border-bottom-color: #3b82f6; }
-
   /* ── Editor de assinatura ─── */
   .assin-toolbar {
     display: flex; gap: 4px; padding: 5px 8px;
@@ -517,14 +496,6 @@
     color: #374151; transition: background 0.1s; font-family: inherit;
   }
   .assin-toolbar button:hover { background: #e2e8f0; }
-  [data-tema="dark"] .assin-toolbar { background: var(--z-elevated); border-color: var(--z-border); }
-  [data-tema="dark"] .assin-toolbar button { background: var(--z-surface); border-color: var(--z-border); color: var(--z-text-2); }
-  [data-tema="dark"] .assin-toolbar button:hover { background: var(--z-border-s); }
-  [data-tema="dark"] #eu-assinatura { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-1) !important; }
-  [data-tema="dark"] #eu-assinatura-preview { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-1) !important; }
-  [data-tema="dark"] .aviso-label { color: var(--z-text-2) !important; }
-  [data-tema="dark"] .secao-email-titulo { color: #60a5fa; border-color: var(--z-border-s); }
-  [data-tema="dark"] .hint-login         { color: var(--z-text-3); }
 
   /* ── Select de destino de homologado ────────── */
   .select-destino {
@@ -931,14 +902,6 @@
   .bm-toggle-label { font-size:13px; font-weight:500; color:#374151; line-height:1.3; }
   .bm-toggle-sub   { font-size:11px; color:#94a3b8; margin-top:1px; }
 
-  /* dark */
-  [data-tema="dark"] .bm-label     { color:#94a3b8; }
-  [data-tema="dark"] .bm-input     { background:#1e2535; border-color:#2d3748; color:#e2e8f0; }
-  [data-tema="dark"] .bm-input:focus { background:#252f45; border-color:#3b82f6; }
-  [data-tema="dark"] .bm-toggle-row { background:#1e2535; border-color:#2d3748; }
-  [data-tema="dark"] .bm-toggle-row:hover { background:#252f45; border-color:#3b4a6b; }
-  [data-tema="dark"] .bm-toggle-label { color:#e2e8f0; }
-  [data-tema="dark"] .bm-slider    { background:#3d4f6e; }
 </style>
 
 <div class="overlay-modal" id="modal-banco" onclick="fecharModalSeClicarFora(event,'modal-banco')">
@@ -1133,11 +1096,6 @@
 .badge-sla-aviso    { background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600; }
 .badge-sla-atrasado { background:#ffedd5;color:#c2410c;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600; }
 .badge-sla-critico  { background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600; }
-[data-tema="dark"] .badge-sla-prazo    { background:rgba(99,102,241,0.15);color:#a5b4fc; }
-[data-tema="dark"] .badge-sla-aviso    { background:rgba(234,179,8,0.15);color:#fbbf24; }
-[data-tema="dark"] .badge-sla-atrasado { background:rgba(249,115,22,0.15);color:#fb923c; }
-[data-tema="dark"] .badge-sla-critico  { background:rgba(220,38,38,0.15);color:#f87171; }
-[data-tema="dark"] #form-sla-novo { background:var(--z-elevated) !important; border-color:var(--z-border-s) !important; }
 </style>
 
 <!-- ════════════════════════════════════════════ -->
@@ -1173,11 +1131,15 @@
 {% block scripts_extras %}
 <script>
   // ─── Navegação entre tabs ────────────────────────────────────
+  const _posicionarAba = Fx.abas(document.querySelector('.tabs-config'), '.tab-btn.ativo', '', true);
+
   function trocarTab(idTab, botao) {
     document.querySelectorAll('.painel-tab').forEach(p => p.classList.remove('ativo'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('ativo'));
     document.getElementById('tab-' + idTab).classList.add('ativo');
     botao.classList.add('ativo');
+    if (_posicionarAba) _posicionarAba();
+    Fx.retocar(document.getElementById('tab-' + idTab), 'fx-painel-entra');
   }
 
   // Maiúsculas sem jogar o cursor pro fim do texto ao editar no meio

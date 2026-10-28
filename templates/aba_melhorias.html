@@ -246,20 +246,6 @@
   .motivo-ta { width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:.82rem; background:#f8fafc; color:#1e293b; resize:vertical; min-height:80px; outline:none; font-family:inherit; }
   .motivo-ta:focus { border-color:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,.08); }
 
-  /* ── Dark mode ── */
-  [data-tema="dark"] .kanban-col    { background: var(--z-surface) !important; border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] .kcard         { background: var(--z-elevated) !important; border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] .kcard:hover   { border-color: #6366f1 !important; box-shadow: 0 3px 12px rgba(0,0,0,0.4) !important; }
-  [data-tema="dark"] .kcard-titulo  { color: var(--z-text-1) !important; }
-  [data-tema="dark"] .kcard-prog,
-  [data-tema="dark"] .kcard-solicitante { color: var(--z-text-3) !important; }
-  [data-tema="dark"] .prior-urgente { background:rgba(220,38,38,.15); color:#f87171; }
-  [data-tema="dark"] .prior-alta    { background:rgba(194,65,12,.15);  color:#fb923c; }
-  [data-tema="dark"] .prior-media   { background:rgba(161,98,7,.15);   color:#fbbf24; }
-  [data-tema="dark"] .prior-baixa   { background:rgba(21,128,61,.15);  color:#4ade80; }
-  [data-tema="dark"] .kadd-btn      { border-color: #4f46e5 !important; color: #818cf8 !important; background: rgba(99,102,241,0.06) !important; }
-  [data-tema="dark"] .kadd-btn:hover { border-color:#818cf8 !important; color:#a5b4fc !important; background: rgba(99,102,241,0.12) !important; }
-
   /* ── Botão nova melhoria ── */
   .btn-nova-mel {
     background: #6366f1; color: #fff;
@@ -270,8 +256,6 @@
     cursor: pointer; transition: background 0.15s;
   }
   .btn-nova-mel:hover { background: #4f46e5; }
-  [data-tema="dark"] .btn-nova-mel { background: #4f46e5 !important; }
-  [data-tema="dark"] .btn-nova-mel:hover { background: #4338ca !important; }
 
   /* ── Drag & drop ── */
   .kcard[draggable="true"] { cursor: grab; }
@@ -283,23 +267,6 @@
     outline: 2px dashed #6366f1;
     outline-offset: -4px;
   }
-  [data-tema="dark"] .kanban-col.drag-over .kanban-cards {
-    background: rgba(99,102,241,0.10) !important;
-  }
-  [data-tema="dark"] .mod-mel,
-  [data-tema="dark"] .mod-rej       { background: var(--z-surface) !important; }
-  [data-tema="dark"] .mod-mel h3,
-  [data-tema="dark"] .mod-rej h3    { color: var(--z-text-1) !important; }
-  [data-tema="dark"] .mod-actions   { border-color: var(--z-border-s) !important; }
-  [data-tema="dark"] .fg label      { color: var(--z-text-2) !important; }
-  [data-tema="dark"] .fg input,
-  [data-tema="dark"] .fg select,
-  [data-tema="dark"] .fg textarea,
-  [data-tema="dark"] .motivo-ta     { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-1) !important; }
-  [data-tema="dark"] .fg select option,
-  [data-tema="dark"] .fg textarea   { background: var(--z-elevated) !important; }
-  [data-tema="dark"] .mbtn-cancel   { background: var(--z-elevated) !important; border-color: var(--z-border) !important; color: var(--z-text-2) !important; }
-  [data-tema="dark"] .mbtn-del      { background: rgba(220,38,38,.12) !important; border-color: rgba(220,38,38,.3) !important; color: #f87171 !important; }
 
   /* ── Imagens anexadas ── */
   .img-grid {
@@ -363,11 +330,6 @@
     background: #f5f3ff;
     color: #6366f1;
   }
-
-  [data-tema="dark"] .img-thumb { border-color: var(--z-border) !important; background: var(--z-elevated) !important; }
-  [data-tema="dark"] .img-dropzone { border-color: var(--z-border) !important; color: var(--z-text-3) !important; }
-  [data-tema="dark"] .img-dropzone:hover,
-  [data-tema="dark"] .img-dropzone.drag-ov { border-color: #6366f1 !important; background: rgba(99,102,241,0.08) !important; color: #818cf8 !important; }
 
   /* ── Lightbox de preview ── */
   .img-lightbox {
@@ -437,7 +399,7 @@
       Em Análise
       <span class="kcount">{{ por_estagio.em_analise | length }}</span>
     </div>
-    <div class="kanban-cards">
+    <div class="kanban-cards" data-fx-cascata>
       {% for m in por_estagio.em_analise %}{{ kcard(m) }}{% endfor %}
     </div>
     <button class="kadd-btn" onclick="abrirModalNova('em_analise')">+ Adicionar</button>
@@ -449,7 +411,7 @@
       Analisada
       <span class="kcount">{{ por_estagio.analisa | length }}</span>
     </div>
-    <div class="kanban-cards">
+    <div class="kanban-cards" data-fx-cascata>
       {% for m in por_estagio.analisa %}{{ kcard(m) }}{% endfor %}
     </div>
     <button class="kadd-btn" onclick="abrirModalNova('analisa')">+ Adicionar</button>
@@ -461,7 +423,7 @@
       Em Programação
       <span class="kcount">{{ por_estagio.em_programacao | length }}</span>
     </div>
-    <div class="kanban-cards">
+    <div class="kanban-cards" data-fx-cascata>
       {% for m in por_estagio.em_programacao %}{{ kcard(m) }}{% endfor %}
     </div>
     <button class="kadd-btn" onclick="abrirModalNova('em_programacao')">+ Adicionar</button>
@@ -473,7 +435,7 @@
       Concluída
       <span class="kcount">{{ por_estagio.concluida | length }}</span>
     </div>
-    <div class="kanban-cards">
+    <div class="kanban-cards" data-fx-cascata>
       {% for m in por_estagio.concluida %}{{ kcard(m) }}{% endfor %}
     </div>
     <button class="kadd-btn" onclick="abrirModalNova('concluida')">+ Adicionar</button>
@@ -485,7 +447,7 @@
       Rejeitada
       <span class="kcount">{{ por_estagio.rejeitada | length }}</span>
     </div>
-    <div class="kanban-cards">
+    <div class="kanban-cards" data-fx-cascata>
       {% for m in por_estagio.rejeitada %}{{ kcard(m) }}{% endfor %}
     </div>
     <button class="kadd-btn" onclick="abrirModalNova('rejeitada')">+ Adicionar</button>
@@ -836,7 +798,11 @@
         pedirMotivo(_dragId);
         return;
       }
-      await _post(`${_B}/mover/${_dragId}`, {estagio: novoEstagio});
+      // o cartão desliza até a coluna nova enquanto salva (FLIP)
+      const card = document.querySelector(`.kcard[data-id="${_dragId}"]`);
+      const destino = col.querySelector('.kanban-cards');
+      const animacao = card && destino ? Fx.flip(card, () => destino.prepend(card)) : Promise.resolve();
+      await Promise.all([_post(`${_B}/mover/${_dragId}`, {estagio: novoEstagio}), animacao]);
       location.reload();
     });
   });
