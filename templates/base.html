@@ -979,6 +979,7 @@
   </style>
 </head>
 <body>
+  <script src="{{ url_for('static', filename='login/transicao-login.js') }}" data-lado-sistema></script>
 
   <canvas id="canvas-fundo"></canvas>
 
@@ -989,7 +990,7 @@
     <div class="sidebar-logo">
       <div class="logo-linha">
         <div class="logo-icone">
-          <img src="{{ url_for('static', filename='icon.ico') }}" alt="Sisplan" style="width:28px;height:28px;object-fit:contain;">
+          <img class="marca-sisplan__logo" src="{{ url_for('static', filename='icon.ico') }}" alt="Sisplan" style="width:28px;height:28px;object-fit:contain;">
         </div>
         <div>
           <div class="logo-nome">Sisplan</div>
@@ -2234,6 +2235,15 @@
       criarParticulas();
       animarParticulas();
     })();
+
+    // Saída com a mesma transição do login (logo volta pro centro antes de ir pra /sair)
+    document.querySelectorAll('a[href="/sair"]').forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        if (!window.SisplanTransicaoLogin) return;
+        e.preventDefault();
+        window.SisplanTransicaoLogin.sair().then(function() { window.location.href = link.href; });
+      });
+    });
   </script>
 </body>
 </html>
