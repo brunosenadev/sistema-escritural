@@ -107,6 +107,7 @@
   /* ── Tabela ───────────────────────────────── */
   .tabela-dados {
     width: 100%;
+    table-layout: fixed; /* a tabela segue a largura do card; textos longos viram reticências em vez de esticar a página */
     border-collapse: collapse;
     font-size: 13px;
   }
@@ -122,6 +123,8 @@
     background: #f8fafc;
     border-bottom: 1px solid #e2e8f0;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .tabela-dados td {
@@ -135,6 +138,11 @@
     white-space: nowrap;
   }
 
+  /* colunas de tamanho previsível; Empresa, Banco e Serviço dividem o resto */
+  .tabela-dados th:nth-child(1) { width: 92px; }
+  .tabela-dados th:nth-child(5) { width: 130px; }
+  .tabela-dados th:nth-child(6) { width: 110px; }
+  .tabela-dados th:nth-child(7) { width: 170px; }
   .tabela-dados tr:last-child td { border-bottom: none; }
   .tabela-dados tr:hover td { background: #f8fbff; }
 

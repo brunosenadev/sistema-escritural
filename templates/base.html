@@ -398,6 +398,7 @@
     .conteudo-principal {
       margin-left: var(--sidebar-larg);
       flex: 1;
+      min-width: 0; /* sem isso o flex item estica até a largura da tabela e a página ganha scroll horizontal */
       display: flex;
       flex-direction: column;
       min-height: 100vh;
