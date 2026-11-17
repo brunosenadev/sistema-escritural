@@ -53,6 +53,10 @@ def pagina_home():
              'cor': cores_tecnicos.get(tec) or '#94a3b8'}
             for tec, qtd in ranking.items()
         ]
+        dados['homologacoes_tecnico_dia'] = {
+            'linhas': banco.homologacoes_por_tecnico_dia([tabela for _, tabela, _ in tipos_visiveis]),
+            'cores': cores_tecnicos,
+        }
 
     if tem_acesso_tela('cancelados'):
         dados['total_cancelados'] = banco.contar_cancelados()

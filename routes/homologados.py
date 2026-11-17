@@ -22,6 +22,7 @@ _CONFIGS = {
     'pagamentos':   ('listar_homologados_pagamentos',     'Homologados Pagamentos',         'homologados_pagamentos'),
     'extrato':      ('listar_homologados_extrato',        'Homologados Extrato Cartão',     'homologados_extrato'),
     'ext-bancario': ('listar_homologados_ext_bancario',  'Homologados Extrato Bancário',   'homologados_ext_bancario'),
+    'sispbol':      ('listar_sispbol',                   'SispBol',                        'sispbol'),
 }
 
 _NOME_ABA = {
@@ -29,6 +30,7 @@ _NOME_ABA = {
     'pagamentos':   'Hom. Pagamentos',
     'extrato':      'Hom. Extrato Cartão',
     'ext-bancario': 'Hom. Extrato Bancário',
+    'sispbol':      'SispBol',
 }
 
 _TABELA_DB = {
@@ -36,6 +38,7 @@ _TABELA_DB = {
     'pagamentos':   'homologados_pagamentos',
     'extrato':      'homologados_extrato',
     'ext-bancario': 'homologados_ext_bancario',
+    'sispbol':      'sispbol',
 }
 
 
@@ -230,6 +233,42 @@ def deletar_hom_ext_bancario(id_registro):
     payload, status = exclusoes.processar_exclusao(
         'hom_ext_bancario', id_registro, f'Hom. Extrato Bancário #{id_registro} — {empresa}', 'Hom. Extrato Bancário',
         lambda a, d: _log('ext-bancario', a, d)
+    )
+    return jsonify(payload), status
+
+
+# ── SispBol ───────────────────────────────────────────────
+
+@homologados_bp.route('/sispbol')
+def aba_sispbol():
+    return _render('sispbol')
+
+@homologados_bp.route('/homologados-sispbol/adicionar', methods=['POST'])
+def adicionar_sispbol():
+    err = _sem_permissao()
+    if err: return err
+    dados = request.get_json() or {}
+    id_novo = banco.adicionar_sispbol(dados, session.get('usuario', ''))
+    _log('sispbol', 'INSERIU', f'Inseriu SispBol #{id_novo} — {dados.get("empresa","?")}')
+    return jsonify({'sucesso': True, 'id': id_novo})
+
+@homologados_bp.route('/homologados-sispbol/atualizar/<int:id_registro>', methods=['PUT'])
+def atualizar_sispbol(id_registro):
+    err = _sem_permissao()
+    if err: return err
+    dados = request.get_json() or {}
+    banco.atualizar_sispbol(id_registro, dados)
+    _log('sispbol', 'EDITOU', f'Editou SispBol #{id_registro} — {dados.get("empresa","?")}')
+    return jsonify({'sucesso': True})
+
+@homologados_bp.route('/homologados-sispbol/deletar/<int:id_registro>', methods=['DELETE'])
+def deletar_sispbol(id_registro):
+    err = _sem_permissao()
+    if err: return err
+    empresa = banco.buscar_empresa_log('sispbol', id_registro)
+    payload, status = exclusoes.processar_exclusao(
+        'sispbol', id_registro, f'SispBol #{id_registro} — {empresa}', 'SispBol',
+        lambda a, d: _log('sispbol', a, d)
     )
     return jsonify(payload), status
 

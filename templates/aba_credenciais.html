@@ -30,20 +30,20 @@
     margin-bottom: 20px;
   }
   .cred-stat {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--fundo-card);
+    border: 1px solid var(--borda);
     border-radius: 10px;
     padding: 14px 18px;
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
-  .cred-stat-val { font-size: 26px; font-weight: 700; color: #0f172a; line-height: 1; }
-  .cred-stat-label { font-size: 12px; color: #64748b; }
+  .cred-stat-val { font-size: 26px; font-weight: 700; color: var(--texto-forte); line-height: 1; }
+  .cred-stat-label { font-size: 12px; color: var(--texto-suave); }
   .cred-stat.ok    { border-left: 4px solid #16a34a; }
   .cred-stat.alerta { border-left: 4px solid #d97706; }
   .cred-stat.critico { border-left: 4px solid #dc2626; }
-  .cred-stat.silenc { border-left: 4px solid #94a3b8; }
+  .cred-stat.silenc { border-left: 4px solid var(--bd-94a3b8); }
 
   /* ── Filtros ── */
   .cred-filtros {
@@ -54,16 +54,16 @@
   }
   .btn-filtro {
     padding: 5px 14px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--borda);
     border-radius: 99px;
     font-size: 12px;
     cursor: pointer;
-    background: #f8fafc;
-    color: #475569;
+    background: var(--fundo-sutil);
+    color: var(--texto-medio);
     font-family: inherit;
     transition: all 0.12s;
   }
-  .btn-filtro:hover { background: #eef2ff; border-color: #c7d2fe; }
+  .btn-filtro:hover { background: var(--bg-eef2ff); border-color: var(--bd-c7d2fe); }
   /* pílula azul desliza até o filtro ativo (Fx.abas) */
   .btn-filtro { position: relative; z-index: 1; }
   .btn-filtro.ativo { background: transparent; color: #fff; border-color: transparent; }
@@ -71,8 +71,8 @@
 
   /* ── Tabela ── */
   .cred-tabela-wrap {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--fundo-card);
+    border: 1px solid var(--borda);
     border-radius: 12px;
     overflow: hidden;
   }
@@ -88,15 +88,15 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #64748b;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
+    color: var(--texto-suave);
+    background: var(--fundo-sutil);
+    border-bottom: 1px solid var(--borda);
     white-space: nowrap;
   }
   .cred-tabela td {
     padding: 11px 14px;
-    border-bottom: 1px solid #f1f5f9;
-    color: #1e293b;
+    border-bottom: 1px solid var(--fundo-muted);
+    color: var(--texto-escuro);
     vertical-align: middle;
   }
   .cred-tabela tr:last-child td { border-bottom: none; }
@@ -109,10 +109,10 @@
     padding: 2px 7px; border-radius: 99px;
     font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
   }
-  .tipo-badge.pix       { background: #f5f3ff; color: #7c3aed; }
-  .tipo-badge.cobranca  { background: #eff6ff; color: #2563eb; }
-  .tipo-badge.pagamento { background: #f0fdf4; color: #15803d; }
-  .tipo-badge.extrato   { background: #fff7ed; color: #c2410c; }
+  .tipo-badge.pix       { background: var(--bg-f5f3ff); color: var(--tx-7c3aed); }
+  .tipo-badge.cobranca  { background: var(--bg-eff6ff); color: var(--tx-2563eb); }
+  .tipo-badge.pagamento { background: var(--bg-f0fdf4); color: var(--tx-15803d); }
+  .tipo-badge.extrato   { background: var(--bg-fff7ed); color: var(--tx-c2410c); }
 
   /* status de validade */
   .status-cred {
@@ -120,29 +120,29 @@
     padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; white-space: nowrap;
   }
   .status-cred .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .status-ok      { background: #f0fdf4; color: #15803d; }
+  .status-ok      { background: var(--bg-f0fdf4); color: var(--tx-15803d); }
   .status-ok .dot { background: #16a34a; }
-  .status-alerta      { background: #fefce8; color: #a16207; }
+  .status-alerta      { background: var(--bg-fefce8); color: var(--tx-a16207); }
   .status-alerta .dot { background: #d97706; }
-  .status-urgente      { background: #fff7ed; color: #c2410c; }
+  .status-urgente      { background: var(--bg-fff7ed); color: var(--tx-c2410c); }
   .status-urgente .dot { background: #ea580c; }
-  .status-vencida      { background: #fef2f2; color: #dc2626; }
+  .status-vencida      { background: var(--bg-fef2f2); color: var(--tx-dc2626); }
   .status-vencida .dot { background: #dc2626; }
-  .status-silenciado      { background: #f1f5f9; color: #64748b; }
+  .status-silenciado      { background: var(--fundo-muted); color: var(--texto-suave); }
   .status-silenciado .dot { background: #94a3b8; }
 
   /* botões de ação na linha */
   .cred-acoes { display: flex; gap: 5px; align-items: center; }
   .btn-cred-acao {
     width: 28px; height: 28px; border: none; border-radius: 7px;
-    background: #f1f5f9; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; color: #64748b;
+    background: var(--fundo-muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: var(--texto-suave);
     flex-shrink: 0;
   }
-  .btn-cred-acao:hover { background: #e2e8f0; color: #0f172a; }
-  .btn-cred-acao.silenciar:hover { background: #fef9c3; color: #a16207; }
-  .btn-cred-acao.reativar:hover { background: #dcfce7; color: #15803d; }
-  .btn-cred-acao.perigo:hover { background: #fef2f2; color: #dc2626; }
+  .btn-cred-acao:hover { background: var(--borda); color: var(--texto-forte); }
+  .btn-cred-acao.silenciar:hover { background: var(--bg-fef9c3); color: var(--tx-a16207); }
+  .btn-cred-acao.reativar:hover { background: var(--bg-dcfce7); color: var(--tx-15803d); }
+  .btn-cred-acao.perigo:hover { background: var(--bg-fef2f2); color: var(--tx-dc2626); }
   .btn-cred-acao svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
 
   /* modal */
@@ -157,15 +157,15 @@
   }
   .cred-tipo-check {
     display: flex; align-items: center; gap: 6px;
-    padding: 5px 14px; border: 1.5px solid #e2e8f0; border-radius: 99px;
+    padding: 5px 14px; border: 1.5px solid var(--borda); border-radius: 99px;
     cursor: pointer; font-size: 12px; font-weight: 500;
-    transition: all 0.12s; user-select: none; color: #475569;
+    transition: all 0.12s; user-select: none; color: var(--texto-medio);
   }
-  .cred-tipo-check.checked { border-color: #2563eb; background: #eff6ff; color: #2563eb; font-weight: 600; }
-  .cred-tipo-check:hover:not(.checked) { border-color: #93c5fd; color: #2563eb; }
+  .cred-tipo-check.checked { border-color: #2563eb; background: var(--bg-eff6ff); color: var(--tx-2563eb); font-weight: 600; }
+  .cred-tipo-check:hover:not(.checked) { border-color: var(--bd-93c5fd); color: var(--tx-2563eb); }
 
   .cred-vazio {
-    padding: 48px 24px; text-align: center; color: #94a3b8; font-size: 14px;
+    padding: 48px 24px; text-align: center; color: var(--texto-leve); font-size: 14px;
   }
   .cred-vazio svg { width: 36px; height: 36px; stroke: #cbd5e1; fill: none; stroke-width: 1.5; display: block; margin: 0 auto 10px; }
 
@@ -173,21 +173,21 @@
   .grupo-modal { margin-bottom: 14px; }
   .grupo-modal label {
     display: block; font-size: 11px; font-weight: 600;
-    letter-spacing: 0.6px; text-transform: uppercase; color: #64748b; margin-bottom: 5px;
+    letter-spacing: 0.6px; text-transform: uppercase; color: var(--texto-suave); margin-bottom: 5px;
   }
   .input-modal {
-    width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;
-    font-size: 13px; font-family: inherit; color: #1e293b; background: #f8fafc;
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--borda); border-radius: 8px;
+    font-size: 13px; font-family: inherit; color: var(--texto-escuro); background: var(--fundo-sutil);
     outline: none; box-sizing: border-box;
     transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   }
-  .input-modal:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
+  .input-modal:focus { border-color: #3b82f6; background: var(--fundo-card); box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
   .btn-cancelar-modal {
-    padding: 9px 18px; border: 1.5px solid #e2e8f0; border-radius: 8px;
-    background: #fff; color: #475569; font-size: 13px; font-weight: 500;
+    padding: 9px 18px; border: 1.5px solid var(--borda); border-radius: 8px;
+    background: var(--fundo-card); color: var(--texto-medio); font-size: 13px; font-weight: 500;
     font-family: inherit; cursor: pointer; transition: background 0.15s;
   }
-  .btn-cancelar-modal:hover { background: #f8fafc; }
+  .btn-cancelar-modal:hover { background: var(--fundo-sutil); }
   .btn-salvar-modal {
     padding: 9px 20px; background: #2563eb; color: #fff; border: none;
     border-radius: 8px; font-size: 13px; font-weight: 600; font-family: inherit;
@@ -197,7 +197,7 @@
 
   /* caixa do modal */
   .modal-cred-box {
-    background: #fff; border-radius: 14px; padding: 28px 28px 20px;
+    background: var(--fundo-card); border-radius: 14px; padding: 28px 28px 20px;
     width: 560px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
     box-shadow: 0 16px 48px rgba(0,0,0,.2);
     animation: cred-entrar 0.22s cubic-bezier(.34,1.56,.64,1);
@@ -207,30 +207,30 @@
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
   .modal-cred-titulo {
-    font-size: 16px; font-weight: 700; color: #0f172a;
+    font-size: 16px; font-weight: 700; color: var(--texto-forte);
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
   }
   .modal-cred-titulo button {
-    background: none; border: none; cursor: pointer; color: #94a3b8;
+    background: none; border: none; cursor: pointer; color: var(--texto-leve);
     font-size: 20px; line-height: 1; padding: 2px 6px; border-radius: 6px;
   }
-  .modal-cred-titulo button:hover { color: #475569; background: #f1f5f9; }
+  .modal-cred-titulo button:hover { color: var(--texto-medio); background: var(--fundo-muted); }
   .modal-cred-rodape {
     display: flex; justify-content: flex-end; gap: 10px;
-    margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;
+    margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--borda);
   }
 
   /* células da tabela */
-  .cred-cel-principal { font-weight: 600; color: #0f172a; }
-  .cred-cel-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .cred-cel-principal { font-weight: 600; color: var(--texto-forte); }
+  .cred-cel-sub { font-size: 11px; color: var(--texto-suave); margin-top: 2px; }
 
   /* chips de fase do simulador */
   .sim-fase {
     padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 600;
-    cursor: pointer; border: 1.5px solid #d97706; color: #d97706;
-    background: #fffbeb; transition: all 0.12s; user-select: none;
+    cursor: pointer; border: 1.5px solid #d97706; color: var(--tx-d97706);
+    background: var(--bg-fffbeb); transition: all 0.12s; user-select: none;
   }
-  .sim-fase-err { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
+  .sim-fase-err { border-color: #dc2626; color: var(--tx-dc2626); background: var(--bg-fef2f2); }
   .sim-fase.selecionado { background: #f59e0b; color: #fff; border-color: #f59e0b; }
   .sim-fase-err.selecionado { background: #dc2626; color: #fff; border-color: #dc2626; }
 </style>
@@ -381,7 +381,7 @@
       <span>Simular Aviso de Credencial</span>
       <button onclick="fecharModalSimular()" title="Fechar">✕</button>
     </div>
-    <p style="font-size:12px;color:#64748b;margin:-8px 0 18px;">A notificação será criada apenas para você e não afeta os envios reais.</p>
+    <p style="font-size:12px;color:var(--texto-suave);margin:-8px 0 18px;">A notificação será criada apenas para você e não afeta os envios reais.</p>
     <div class="grupo-modal">
       <label>Credencial</label>
       <select class="input-modal" id="sim-cred-id">

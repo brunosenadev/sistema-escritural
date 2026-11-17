@@ -51,7 +51,10 @@ Compress(app)
 # Serve static files via WhiteNoise (bypasses Python on Render/gunicorn)
 try:
     from whitenoise import WhiteNoise
-    app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(os.path.dirname(__file__), 'static'), prefix='static')
+    # autorefresh só no "python app.py" local: sem ele, um CSS/JS editado com o servidor no ar
+    # sai cortado (o WhiteNoise guarda o tamanho antigo do arquivo). No Render (gunicorn) fica desligado.
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(os.path.dirname(__file__), 'static'), prefix='static',
+                              autorefresh=(__name__ == '__main__'))
 except ImportError:
     pass
 
@@ -96,6 +99,7 @@ banco.migrar_flags_avisos()
 banco.migrar_hub_v2()
 banco.migrar_sla()
 banco.migrar_solicitacoes_exclusao()
+banco.migrar_sispbol_legado()
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(pendente_bp)

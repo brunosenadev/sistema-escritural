@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, make_response
 import banco
 import sisplan_auth
-from utils import usuario_logado, criar_tokens, tem_acesso_tela
+from utils import usuario_logado, criar_tokens, tem_acesso_tela, _payload_access
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -24,6 +24,7 @@ _TELAS_ORDEM = [
     ('homologados_pagamentos',   'homologados.aba_homologados_pagamentos', {}),
     ('homologados_extrato',      'homologados.aba_homologados_extrato',    {}),
     ('homologados_ext_bancario', 'homologados.aba_homologados_ext_bancario', {}),
+    ('sispbol',                   'homologados.aba_sispbol',    {}),
     ('cancelados',                'cancelados.aba_cancelados',  {}),
     ('melhorias',                 'melhorias.aba_melhorias',    {}),
     ('hub',                       'hub.aba_hub',                {}),
@@ -202,6 +203,24 @@ def api_minha_cor():
     banco.atualizar_cor_usuario(id_usuario, cor)
     session['cor'] = cor
     return jsonify({'sucesso': True})
+
+
+@auth_bp.route('/api/meu-tema', methods=['PUT'])
+def api_meu_tema():
+    if not usuario_logado():
+        return jsonify({'erro': 'Não autenticado'}), 401
+    tema = (request.get_json() or {}).get('tema', '')
+    if tema not in ('claro', 'papel', 'ceu', 'suave', 'meianoite', 'preto'):
+        return jsonify({'erro': 'Tema inválido'}), 400
+    id_usuario = session.get('id_usuario')
+    banco.atualizar_tema(id_usuario, tema)
+    session['tema'] = tema
+    # o tema também vai no JWT; reemite o access token pra não voltar ao antigo se a sessão for refeita
+    u = banco.buscar_usuario_por_id(id_usuario)
+    access, *_ = criar_tokens(u, jti=(_payload_access() or {}).get('jti'))
+    resp = make_response(jsonify({'sucesso': True}))
+    resp.set_cookie('access_token', access, max_age=60*60, **_COOKIE_OPTS)
+    return resp
 
 
 @auth_bp.route('/sair')

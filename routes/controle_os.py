@@ -9,6 +9,7 @@ NOMES_ABA = {
     'pagamentos':   'Hom. Pagamentos',
     'extrato':      'Hom. Extrato Cartão',
     'ext_bancario': 'Hom. Extrato Bancário',
+    'sispbol':      'SispBol',
 }
 
 

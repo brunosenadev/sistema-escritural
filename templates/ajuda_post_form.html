@@ -15,27 +15,27 @@
 
   .apf-toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
 
-  .btn-secundario-mini { padding: 9px 16px; background: #f8fafc; color: #475569; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
-  .btn-secundario-mini:hover { background: #f1f5f9; }
+  .btn-secundario-mini { padding: 9px 16px; background: var(--fundo-sutil); color: var(--texto-medio); border: 1.5px solid var(--borda); border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+  .btn-secundario-mini:hover { background: var(--fundo-muted); }
   .btn-secundario-mini svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
 
   .btn-primario-config { padding: 9px 18px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; text-decoration: none; }
   .btn-primario-config:hover { background: #1d4ed8; }
   .btn-primario-config svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; }
 
-  .card-config { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
-  .card-config-titulo-bloco { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: #64748b; margin-bottom: 14px; }
+  .card-config { background: var(--fundo-card); border: 1px solid var(--borda); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  .card-config-titulo-bloco { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--texto-suave); margin-bottom: 14px; }
 
   .grupo-campo { margin-bottom: 16px; }
   .grupo-campo:last-child { margin-bottom: 0; }
-  .grupo-campo label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
-  .input-config { width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13.5px; font-family: 'Inter', sans-serif; color: #1e293b; background: #f8fafc; outline: none; box-sizing: border-box; }
-  .input-config:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
+  .grupo-campo label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--texto-suave); margin-bottom: 6px; }
+  .input-config { width: 100%; padding: 9px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font-size: 13.5px; font-family: 'Inter', sans-serif; color: var(--texto-escuro); background: var(--fundo-sutil); outline: none; box-sizing: border-box; }
+  .input-config:focus { border-color: #3b82f6; background: var(--fundo-card); box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
   textarea.input-config { resize: vertical; min-height: 64px; font-family: inherit; }
   select.input-config { cursor: pointer; }
 
   .apf-upload-pdf {
-    border: 1.5px dashed #c7d7fe;
+    border: 1.5px dashed var(--bd-c7d7fe);
     background: #f8faff;
     border-radius: 12px;
     padding: 20px 16px;
@@ -46,7 +46,7 @@
     align-items: center;
     transition: background 0.15s, border-color 0.15s, transform 0.1s;
   }
-  .apf-upload-pdf:hover { background: #eef2ff; border-color: #93c5fd; }
+  .apf-upload-pdf:hover { background: var(--bg-eef2ff); border-color: var(--bd-93c5fd); }
   .apf-upload-pdf:active { transform: scale(0.99); }
   .apf-upload-pdf-icone {
     width: 44px; height: 44px; border-radius: 12px;
@@ -56,23 +56,23 @@
     box-shadow: 0 4px 12px rgba(37,99,235,0.25);
   }
   .apf-upload-pdf-icone svg { width: 21px; height: 21px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; margin: 0; }
-  .apf-upload-pdf-titulo { font-size: 13px; font-weight: 700; color: #1e293b; }
-  .apf-upload-pdf-titulo span { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
-  .apf-upload-pdf-sub { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+  .apf-upload-pdf-titulo { font-size: 13px; font-weight: 700; color: var(--texto-escuro); }
+  .apf-upload-pdf-titulo span { color: var(--tx-2563eb); text-decoration: underline; text-underline-offset: 2px; }
+  .apf-upload-pdf-sub { font-size: 11px; color: var(--texto-leve); margin-top: 4px; }
   .apf-upload-pdf.carregando { opacity: 0.65; pointer-events: none; }
   .apf-upload-pdf.arrastando { background: #e0e9ff; border-color: #2563eb; border-style: solid; }
 
   .apf-html-toggle {
     width: 100%; box-sizing: border-box;
     display: flex; align-items: center; gap: 8px;
-    padding: 10px 12px; border: 1.5px dashed #e2e8f0; border-radius: 9px;
-    background: #f8fafc; color: #475569; font-size: 12.5px; font-weight: 600;
+    padding: 10px 12px; border: 1.5px dashed var(--borda); border-radius: 9px;
+    background: var(--fundo-sutil); color: var(--texto-medio); font-size: 12.5px; font-weight: 600;
     font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;
     transition: background 0.15s, border-color 0.15s;
   }
-  .apf-html-toggle:hover { background: #f1f5f9; border-color: #cbd5e1; }
+  .apf-html-toggle:hover { background: var(--fundo-muted); border-color: var(--borda-forte); }
   .apf-html-toggle svg { width: 15px; height: 15px; stroke: #64748b; fill: none; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; }
-  .apf-html-toggle.aberto { background: #eff6ff; border-color: #93c5fd; color: #2563eb; }
+  .apf-html-toggle.aberto { background: var(--bg-eff6ff); border-color: var(--bd-93c5fd); color: var(--tx-2563eb); }
   .apf-html-toggle.aberto svg { stroke: #2563eb; }
 
   .apf-html-area { display: none; margin-top: 10px; }
@@ -84,9 +84,9 @@
   #botao-inserir-html { width: 100%; justify-content: center; }
   #botao-inserir-html svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; }
 
-  #campo-quill { background: #fff; border-radius: 0 0 10px 10px; }
-  .ql-toolbar.ql-snow { border-radius: 10px 10px 0 0; border-color: #e2e8f0 !important; background: #f8fafc; }
-  .ql-container.ql-snow { border-color: #e2e8f0 !important; font-size: 13.5px; min-height: 380px; }
+  #campo-quill { background: var(--fundo-card); border-radius: 0 0 10px 10px; }
+  .ql-toolbar.ql-snow { border-radius: 10px 10px 0 0; border-color: var(--borda) !important; background: var(--fundo-sutil); }
+  .ql-container.ql-snow { border-color: var(--borda) !important; font-size: 13.5px; min-height: 380px; }
   .ql-editor { min-height: 380px; }
 </style>
 {% endblock %}

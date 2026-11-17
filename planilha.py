@@ -119,6 +119,7 @@ def ler_planilha_completa(caminho_arquivo):
         'pagamentos': [],
         'extrato':    [],
         'cancelados': [],
+        'sispbol':    [],
     }
 
     aba_p = _encontrar_aba_pendente(wb)
@@ -140,6 +141,10 @@ def ler_planilha_completa(caminho_arquivo):
     aba_can = _encontrar_aba(wb, 'cancel')
     if aba_can:
         resultado['cancelados'] = _ler_cancelados_sheet(aba_can)
+
+    aba_sb = _encontrar_aba(wb, 'sispbol')
+    if aba_sb:
+        resultado['sispbol'] = _ler_sispbol_sheet(aba_sb)
 
     return resultado
 
@@ -221,6 +226,38 @@ _COL_CAN = {
     'ordem_servico':11,
     'obs':          12,
 }
+
+
+_COL_SISPBOL = {
+    'tecnico':         1,
+    'empresa':         2,
+    'banco':           3,
+    'dt_solicita':     4,
+    'dt_status':       5,
+    'status':          6,
+    'usa_envio_table': 7,
+}
+
+
+def _ler_sispbol_sheet(aba):
+    registros = []
+    for num_linha in range(LINHA_INICIO_DADOS, aba.max_row + 1):
+        row = {campo: aba.cell(num_linha, col).value for campo, col in _COL_SISPBOL.items()}
+        # linhas de ano (2024, 2025...) só têm a 1ª coluna preenchida
+        if _e_linha_separadora(row['empresa'], None, row['banco']):
+            continue
+        registros.append({
+            'tecnico':         str(row['tecnico'] or '').strip(),
+            'empresa':         str(row['empresa'] or '').strip(),
+            'servico':         'SISPBOL',
+            'banco':           str(row['banco']   or '').strip(),
+            'dt_solicita':     _formatar_data(row['dt_solicita']),
+            'dt_status':       _formatar_data(row['dt_status']),
+            'status':          str(row['status']  or 'HOMOLOGADO').strip().upper(),
+            'usa_envio_table': str(row['usa_envio_table'] or 'NÃO').strip().upper(),
+            'obs':             '',
+        })
+    return registros
 
 
 def _ler_aba_homologados(aba):

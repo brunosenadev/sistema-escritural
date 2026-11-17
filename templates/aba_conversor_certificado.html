@@ -10,8 +10,8 @@
 <style>
 
   .card-config {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--fundo-card);
+    border: 1px solid var(--borda);
     border-radius: 14px;
     overflow: hidden;
     box-shadow: 0 1px 4px rgba(30,79,196,0.05);
@@ -20,13 +20,13 @@
 
   .card-config-header {
     padding: 14px 20px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--fundo-muted);
   }
 
   .card-config-titulo {
     font-size: 14px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--texto-escuro);
   }
 
   .card-config-body { padding: 20px; }
@@ -40,13 +40,13 @@
   }
   .input-form {
     padding: 8px 12px;
-    border: 1.5px solid #e2e8f0;
+    border: 1.5px solid var(--borda);
     border-radius: 8px;
     font-size: 13px;
     font-family: inherit;
     outline: none;
     transition: border-color 0.15s;
-    color: #1e293b;
+    color: var(--texto-escuro);
   }
   .input-form:focus { border-color: #3b82f6; }
 
@@ -62,9 +62,9 @@
   .botao-salvar svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; }
 
   .mensagem-erro {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #dc2626;
+    background: var(--bg-fef2f2);
+    border: 1px solid var(--bd-fecaca);
+    color: var(--tx-dc2626);
     border-radius: 8px;
     padding: 10px 14px;
     font-size: 13px;
@@ -77,7 +77,7 @@
 
   .aviso-seguranca {
     display: flex; gap: 8px; align-items: flex-start;
-    background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8;
+    background: var(--bg-eff6ff); border: 1px solid var(--bd-bfdbfe); color: var(--tx-1d4ed8);
     border-radius: 8px; padding: 10px 14px; font-size: 12px; line-height: 1.5;
     margin-bottom: 20px;
   }
@@ -105,8 +105,8 @@
   .grade-tipos { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; }
   .chip-tipo {
     padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 600;
-    cursor: pointer; border: 1.5px solid #2563eb; color: #2563eb;
-    background: #eff6ff; transition: all 0.12s; user-select: none;
+    cursor: pointer; border: 1.5px solid #2563eb; color: var(--tx-2563eb);
+    background: var(--bg-eff6ff); transition: all 0.12s; user-select: none;
     display: inline-flex; align-items: center;
   }
   .chip-tipo input { display: none; }

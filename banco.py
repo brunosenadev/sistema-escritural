@@ -514,6 +514,21 @@ def inicializar_banco():
             criado_em     TEXT DEFAULT (datetime('now','localtime')),
             atualizado_em TEXT DEFAULT (datetime('now','localtime'))
         );
+        CREATE TABLE IF NOT EXISTS sispbol (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            tecnico         TEXT,
+            empresa         TEXT,
+            servico         TEXT DEFAULT 'SISPBOL',
+            banco           TEXT,
+            dt_solicita     TEXT,
+            dt_status       TEXT,
+            status          TEXT DEFAULT 'HOMOLOGADO',
+            usa_envio_table TEXT DEFAULT 'NÃO',
+            obs             TEXT,
+            criado_por      TEXT,
+            criado_em       TEXT DEFAULT (datetime('now','localtime')),
+            atualizado_em   TEXT DEFAULT (datetime('now','localtime'))
+        );
         CREATE TABLE IF NOT EXISTS email_config_usuario (
             usuario_id  INTEGER PRIMARY KEY,
             email       TEXT    DEFAULT '',
@@ -2021,7 +2036,8 @@ def contar_todos():
             (SELECT COUNT(*) FROM homologados_cobranca)   AS cobranca,
             (SELECT COUNT(*) FROM homologados_pagamentos) AS pagamentos,
             (SELECT COUNT(*) FROM homologados_extrato)         AS extrato,
-            (SELECT COUNT(*) FROM homologados_ext_bancario)    AS ext_bancario
+            (SELECT COUNT(*) FROM homologados_ext_bancario)    AS ext_bancario,
+            (SELECT COUNT(*) FROM sispbol)                     AS sispbol
     """).fetchone()
     conn.close()
     return dict(row)
@@ -2405,6 +2421,7 @@ _TABELA_HOMOLOGADO = {
     'extrato':      'homologados_extrato',
     'ext_bancario': 'homologados_ext_bancario',
     'ext-bancario': 'homologados_ext_bancario',
+    'sispbol':      'sispbol',
 }
 
 # conjunto de nomes de tabela permitidos para uso em queries dinâmicas
@@ -2447,6 +2464,35 @@ def ranking_tecnicos_homologados(tabelas):
             ranking[tec] = ranking.get(tec, 0) + r['qtd']
     conn.close()
     return dict(sorted(ranking.items(), key=lambda x: x[1], reverse=True))
+
+
+def homologacoes_por_tecnico_dia(tabelas):
+    """Conta homologações por (técnico, dia da dt_status) nas tabelas homologados_*
+    informadas. Retorna [[tecnico, 'AAAA-MM-DD', qtd], ...]; datas inválidas ficam de fora."""
+    from datetime import datetime as _dt
+    contagem = {}
+    conn = conectar()
+    try:
+        for tabela in tabelas:
+            if tabela not in _TABELAS_HOMOLOGADO_VALIDAS:
+                continue
+            for r in conn.execute(f"SELECT tecnico, dt_status FROM {tabela}"):
+                try:
+                    dia = _dt.strptime((r['dt_status'] or '').strip(), '%d/%m/%Y').strftime('%Y-%m-%d')
+                except ValueError:
+                    continue
+                chave = ((r['tecnico'] or 'SEM TEC.').strip(), dia)
+                contagem[chave] = contagem.get(chave, 0) + 1
+    finally:
+        conn.close()
+    return [[tec, dia, qtd] for (tec, dia), qtd in contagem.items()]
+
+
+def atualizar_tema(usuario_id, tema):
+    conn = conectar()
+    conn.execute("UPDATE usuarios SET tema=? WHERE id=?", (tema, usuario_id))
+    conn.commit()
+    conn.close()
 
 
 def atualizar_tela_inicial(usuario_id, tela):
@@ -2586,6 +2632,93 @@ def mover_homologado_para_cancelado(id_registro, tipo):
     conn.commit()
     conn.close()
     return cur.lastrowid
+
+# ── SispBol ───────────────────────────────────────────────
+
+def _valores_sispbol(d):
+    return (d.get('tecnico',''), d.get('empresa',''), d.get('servico') or 'SISPBOL',
+            d.get('banco',''), d.get('dt_solicita',''), d.get('dt_status',''),
+            d.get('status') or 'HOMOLOGADO', d.get('usa_envio_table') or 'NÃO', d.get('obs',''))
+
+_INSERT_SISPBOL = ("INSERT INTO sispbol (tecnico,empresa,servico,banco,dt_solicita,dt_status,status,"
+                   "usa_envio_table,obs,criado_por) VALUES (?,?,?,?,?,?,?,?,?,?)")
+
+
+def listar_sispbol():
+    conn = conectar()
+    rows = conn.execute("SELECT * FROM sispbol ORDER BY id").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def adicionar_sispbol(dados, criado_por=''):
+    conn = conectar()
+    cur = conn.execute(_INSERT_SISPBOL, _valores_sispbol(dados) + (criado_por,))
+    id_novo = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return id_novo
+
+
+def atualizar_sispbol(id_registro, dados):
+    agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+    valores = list(_valores_sispbol(dados))
+    valores[7] = dados.get('usa_envio_table')  # campo saiu da tela: None mantém o valor já salvo
+    conn = conectar()
+    conn.execute(
+        "UPDATE sispbol SET tecnico=?,empresa=?,servico=?,banco=?,dt_solicita=?,dt_status=?,status=?,"
+        "usa_envio_table=COALESCE(?,usa_envio_table),obs=?,atualizado_em=? WHERE id=?",
+        tuple(valores) + (agora, id_registro)
+    )
+    conn.commit()
+    conn.close()
+    return True
+
+
+def deletar_sispbol(id_registro):
+    conn = conectar()
+    conn.execute("DELETE FROM sispbol WHERE id=?", (id_registro,))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def importar_sispbol(lista_registros, substituir=True):
+    conn = conectar()
+    if substituir:
+        conn.execute("DELETE FROM sispbol")
+    for reg in lista_registros:
+        conn.execute(_INSERT_SISPBOL, _valores_sispbol(reg) + ('importação planilha',))
+    total = conn.execute("SELECT COUNT(*) FROM sispbol").fetchone()[0]
+    conn.commit()
+    conn.close()
+    return total
+
+# Histórico da aba SISPBOL da planilha mãe (2024–2026). Roda uma vez só (flag em config_geral),
+# pra não recriar registros que alguém apagar depois.
+_SISPBOL_LEGADO = [
+    # tecnico,  empresa,               banco,             dt_solicita,  dt_status
+    ('ALISSON', 'CLASSE TEXTIL',        '988 - CAPITAL',   '13/05/2024', '13/05/2024'),
+    ('ALISSON', 'CLASSE TEXTIL',        '993 - RNX',       '13/05/2024', '13/05/2024'),
+    ('KAYO',    'MALHARIA CATARINENSE', '341 e 033',       '24/06/2024', '18/07/2024'),
+    ('ANTONY',  'ELEGANCE',             '001, 237 E 756',  '01/09/2024', '13/09/2024'),
+    ('PEDRO',   'MEIAS RIKAM',          '001 - BB',        '10/02/2025', '14/02/2025'),
+    ('PEDRO',   'RIKAM',                '756 - SICOOB',    '19/08/2025', '19/08/2025'),
+    ('PEDRO',   'VIA DA MODA',          '033 - SANTANDER', '14/01/2026', '26/01/2026'),
+    # na planilha esta linha está deslocada (banco = "SISPBOL"); só há uma data
+    ('HEITOR',  'KULT JEANS',           '422 - SAFRA',     '',           '13/05/2026'),
+]
+
+
+def migrar_sispbol_legado():
+    if get_config('sispbol_legado_importado') == '1':
+        return
+    importar_sispbol([
+        {'tecnico': t, 'empresa': e, 'banco': b, 'dt_solicita': ds, 'dt_status': dst,
+         'status': 'HOMOLOGADO', 'usa_envio_table': 'NÃO'}
+        for t, e, b, ds, dst in _SISPBOL_LEGADO
+    ], substituir=False)
+    set_config('sispbol_legado_importado', '1')
 
 # ── Homologados Cobrança ──────────────────────────────────
 
@@ -3332,7 +3465,7 @@ def listar_logs(busca=None, usuario=None, tela=None, acao=None,
 def buscar_empresa_log(tabela, id_registro):
     """Busca nome da empresa para usar em descrições de log antes de deletar."""
     if tabela not in {'pendentes', 'homologados_cobranca', 'homologados_pagamentos',
-                      'homologados_extrato', 'homologados_ext_bancario', 'cancelados', 'escritural'}:
+                      'homologados_extrato', 'homologados_ext_bancario', 'sispbol', 'cancelados', 'escritural'}:
         return ''
     conn = conectar()
     try:
@@ -3880,6 +4013,7 @@ EXECUTORES_EXCLUSAO = {
     'hom_pagamentos':    deletar_homologado_pagamentos,
     'hom_extrato':       deletar_homologado_extrato,
     'hom_ext_bancario':  deletar_homologado_ext_bancario,
+    'sispbol':           deletar_sispbol,
     'ajuda_topico':      remover_ajuda_topico,
     'ajuda_post':        remover_ajuda_post,
     'ajuda_collection':  remover_collection,

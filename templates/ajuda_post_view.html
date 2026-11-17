@@ -22,30 +22,30 @@
 <style>
   .ajv-voltar {
     display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12.5px; font-weight: 600; color: #64748b;
+    font-size: 12.5px; font-weight: 600; color: var(--texto-suave);
     text-decoration: none; margin-bottom: 18px;
   }
-  .ajv-voltar:hover { color: #2563eb; }
+  .ajv-voltar:hover { color: var(--tx-2563eb); }
   .ajv-voltar svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
 
   .ajv-card {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--fundo-card);
+    border: 1px solid var(--borda);
     border-radius: 16px;
     padding: 32px 36px;
     max-width: 860px;
   }
 
   .ajv-meta {
-    font-size: 11.5px; color: #94a3b8;
+    font-size: 11.5px; color: var(--texto-leve);
     display: flex; align-items: center; gap: 8px;
     margin-bottom: 18px; padding-bottom: 18px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--fundo-muted);
   }
   .ajv-meta svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
 
-  .ajv-conteudo { font-size: 14px; line-height: 1.75; color: #334155; }
-  .ajv-conteudo h1, .ajv-conteudo h2, .ajv-conteudo h3 { color: #1e293b; margin: 22px 0 10px; line-height: 1.35; }
+  .ajv-conteudo { font-size: 14px; line-height: 1.75; color: var(--texto-2); }
+  .ajv-conteudo h1, .ajv-conteudo h2, .ajv-conteudo h3 { color: var(--texto-escuro); margin: 22px 0 10px; line-height: 1.35; }
   .ajv-conteudo h1 { font-size: 20px; }
   .ajv-conteudo h2 { font-size: 17px; }
   .ajv-conteudo h3 { font-size: 15px; }
@@ -53,10 +53,10 @@
   .ajv-conteudo ul, .ajv-conteudo ol { margin: 0 0 12px 22px; }
   .ajv-conteudo li { margin-bottom: 4px; }
   .ajv-conteudo img { max-width: 100%; border-radius: 8px; margin: 10px 0; }
-  .ajv-conteudo a { color: #2563eb; }
-  .ajv-conteudo strong { color: #1e293b; }
-  .ajv-conteudo blockquote { border-left: 3px solid #bfdbfe; padding-left: 14px; color: #64748b; margin: 12px 0; }
-  .ajv-conteudo code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12.5px; }
+  .ajv-conteudo a { color: var(--tx-2563eb); }
+  .ajv-conteudo strong { color: var(--texto-escuro); }
+  .ajv-conteudo blockquote { border-left: 3px solid var(--bd-bfdbfe); padding-left: 14px; color: var(--texto-suave); margin: 12px 0; }
+  .ajv-conteudo code { background: var(--fundo-muted); padding: 2px 6px; border-radius: 4px; font-size: 12.5px; }
   .ajv-conteudo pre { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 8px; overflow-x: auto; margin-bottom: 12px; }
 </style>
 {% endblock %}

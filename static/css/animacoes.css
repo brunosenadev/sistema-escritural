@@ -182,7 +182,7 @@
   display: block;
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #e8edf7 0%, #e8edf7 35%, #f5f7fc 50%, #e8edf7 65%, #e8edf7 100%);
+  background: linear-gradient(90deg, var(--bg-e8edf7) 0%, var(--bg-e8edf7) 35%, #f5f7fc 50%, var(--bg-e8edf7) 65%, var(--bg-e8edf7) 100%);
   background-size: 220% 100%;
   animation: fx-varre 1.3s linear infinite;
 }

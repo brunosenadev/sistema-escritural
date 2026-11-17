@@ -10,43 +10,43 @@
   /* ── Modal base (copiado de aba_escritural para funcionar nesta página) ── */
   .overlay-modal { display: none; position: fixed; inset: 0; background: rgba(10,22,40,0.55); z-index: 500; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
   .overlay-modal.aberto { display: flex; }
-  .card-modal { background: #fff; border-radius: 16px; padding: 28px; width: 100%; max-width: 640px; box-shadow: 0 16px 48px rgba(0,0,0,0.18); max-height: 92vh; overflow-y: auto; animation: modal-entrar 0.2s ease; }
+  .card-modal { background: var(--fundo-card); border-radius: 16px; padding: 28px; width: 100%; max-width: 640px; box-shadow: 0 16px 48px rgba(0,0,0,0.18); max-height: 92vh; overflow-y: auto; animation: modal-entrar 0.2s ease; }
   @keyframes modal-entrar { from{opacity:0;transform:translateY(-12px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
   .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; gap: 10px; }
-  .modal-titulo { font-size: 16px; font-weight: 700; color: #1e293b; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .botao-fechar-modal { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; border-radius: 6px; display: flex; align-items: center; }
-  .botao-fechar-modal:hover { color: #ef4444; background: #fef2f2; }
+  .modal-titulo { font-size: 16px; font-weight: 700; color: var(--texto-escuro); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .botao-fechar-modal { background: none; border: none; cursor: pointer; color: var(--texto-leve); padding: 4px; border-radius: 6px; display: flex; align-items: center; }
+  .botao-fechar-modal:hover { color: var(--tx-ef4444); background: var(--bg-fef2f2); }
   .botao-fechar-modal svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
   .grade-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
   .campo-completo { grid-column: 1 / -1; }
   .grupo-form { display: flex; flex-direction: column; gap: 5px; }
-  .grupo-form label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; }
-  .input-form { padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.15s; color: #1e293b; width: 100%; background: #f8fafc; }
-  .input-form:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
-  .rodape-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #f1f5f9; }
-  .botao-cancelar { padding: 9px 18px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 13px; font-family: inherit; cursor: pointer; }
-  .botao-cancelar:hover { background: #f1f5f9; }
+  .grupo-form label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--texto-suave); }
+  .input-form { padding: 8px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.15s; color: var(--texto-escuro); width: 100%; background: var(--fundo-sutil); }
+  .input-form:focus { border-color: #3b82f6; background: var(--fundo-card); box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
+  .rodape-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--fundo-muted); }
+  .botao-cancelar { padding: 9px 18px; border-radius: 8px; border: 1.5px solid var(--borda); background: var(--fundo-sutil); color: var(--texto-medio); font-size: 13px; font-family: inherit; cursor: pointer; }
+  .botao-cancelar:hover { background: var(--fundo-muted); }
   .botao-salvar { padding: 9px 20px; border-radius: 8px; border: none; background: #0a1628; color: #fff; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
   .botao-salvar:hover { background: #1a3a7a; }
 
   /* ── Página ── */
   .em-header { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 20px; }
-  .em-table-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+  .em-table-wrap { background: var(--fundo-card); border: 1px solid var(--borda); border-radius: 14px; overflow: hidden; }
   table.em-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .em-table th { padding: 11px 14px; text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; border-bottom: 2px solid #f1f5f9; background: #f8fafc; white-space: nowrap; }
-  .em-table td { padding: 11px 14px; border-bottom: 1px solid #f8fafc; color: #334155; vertical-align: middle; }
+  .em-table th { padding: 11px 14px; text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--texto-suave); border-bottom: 2px solid var(--fundo-muted); background: var(--fundo-sutil); white-space: nowrap; }
+  .em-table td { padding: 11px 14px; border-bottom: 1px solid var(--fundo-sutil); color: var(--texto-2); vertical-align: middle; }
   .em-table tr:last-child td { border-bottom: none; }
-  .em-table tr:hover td { background: #f8fafc; }
-  .td-nome { font-weight: 600; color: #1e293b; }
-  .td-assunto { font-size: 12px; color: #64748b; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .badge-inativo { background: #fee2e2; color: #b91c1c; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
-  .badge-ativo   { background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+  .em-table tr:hover td { background: var(--fundo-sutil); }
+  .td-nome { font-weight: 600; color: var(--texto-escuro); }
+  .td-assunto { font-size: 12px; color: var(--texto-suave); max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge-inativo { background: var(--bg-fee2e2); color: var(--tx-b91c1c); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+  .badge-ativo   { background: var(--bg-dcfce7); color: var(--tx-15803d); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
   .td-acoes { white-space: nowrap; }
-  .btn-editar-em  { padding: 5px 11px; border: none; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; background: #f1f5f9; color: #334155; margin-right: 4px; }
-  .btn-editar-em:hover  { background: #e2e8f0; }
-  .btn-deletar-em { padding: 5px 11px; border: none; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; background: #fee2e2; color: #b91c1c; }
-  .btn-deletar-em:hover { background: #fecaca; }
-  .em-vazio { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; }
+  .btn-editar-em  { padding: 5px 11px; border: none; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; background: var(--fundo-muted); color: var(--texto-2); margin-right: 4px; }
+  .btn-editar-em:hover  { background: var(--borda); }
+  .btn-deletar-em { padding: 5px 11px; border: none; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; background: var(--bg-fee2e2); color: var(--tx-b91c1c); }
+  .btn-deletar-em:hover { background: var(--bg-fecaca); }
+  .em-vazio { text-align: center; padding: 40px; color: var(--texto-leve); font-size: 13px; }
 
   /* ── Modal largo com duas colunas ── */
   #overlay-em .card-modal { max-width: 880px; }
@@ -54,19 +54,19 @@
   .em-col-form { flex: 1; min-width: 0; }
   .em-col-side { width: 256px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
 
-  .em-params-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; max-height: 220px; overflow-y: auto; }
-  .em-params-titulo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; }
-  .em-params-hint  { font-size: 10px; color: #94a3b8; margin-bottom: 8px; }
+  .em-params-box { background: var(--fundo-sutil); border: 1px solid var(--borda); border-radius: 10px; padding: 12px 14px; max-height: 220px; overflow-y: auto; }
+  .em-params-titulo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--texto-suave); margin-bottom: 6px; }
+  .em-params-hint  { font-size: 10px; color: var(--texto-leve); margin-bottom: 8px; }
   .em-param-row { display: flex; align-items: baseline; gap: 6px; padding: 3px 5px; border-radius: 5px; cursor: pointer; }
-  .em-param-row:hover { background: #e2e8f0; }
+  .em-param-row:hover { background: var(--borda); }
   .em-param-token { font-family: monospace; font-size: 11px; font-weight: 700; color: #0891b2; white-space: nowrap; }
-  .em-param-desc  { font-size: 10.5px; color: #64748b; }
+  .em-param-desc  { font-size: 10.5px; color: var(--texto-suave); }
 
-  .em-preview-box { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
-  .em-preview-titulo  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; }
-  .em-preview-assunto { font-size: 11.5px; font-weight: 600; color: #1e293b; margin-bottom: 8px; padding-bottom: 7px; border-bottom: 1px solid #f1f5f9; word-break: break-word; }
-  .em-preview-corpo   { font-size: 11.5px; color: #334155; white-space: pre-wrap; line-height: 1.6; word-break: break-word; max-height: 180px; overflow-y: auto; }
-  .em-preview-vazio   { font-size: 11px; color: #94a3b8; font-style: italic; }
+  .em-preview-box { background: var(--fundo-card); border: 1.5px solid var(--borda); border-radius: 10px; padding: 12px 14px; }
+  .em-preview-titulo  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--texto-suave); margin-bottom: 6px; }
+  .em-preview-assunto { font-size: 11.5px; font-weight: 600; color: var(--texto-escuro); margin-bottom: 8px; padding-bottom: 7px; border-bottom: 1px solid var(--fundo-muted); word-break: break-word; }
+  .em-preview-corpo   { font-size: 11.5px; color: var(--texto-2); white-space: pre-wrap; line-height: 1.6; word-break: break-word; max-height: 180px; overflow-y: auto; }
+  .em-preview-vazio   { font-size: 11px; color: var(--texto-leve); font-style: italic; }
 
 </style>
 {% endblock %}

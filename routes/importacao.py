@@ -63,6 +63,9 @@ def importar_planilha():
     if dados.get('cancelados'):
         totais['cancelados'] = banco.importar_cancelados(dados['cancelados'], substituir=substituir)
 
+    if dados.get('sispbol'):
+        totais['sispbol'] = banco.importar_sispbol(dados['sispbol'], substituir=substituir)
+
     if not totais:
         return jsonify({'erro': 'Nenhuma aba reconhecida na planilha.'}), 400
 

@@ -19,19 +19,19 @@
   /* ── Tabs ── */
   .aj-tabs {
     display: flex; gap: 4px; margin-bottom: 24px;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 2px solid var(--borda);
     padding-bottom: 0;
   }
   .aj-tab-btn {
     padding: 9px 20px; font-size: 13px; font-weight: 600;
     border: none; background: none; cursor: pointer;
-    font-family: inherit; color: #64748b;
+    font-family: inherit; color: var(--texto-suave);
     border-bottom: 2px solid transparent; margin-bottom: -2px;
     transition: color 0.15s, border-color 0.15s;
     display: flex; align-items: center; gap: 6px;
   }
-  .aj-tab-btn.ativo { color: #2563eb; border-bottom-color: #2563eb; }
-  .aj-tab-btn:hover:not(.ativo) { color: #334155; }
+  .aj-tab-btn.ativo { color: var(--tx-2563eb); border-bottom-color: #2563eb; }
+  .aj-tab-btn:hover:not(.ativo) { color: var(--texto-2); }
   .aj-tab-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
   .aj-tab-painel { display: none; }
   .aj-tab-painel.ativo { display: block; }
@@ -39,7 +39,7 @@
   /* ── Manuais ── */
   .aj-topico { margin-bottom: 32px; }
   .aj-topico-titulo {
-    font-size: 14px; font-weight: 700; color: #1e293b;
+    font-size: 14px; font-weight: 700; color: var(--texto-escuro);
     text-transform: uppercase; letter-spacing: 0.5px;
     margin-bottom: 14px;
     display: flex; align-items: center; gap: 8px;
@@ -53,40 +53,40 @@
   }
 
   .aj-card {
-    background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+    background: var(--fundo-card); border: 1px solid var(--borda); border-radius: 14px;
     padding: 18px; text-decoration: none; display: flex;
     flex-direction: column; gap: 10px;
     transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
   }
-  .aj-card:hover { box-shadow: 0 6px 20px rgba(30,79,196,0.10); border-color: #bfdbfe; transform: translateY(-1px); }
+  .aj-card:hover { box-shadow: 0 6px 20px rgba(30,79,196,0.10); border-color: var(--bd-bfdbfe); transform: translateY(-1px); }
 
   .aj-card-icone {
     width: 36px; height: 36px; border-radius: 10px;
-    background: #eff6ff; display: flex; align-items: center; justify-content: center;
+    background: var(--bg-eff6ff); display: flex; align-items: center; justify-content: center;
   }
   .aj-card-icone svg { width: 18px; height: 18px; stroke: #2563eb; fill: none; stroke-width: 2; stroke-linecap: round; }
-  .aj-card-icone.col { background: #f0fdf4; }
+  .aj-card-icone.col { background: var(--bg-f0fdf4); }
   .aj-card-icone.col svg { stroke: #16a34a; }
 
-  .aj-card-titulo { font-size: 14px; font-weight: 700; color: #1e293b; line-height: 1.4; }
-  .aj-card-banco  { font-size: 11px; font-weight: 600; color: #2563eb; text-transform: uppercase; letter-spacing: 0.4px; }
-  .aj-card-desc   { font-size: 12.5px; color: #64748b; line-height: 1.5; flex: 1; }
+  .aj-card-titulo { font-size: 14px; font-weight: 700; color: var(--texto-escuro); line-height: 1.4; }
+  .aj-card-banco  { font-size: 11px; font-weight: 600; color: var(--tx-2563eb); text-transform: uppercase; letter-spacing: 0.4px; }
+  .aj-card-desc   { font-size: 12.5px; color: var(--texto-suave); line-height: 1.5; flex: 1; }
   .aj-card-rodape {
-    font-size: 11px; color: #94a3b8;
+    font-size: 11px; color: var(--texto-leve);
     display: flex; align-items: center; gap: 6px;
-    padding-top: 10px; border-top: 1px solid #f1f5f9;
+    padding-top: 10px; border-top: 1px solid var(--fundo-muted);
   }
   .aj-card-rodape svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
 
   .aj-empty {
-    text-align: center; padding: 60px 20px; color: #94a3b8; font-size: 13px;
-    background: #fff; border: 1px dashed #e2e8f0; border-radius: 14px;
+    text-align: center; padding: 60px 20px; color: var(--texto-leve); font-size: 13px;
+    background: var(--fundo-card); border: 1px dashed var(--borda); border-radius: 14px;
   }
 
   /* ── Collections: agrupamento por banco ── */
   .col-banco-grupo { margin-bottom: 30px; }
   .col-banco-titulo {
-    font-size: 13px; font-weight: 700; color: #1e293b;
+    font-size: 13px; font-weight: 700; color: var(--texto-escuro);
     text-transform: uppercase; letter-spacing: 0.5px;
     margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
   }
@@ -101,12 +101,12 @@
   <button class="aj-tab-btn ativo" id="tab-manuais" onclick="trocarAba('manuais')">
     <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
     Manuais
-    {% if topicos %}<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;">{{ topicos | map(attribute='posts') | sum(start=[]) | length }}</span>{% endif %}
+    {% if topicos %}<span style="background:var(--bg-dcfce7);color:var(--tx-15803d);font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;">{{ topicos | map(attribute='posts') | sum(start=[]) | length }}</span>{% endif %}
   </button>
   <button class="aj-tab-btn" id="tab-collections" onclick="trocarAba('collections')">
     <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
     Collections API
-    {% if collections_por_banco %}<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;">{{ collections_por_banco.values() | sum(start=[]) | list | length }}</span>{% endif %}
+    {% if collections_por_banco %}<span style="background:var(--bg-dcfce7);color:var(--tx-15803d);font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;">{{ collections_por_banco.values() | sum(start=[]) | list | length }}</span>{% endif %}
   </button>
 </div>
 
@@ -117,7 +117,7 @@
   <div class="aj-empty">
     Nenhum manual cadastrado ainda.
     {% if nivel_acesso == 'master' or 'ajuda_gerenciar' in telas_acesso %}
-    <br><a href="/ajuda/gerenciar" style="color:#2563eb;font-weight:600;">Cadastrar o primeiro manual</a>
+    <br><a href="/ajuda/gerenciar" style="color:var(--tx-2563eb);font-weight:600;">Cadastrar o primeiro manual</a>
     {% endif %}
   </div>
   {% else %}
@@ -154,7 +154,7 @@
   <div class="aj-empty">
     Nenhuma collection cadastrada ainda.
     {% if nivel_acesso == 'master' or 'ajuda_gerenciar' in telas_acesso %}
-    <br><a href="/ajuda/gerenciar?aba=collections" style="color:#2563eb;font-weight:600;">Cadastrar a primeira collection</a>
+    <br><a href="/ajuda/gerenciar?aba=collections" style="color:var(--tx-2563eb);font-weight:600;">Cadastrar a primeira collection</a>
     {% endif %}
   </div>
   {% else %}

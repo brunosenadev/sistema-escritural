@@ -15,8 +15,8 @@
   }
 
   .sql-sidebar {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--fundo-card);
+    border: 1px solid var(--borda);
     border-radius: 14px;
     overflow: hidden;
     display: flex;
@@ -30,9 +30,9 @@
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    color: #64748b;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
+    color: var(--texto-suave);
+    background: var(--fundo-sutil);
+    border-bottom: 1px solid var(--borda);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -53,10 +53,10 @@
     padding: 5px 12px;
     font-size: 12px;
     font-weight: 600;
-    color: #334155;
+    color: var(--texto-2);
     transition: background .1s;
   }
-  .tabela-item-header:hover { background: #f1f5f9; }
+  .tabela-item-header:hover { background: var(--fundo-muted); }
   .tabela-item-header svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
   .tabela-item-header .ico-db { stroke: #6366f1; }
   .tabela-item-header .seta { stroke: #94a3b8; transition: transform .15s; }
@@ -71,11 +71,11 @@
     gap: 6px;
     padding: 3px 12px 3px 28px;
     font-size: 11px;
-    color: #64748b;
+    color: var(--texto-suave);
   }
   .col-item .col-tipo {
     font-size: 10px;
-    color: #94a3b8;
+    color: var(--texto-leve);
     margin-left: auto;
     font-family: monospace;
   }
@@ -88,8 +88,8 @@
   }
 
   .sql-editor-card {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--fundo-card);
+    border: 1px solid var(--borda);
     border-radius: 14px;
     overflow: hidden;
     box-shadow: 0 1px 4px rgba(30,79,196,0.05);
@@ -103,14 +103,14 @@
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    border-bottom: 1px solid #e2e8f0;
-    background: #f8fafc;
+    border-bottom: 1px solid var(--borda);
+    background: var(--fundo-sutil);
   }
 
   .sql-toolbar-title {
     font-size: 13px;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--texto-escuro);
     margin-right: auto;
     display: flex;
     align-items: center;
@@ -142,18 +142,18 @@
 
   .btn-executar { background: #2563eb; color: #fff; border-color: #1d4ed8; }
   .btn-executar:hover { background: #1d4ed8; }
-  .btn-formatar { background: #fff; color: #4b5563; border-color: #d1d5db; }
-  .btn-formatar:hover { background: #f1f5f9; border-color: #94a3b8; }
-  .btn-limpar   { background: #fff; color: #ef4444; border-color: #fca5a5; }
-  .btn-limpar:hover { background: #fef2f2; }
-  .btn-exportar { background: #fff; color: #16a34a; border-color: #86efac; }
-  .btn-exportar:hover { background: #f0fdf4; border-color: #4ade80; }
+  .btn-formatar { background: var(--fundo-card); color: var(--tx-4b5563); border-color: var(--bd-d1d5db); }
+  .btn-formatar:hover { background: var(--fundo-muted); border-color: var(--bd-94a3b8); }
+  .btn-limpar   { background: var(--fundo-card); color: var(--tx-ef4444); border-color: var(--bd-fca5a5); }
+  .btn-limpar:hover { background: var(--bg-fef2f2); }
+  .btn-exportar { background: var(--fundo-card); color: var(--tx-16a34a); border-color: var(--bd-86efac); }
+  .btn-exportar:hover { background: var(--bg-f0fdf4); border-color: #4ade80; }
 
   .kbd-hint {
     font-size: 10px;
-    color: #94a3b8;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
+    color: var(--texto-leve);
+    background: var(--fundo-muted);
+    border: 1px solid var(--borda);
     border-radius: 4px;
     padding: 1px 5px;
     font-family: monospace;
@@ -169,8 +169,8 @@
     padding: 14px 16px;
     border: none;
     outline: none;
-    color: #1e293b;
-    background: #fff;
+    color: var(--texto-escuro);
+    background: var(--fundo-card);
     tab-size: 2;
     box-sizing: border-box;
   }
@@ -185,8 +185,8 @@
   }
 
   .resultado-bloco {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--fundo-card);
+    border: 1px solid var(--borda);
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
@@ -197,8 +197,8 @@
     align-items: center;
     gap: 10px;
     padding: 8px 14px;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
+    background: var(--fundo-sutil);
+    border-bottom: 1px solid var(--borda);
     font-size: 12px;
   }
 
@@ -208,14 +208,14 @@
     font-size: 11px;
     font-weight: 700;
   }
-  .badge-select  { background: #dbeafe; color: #1d4ed8; }
-  .badge-dml     { background: #dcfce7; color: #15803d; }
-  .badge-erro    { background: #fee2e2; color: #991b1b; }
+  .badge-select  { background: var(--bg-dbeafe); color: var(--tx-1d4ed8); }
+  .badge-dml     { background: var(--bg-dcfce7); color: var(--tx-15803d); }
+  .badge-erro    { background: var(--bg-fee2e2); color: var(--tx-991b1b); }
 
   .resultado-sql-preview {
     font-family: monospace;
     font-size: 11px;
-    color: #64748b;
+    color: var(--texto-suave);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -224,7 +224,7 @@
 
   .resultado-info {
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--texto-leve);
     margin-left: auto;
     white-space: nowrap;
   }
@@ -245,23 +245,23 @@
   .tabela-sql thead th {
     position: sticky;
     top: 0;
-    background: #f1f5f9;
-    color: #475569;
+    background: var(--fundo-muted);
+    color: var(--texto-medio);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
     padding: 8px 12px;
     text-align: left;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--borda);
     white-space: nowrap;
     z-index: 1;
   }
 
   .tabela-sql tbody td {
     padding: 7px 12px;
-    border-bottom: 1px solid #f1f5f9;
-    color: #1e293b;
+    border-bottom: 1px solid var(--fundo-muted);
+    color: var(--texto-escuro);
     white-space: nowrap;
     max-width: 320px;
     overflow: hidden;
@@ -270,14 +270,14 @@
   }
 
   .tabela-sql tbody tr:last-child td { border-bottom: none; }
-  .tabela-sql tbody tr:hover td { background: #f8fafc; }
+  .tabela-sql tbody tr:hover td { background: var(--fundo-sutil); }
 
-  .td-null { color: #94a3b8 !important; font-style: italic; }
+  .td-null { color: var(--texto-leve) !important; font-style: italic; }
 
   .dml-msg {
     padding: 16px;
     font-size: 13px;
-    color: #15803d;
+    color: var(--tx-15803d);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -287,16 +287,16 @@
   .erro-msg {
     padding: 14px 16px;
     font-size: 13px;
-    color: #991b1b;
+    color: var(--tx-991b1b);
     font-family: monospace;
-    background: #fef2f2;
+    background: var(--bg-fef2f2);
     white-space: pre-wrap;
   }
 
   .placeholder-sql {
     padding: 40px 16px;
     text-align: center;
-    color: #94a3b8;
+    color: var(--texto-leve);
     font-size: 13px;
   }
   .placeholder-sql svg { width: 32px; height: 32px; stroke: #cbd5e1; fill: none; stroke-width: 1.5; margin: 0 auto 10px; display: block; stroke-linecap: round; stroke-linejoin: round; }
@@ -314,7 +314,7 @@
       Tabelas
     </div>
     <div class="sql-sidebar-body" id="lista-tabelas">
-      <div style="padding:16px;font-size:12px;color:#94a3b8;text-align:center;">Carregando...</div>
+      <div style="padding:16px;font-size:12px;color:var(--texto-leve);text-align:center;">Carregando...</div>
     </div>
   </div>
 
@@ -513,7 +513,7 @@ function carregarTabelas() {
     })
     .catch(() => {
       document.getElementById('lista-tabelas').innerHTML =
-        '<div style="padding:12px;font-size:12px;color:#ef4444;">Erro ao carregar.</div>';
+        '<div style="padding:12px;font-size:12px;color:var(--tx-ef4444);">Erro ao carregar.</div>';
     });
 }
 

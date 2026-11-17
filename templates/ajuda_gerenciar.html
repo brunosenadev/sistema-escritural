@@ -10,73 +10,73 @@
 {% block estilos_extras %}
 <style>
   /* Reaproveita estilos de configuracoes.html */
-  .card-config { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(30,79,196,0.05); margin-bottom: 20px; }
-  .card-config-header { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .card-config-titulo { font-size: 14px; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+  .card-config { background: var(--fundo-card); border: 1px solid var(--borda); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(30,79,196,0.05); margin-bottom: 20px; }
+  .card-config-header { padding: 14px 20px; border-bottom: 1px solid var(--fundo-muted); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .card-config-titulo { font-size: 14px; font-weight: 600; color: var(--texto-escuro); display: flex; align-items: center; gap: 8px; }
   .card-config-titulo svg { width: 15px; height: 15px; stroke: #3b82f6; fill: none; stroke-width: 2; stroke-linecap: round; }
   .card-config-acoes { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
   .card-config-body { padding: 0; }
 
   .tabela-config { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .tabela-config th { padding: 8px 14px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; color: #64748b; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
-  .tabela-config td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
+  .tabela-config th { padding: 8px 14px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; color: var(--texto-suave); background: var(--fundo-sutil); border-bottom: 1px solid var(--borda); }
+  .tabela-config td { padding: 10px 14px; border-bottom: 1px solid var(--fundo-muted); color: var(--texto-2); vertical-align: middle; }
   .tabela-config tr:last-child td { border-bottom: none; }
-  .tabela-config tr:hover td { background: #f8fbff; }
+  .tabela-config tr:hover td { background: var(--bg-f8fbff); }
 
   .btn-acao-mini { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer; border: 1.5px solid transparent; transition: background 0.15s; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
   .btn-acao-mini svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
-  .btn-editar-mini  { background: #eff6ff; color: #3b82f6; border-color: #bfdbfe; }
-  .btn-editar-mini:hover  { background: #dbeafe; }
-  .btn-deletar-mini { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
-  .btn-deletar-mini:hover { background: #fee2e2; }
+  .btn-editar-mini  { background: var(--bg-eff6ff); color: var(--tx-3b82f6); border-color: var(--bd-bfdbfe); }
+  .btn-editar-mini:hover  { background: var(--bg-dbeafe); }
+  .btn-deletar-mini { background: var(--bg-fef2f2); color: var(--tx-ef4444); border-color: var(--bd-fecaca); }
+  .btn-deletar-mini:hover { background: var(--bg-fee2e2); }
 
   .btn-primario-config { padding: 8px 16px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; text-decoration: none; }
   .btn-primario-config:hover { background: #1d4ed8; }
   .btn-primario-config svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; }
 
-  .btn-secundario-mini { padding: 7px 14px; background: #f8fafc; color: #475569; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
-  .btn-secundario-mini:hover { background: #f1f5f9; }
+  .btn-secundario-mini { padding: 7px 14px; background: var(--fundo-sutil); color: var(--texto-medio); border: 1.5px solid var(--borda); border-radius: 8px; font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+  .btn-secundario-mini:hover { background: var(--fundo-muted); }
   .btn-secundario-mini svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
 
   .overlay-modal { display: none; position: fixed; inset: 0; background: rgba(10,22,40,0.55); z-index: 500; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
   .overlay-modal.aberto { display: flex; }
-  .modal-config { background: #fff; border-radius: 16px; padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(10,22,40,0.25); animation: modal-entrar 0.25s cubic-bezier(.34,1.56,.64,1); }
+  .modal-config { background: var(--fundo-card); border-radius: 16px; padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(10,22,40,0.25); animation: modal-entrar 0.25s cubic-bezier(.34,1.56,.64,1); }
   @keyframes modal-entrar { from { opacity: 0; transform: scale(0.92) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-  .modal-titulo { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
-  .btn-fechar-modal { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; border-radius: 6px; display: flex; align-items: center; }
-  .btn-fechar-modal:hover { color: #475569; background: #f1f5f9; }
+  .modal-titulo { font-size: 16px; font-weight: 700; color: var(--texto-forte); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+  .btn-fechar-modal { background: none; border: none; cursor: pointer; color: var(--texto-leve); padding: 4px; border-radius: 6px; display: flex; align-items: center; }
+  .btn-fechar-modal:hover { color: var(--texto-medio); background: var(--fundo-muted); }
   .btn-fechar-modal svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
   .grupo-modal { margin-bottom: 14px; }
-  .grupo-modal label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: #64748b; margin-bottom: 5px; }
-  .input-modal { width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: 'Inter', sans-serif; color: #1e293b; background: #f8fafc; outline: none; }
-  .input-modal:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
+  .grupo-modal label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--texto-suave); margin-bottom: 5px; }
+  .input-modal { width: 100%; padding: 9px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font-size: 13px; font-family: 'Inter', sans-serif; color: var(--texto-escuro); background: var(--fundo-sutil); outline: none; }
+  .input-modal:focus { border-color: #3b82f6; background: var(--fundo-card); box-shadow: 0 0 0 3px rgba(59,130,246,0.10); }
   .rodape-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-  .btn-cancelar-modal { padding: 9px 18px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #fff; color: #475569; font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer; }
-  .btn-cancelar-modal:hover { background: #f8fafc; }
+  .btn-cancelar-modal { padding: 9px 18px; border: 1.5px solid var(--borda); border-radius: 8px; background: var(--fundo-card); color: var(--texto-medio); font-size: 13px; font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer; }
+  .btn-cancelar-modal:hover { background: var(--fundo-sutil); }
   .btn-salvar-modal { padding: 9px 20px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; }
   .btn-salvar-modal:hover { background: #1d4ed8; }
 
-  .aj-empty-topico { text-align: center; padding: 28px; color: #94a3b8; font-size: 12.5px; }
+  .aj-empty-topico { text-align: center; padding: 28px; color: var(--texto-leve); font-size: 12.5px; }
 
   .aj-toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 18px; }
   .aj-toolbar .btn-secundario-mini { padding: 9px 16px; }
 
   /* Abas gerenciar */
-  .ger-tabs { display: flex; gap: 4px; margin-bottom: 22px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0; }
-  .ger-tab-btn { padding: 9px 20px; font-size: 13px; font-weight: 600; border: none; background: none; cursor: pointer; font-family: 'Inter',sans-serif; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.15s, border-color 0.15s; display: flex; align-items: center; gap: 6px; }
+  .ger-tabs { display: flex; gap: 4px; margin-bottom: 22px; border-bottom: 2px solid var(--borda); padding-bottom: 0; }
+  .ger-tab-btn { padding: 9px 20px; font-size: 13px; font-weight: 600; border: none; background: none; cursor: pointer; font-family: 'Inter',sans-serif; color: var(--texto-suave); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.15s, border-color 0.15s; display: flex; align-items: center; gap: 6px; }
   .ger-tab-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
-  .ger-tab-btn.ativo { color: #2563eb; border-bottom-color: #2563eb; }
-  .ger-tab-btn:hover:not(.ativo) { color: #334155; }
+  .ger-tab-btn.ativo { color: var(--tx-2563eb); border-bottom-color: #2563eb; }
+  .ger-tab-btn:hover:not(.ativo) { color: var(--texto-2); }
   .ger-painel { display: none; }
   .ger-painel.ativo { display: block; }
 
   /* Collections */
-  .col-tabela-banco { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #16a34a; }
-  .col-conteudo-preview { font-family: 'Consolas','Monaco',monospace; font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  .col-tabela-banco { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--tx-16a34a); }
+  .col-conteudo-preview { font-family: 'Consolas','Monaco',monospace; font-size: 11px; color: var(--texto-leve); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
 
   /* Modal collection */
-  .modal-col-config { background: #fff; border-radius: 16px; padding: 28px; width: 100%; max-width: 600px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(10,22,40,0.25); animation: modal-entrar 0.2s ease; }
-  .textarea-col-config { width: 100%; padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-family: 'Consolas','Monaco','Courier New',monospace; background: #0f172a; color: #e2e8f0; outline: none; resize: vertical; min-height: 200px; box-sizing: border-box; }
+  .modal-col-config { background: var(--fundo-card); border-radius: 16px; padding: 28px; width: 100%; max-width: 600px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(10,22,40,0.25); animation: modal-entrar 0.2s ease; }
+  .textarea-col-config { width: 100%; padding: 10px 12px; border: 1.5px solid var(--borda); border-radius: 8px; font-size: 12px; font-family: 'Consolas','Monaco','Courier New',monospace; background: #0f172a; color: #e2e8f0; outline: none; resize: vertical; min-height: 200px; box-sizing: border-box; }
   .textarea-col-config:focus { border-color: #3b82f6; }
 </style>
 {% endblock %}
@@ -109,7 +109,7 @@
   </div>
 
   {% if not topicos %}
-  <div class="aj-empty-topico" style="background:#fff;border:1px dashed #e2e8f0;border-radius:14px;padding:50px 20px;">
+  <div class="aj-empty-topico" style="background:var(--fundo-card);border:1px dashed var(--borda);border-radius:14px;padding:50px 20px;">
     Nenhum tópico cadastrado. Crie o primeiro tópico para começar a adicionar manuais.
   </div>
   {% endif %}
@@ -120,7 +120,7 @@
       <span class="card-config-titulo">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         {{ topico.nome }}
-        <span style="font-size:11px;font-weight:500;color:#94a3b8;">({{ topico.posts | length }} manual{{ 'is' if topico.posts | length != 1 else '' }})</span>
+        <span style="font-size:11px;font-weight:500;color:var(--texto-leve);">({{ topico.posts | length }} manual{{ 'is' if topico.posts | length != 1 else '' }})</span>
       </span>
       <div class="card-config-acoes">
         <a href="/ajuda/gerenciar/post/novo?topico_id={{ topico.id }}" class="btn-acao-mini btn-editar-mini">
@@ -147,8 +147,8 @@
           {% for post in topico.posts %}
           <tr>
             <td style="font-weight:500;">{{ post.titulo }}</td>
-            <td style="color:#64748b;">{{ post.descricao or '—' }}</td>
-            <td style="color:#94a3b8;font-size:12px;">{{ post.atualizado_em }}</td>
+            <td style="color:var(--texto-suave);">{{ post.descricao or '—' }}</td>
+            <td style="color:var(--texto-leve);font-size:12px;">{{ post.atualizado_em }}</td>
             <td>
               <div style="display:flex;gap:6px;">
                 <a href="/ajuda/gerenciar/post/{{ post.id }}/editar" class="btn-acao-mini btn-editar-mini">
@@ -186,7 +186,7 @@
   </div>
 
   {% if not collections %}
-  <div class="aj-empty-topico" style="background:#fff;border:1px dashed #e2e8f0;border-radius:14px;padding:50px 20px;">
+  <div class="aj-empty-topico" style="background:var(--fundo-card);border:1px dashed var(--borda);border-radius:14px;padding:50px 20px;">
     Nenhuma collection cadastrada ainda.
   </div>
   {% else %}
@@ -200,9 +200,9 @@
           {% for col in collections %}
           <tr>
             <td class="col-tabela-banco">{{ col.banco }}</td>
-            <td style="font-weight:500;"><a href="/ajuda/collections/{{ col.id }}" style="color:#2563eb;text-decoration:none;">{{ col.titulo }}</a></td>
-            <td style="color:#64748b;">{{ col.descricao or '—' }}</td>
-            <td style="color:#94a3b8;font-size:12px;">{{ col.atualizado_em }}</td>
+            <td style="font-weight:500;"><a href="/ajuda/collections/{{ col.id }}" style="color:var(--tx-2563eb);text-decoration:none;">{{ col.titulo }}</a></td>
+            <td style="color:var(--texto-suave);">{{ col.descricao or '—' }}</td>
+            <td style="color:var(--texto-leve);font-size:12px;">{{ col.atualizado_em }}</td>
             <td>
               <div style="display:flex;gap:6px;">
                 <button class="btn-acao-mini btn-editar-mini" onclick='abrirModalEditarCollection({{ col | tojson | forceescape }})'>

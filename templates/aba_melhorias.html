@@ -31,8 +31,8 @@
     min-width: 230px;
     max-width: 290px;
     border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
+    border: 1px solid var(--borda);
+    background: var(--fundo-sutil);
     display: flex;
     flex-direction: column;
   }
@@ -76,8 +76,8 @@
 
   /* ── Card ── */
   .kcard {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--fundo-card);
+    border: 1px solid var(--borda);
     border-radius: 8px;
     padding: 9px 10px 8px;
     cursor: pointer;
@@ -85,7 +85,7 @@
   }
   .kcard:hover {
     box-shadow: 0 3px 10px rgba(0,0,0,0.09);
-    border-color: #c7d2fe;
+    border-color: var(--bd-c7d2fe);
     transform: translateY(-1px);
   }
 
@@ -105,15 +105,15 @@
     letter-spacing: 0.04em;
     flex-shrink: 0;
   }
-  .prior-urgente { background:#fef2f2; color:#dc2626; }
-  .prior-alta    { background:#fff7ed; color:#c2410c; }
-  .prior-media   { background:#fefce8; color:#a16207; }
-  .prior-baixa   { background:#f0fdf4; color:#15803d; }
+  .prior-urgente { background:var(--bg-fef2f2); color:var(--tx-dc2626); }
+  .prior-alta    { background:var(--bg-fff7ed); color:var(--tx-c2410c); }
+  .prior-media   { background:var(--bg-fefce8); color:var(--tx-a16207); }
+  .prior-baixa   { background:var(--bg-f0fdf4); color:var(--tx-15803d); }
 
   .kcard-prog {
     margin-left: auto;
     font-size: 0.65rem;
-    color: #94a3b8;
+    color: var(--texto-leve);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -123,7 +123,7 @@
   .kcard-titulo {
     font-size: 0.80rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--texto-escuro);
     line-height: 1.35;
     margin-bottom: 5px;
     display: -webkit-box;
@@ -141,14 +141,14 @@
 
   .kcard-img-badge {
     display: inline-flex; align-items: center; gap: 3px;
-    font-size: 0.60rem; color: #94a3b8;
+    font-size: 0.60rem; color: var(--texto-leve);
     flex-shrink: 0;
   }
   .kcard-img-badge svg { opacity: 0.7; }
 
   .kcard-solicitante {
     font-size: 0.63rem;
-    color: #94a3b8;
+    color: var(--texto-leve);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -182,16 +182,16 @@
   .kadd-btn {
     margin: 0 8px 8px;
     width: calc(100% - 16px);
-    border: 1.5px dashed #cbd5e1;
+    border: 1.5px dashed var(--borda-forte);
     background: transparent;
-    color: #94a3b8;
+    color: var(--texto-leve);
     border-radius: 7px;
     padding: 7px;
     font-size: 0.74rem;
     cursor: pointer;
     transition: border-color 0.12s, color 0.12s;
   }
-  .kadd-btn:hover { border-color:#6366f1; color:#6366f1; }
+  .kadd-btn:hover { border-color:#6366f1; color:var(--tx-6366f1); }
   {% if not pode_mover %}.kadd-btn { display:none; }{% endif %}
 
   /* ── Modal criar/editar ── */
@@ -203,47 +203,47 @@
   .ov-mel.aberto { display: flex; }
 
   .mod-mel {
-    background: #fff;
+    background: var(--fundo-card);
     border-radius: 12px;
     padding: 24px;
     width: 480px; max-width: 95vw; max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 24px 64px rgba(0,0,0,0.20);
   }
-  .mod-mel h3 { margin:0 0 18px; font-size:0.95rem; font-weight:700; color:#1e293b; }
+  .mod-mel h3 { margin:0 0 18px; font-size:0.95rem; font-weight:700; color:var(--texto-escuro); }
 
   .frow { display:flex; gap:10px; }
   .fg { display:flex; flex-direction:column; gap:4px; margin-bottom:12px; flex:1; }
-  .fg label { font-size:0.73rem; font-weight:600; color:#475569; }
+  .fg label { font-size:0.73rem; font-weight:600; color:var(--texto-medio); }
   .fg input, .fg select, .fg textarea {
     padding: 7px 10px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--borda);
     border-radius: 7px;
     font-size: 0.82rem;
-    background: #f8fafc;
-    color: #1e293b;
+    background: var(--fundo-sutil);
+    color: var(--texto-escuro);
     outline: none;
     font-family: inherit;
   }
   .fg input:focus, .fg select:focus, .fg textarea:focus {
-    border-color: #6366f1; background: #fff; box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+    border-color: #6366f1; background: var(--fundo-card); box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
   }
   .fg textarea { resize: vertical; min-height: 80px; }
 
   .mod-actions {
     display:flex; gap:8px; justify-content:flex-end; margin-top:16px;
-    padding-top: 14px; border-top: 1px solid #f1f5f9;
+    padding-top: 14px; border-top: 1px solid var(--fundo-muted);
   }
   .mbtn-save   { background:#6366f1;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:.82rem;font-weight:600;cursor:pointer; }
-  .mbtn-cancel { background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:7px;padding:8px 16px;font-size:.82rem;font-weight:600;cursor:pointer; }
-  .mbtn-del    { background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:7px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;margin-right:auto; }
+  .mbtn-cancel { background:var(--fundo-sutil);color:var(--texto-medio);border:1px solid var(--borda);border-radius:7px;padding:8px 16px;font-size:.82rem;font-weight:600;cursor:pointer; }
+  .mbtn-del    { background:var(--bg-fef2f2);color:var(--tx-dc2626);border:1px solid var(--bd-fecaca);border-radius:7px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;margin-right:auto; }
 
   /* ── Modal rejeição ── */
   .ov-rej { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1100; align-items:center; justify-content:center; }
   .ov-rej.aberto { display:flex; }
-  .mod-rej { background:#fff; border-radius:12px; padding:22px; width:380px; max-width:95vw; box-shadow:0 24px 64px rgba(0,0,0,.20); }
-  .mod-rej h3 { margin:0 0 14px; font-size:.92rem; font-weight:700; color:#1e293b; }
-  .motivo-ta { width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:.82rem; background:#f8fafc; color:#1e293b; resize:vertical; min-height:80px; outline:none; font-family:inherit; }
+  .mod-rej { background:var(--fundo-card); border-radius:12px; padding:22px; width:380px; max-width:95vw; box-shadow:0 24px 64px rgba(0,0,0,.20); }
+  .mod-rej h3 { margin:0 0 14px; font-size:.92rem; font-weight:700; color:var(--texto-escuro); }
+  .motivo-ta { width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--borda); border-radius:7px; font-size:.82rem; background:var(--fundo-sutil); color:var(--texto-escuro); resize:vertical; min-height:80px; outline:none; font-family:inherit; }
   .motivo-ta:focus { border-color:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,.08); }
 
   /* ── Botão nova melhoria ── */
@@ -281,9 +281,9 @@
     height: 72px;
     border-radius: 7px;
     overflow: hidden;
-    border: 1.5px solid #e2e8f0;
+    border: 1.5px solid var(--borda);
     flex-shrink: 0;
-    background: #f8fafc;
+    background: var(--fundo-sutil);
   }
   .img-thumb img {
     width: 100%; height: 100%;
@@ -310,13 +310,13 @@
   .img-thumb-del:hover { background: rgba(220,38,38,0.85); }
 
   .img-dropzone {
-    border: 1.5px dashed #cbd5e1;
+    border: 1.5px dashed var(--borda-forte);
     border-radius: 8px;
     padding: 10px 14px;
     text-align: center;
     cursor: pointer;
     font-size: 0.76rem;
-    color: #94a3b8;
+    color: var(--texto-leve);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -327,8 +327,8 @@
   .img-dropzone svg { flex-shrink: 0; }
   .img-dropzone:hover, .img-dropzone.drag-ov {
     border-color: #6366f1;
-    background: #f5f3ff;
-    color: #6366f1;
+    background: var(--bg-f5f3ff);
+    color: var(--tx-6366f1);
   }
 
   /* ── Lightbox de preview ── */
@@ -510,7 +510,7 @@
         {% if setor_usuario in ['PROGRAMAÇÃO', 'GESTOR PROGRAMAÇÃO'] %}
           {# usuário já é da programação: auto-preenche com seu próprio nome #}
           <input type="text" id="mel-prog" value="{{ nome_usuario | e }}" readonly
-                 style="background:var(--z-elevated,#f1f5f9);color:var(--z-text-2,#475569);cursor:default;">
+                 style="background:var(--z-elevated,var(--fundo-muted));color:var(--z-text-2,var(--texto-medio));cursor:default;">
         {% else %}
           <select id="mel-prog">
             <option value="">— Nenhum —</option>
