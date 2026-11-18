@@ -9,6 +9,7 @@ _HOMOLOGADOS = [
     ('homologados_pagamentos',   'homologados_pagamentos',   'Pagamentos'),
     ('homologados_extrato',      'homologados_extrato',      'Extrato Cartão'),
     ('homologados_ext_bancario', 'homologados_ext_bancario', 'Extrato Bancário'),
+    ('sispbol',                  'sispbol',                  'SispBol'),
 ]
 
 _TELAS_INICIAL = [

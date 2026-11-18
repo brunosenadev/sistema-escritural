@@ -660,7 +660,7 @@
       padding: 0 6px;
       border-radius: 8px;
       text-decoration: none;
-      color: #7cc3ff;
+      color: var(--sp-marca);
     }
     .marca-sisplan__logo { height: 32px; width: auto; }
     .marca-sisplan__divisor { width: 1px; height: 28px; margin: 0 2px; background: rgba(246,239,249,0.2); }
@@ -1646,19 +1646,26 @@
     });
   </script>
 
-  <!-- ── Aparência (temas claros) ─────────────────────────── -->
+  <!-- ── Aparência (mesma janela do Sisplan WEB) ─────────────────────────── -->
   <div id="overlay-aparencia" class="aparencia-overlay" style="display:none;" onclick="if(event.target===this)fecharAparencia()">
     <div class="aparencia-caixa" role="dialog" aria-modal="true" aria-labelledby="aparencia-titulo">
       <div class="aparencia-cabecalho">
         <div>
           <h2 id="aparencia-titulo">Aparência</h2>
-          <p>Clique num tema para aplicá-lo. A escolha fica salva no seu usuário. &ldquo;Alterar tema&rdquo; no menu alterna entre o último claro e o último escuro escolhidos.</p>
+          <p>Clique num tema para aplicá-lo. O botão Alterar tema alterna entre o último claro e o último escuro escolhidos.</p>
         </div>
         <button type="button" class="aparencia-fechar" onclick="fecharAparencia()" aria-label="Fechar">
           <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-      <div id="aparencia-grade"></div>
+      <div class="aparencia-corpo">
+        <h3 class="aparencia-secao">Prévia</h3>
+        <div id="aparencia-previa" class="aparencia-previa" aria-hidden="true"></div>
+        <div id="aparencia-grade" class="aparencia-grupos"></div>
+      </div>
+      <div class="aparencia-rodape">
+        <button type="button" class="aparencia-botao" onclick="fecharAparencia()">Fechar</button>
+      </div>
     </div>
   </div>
   <script>
@@ -1675,36 +1682,65 @@
         try { v = localStorage.getItem('escritural_tema_' + fam); } catch (e) {}
         return v && familia(v) === fam ? v : (fam === 'escuro' ? 'suave' : 'claro');
       }
-      var LINHA = '<span class="maquete__linha"><span class="maquete__barra maquete__barra--forte"></span><span class="maquete__barra"></span><span class="maquete__pilula"></span></span>';
+      function temaAtual() { return document.documentElement.getAttribute('data-tema') || 'claro'; }
       var salvando = false;
 
+      // tela do sistema em miniatura; a prévia e as opções usam a mesma (as opções em escala menor)
+      function linha(cls, pilula) {
+        return '<span class="maquete__linha' + cls + '"><i></i><i></i><i></i>' +
+          (pilula ? '<span class="maquete__pilula">Homologado</span>' : '<i></i>') + '</span>';
+      }
+      function maquete(id) {
+        return '<span class="maquete" data-tema="' + id + '">' +
+          '<span class="maquete__topo"><b class="maquete__marca">Escritural WEB</b>' +
+          '<span class="maquete__busca">Pesquisar</span><span class="maquete__avatar">AB</span></span>' +
+          '<span class="maquete__menu"><i class="ativo"></i><i></i><i></i><i></i></span>' +
+          '<span class="maquete__corpo">' +
+          '<span class="maquete__titulo"><b>Homologados</b><span class="maquete__btn">Incluir</span>' +
+          '<span class="maquete__btn maquete__btn--contorno">Filtros</span></span>' +
+          '<span class="maquete__cartao">' + linha(' maquete__linha--cab', false) + linha('', true) +
+          linha(' maquete__linha--sel', true) + linha('', true) + linha('', false) + linha('', true) +
+          '</span></span></span>';
+      }
+
+      function mostrarPrevia(id) {
+        document.querySelector('#aparencia-previa .maquete').setAttribute('data-tema', id);
+      }
+
+      // marca o tema atual e o último da outra família (o que "Alterar tema" vai usar)
       function marcar() {
-        var atual = document.documentElement.getAttribute('data-tema') || 'claro';
+        var atual = temaAtual();
+        var outro = lembrado(familia(atual) === 'escuro' ? 'claro' : 'escuro');
         document.querySelectorAll('#aparencia-grade .aparencia-opcao').forEach(function (b) {
           b.setAttribute('aria-pressed', String(b.dataset.id === atual));
+          b.classList.toggle('aparencia-opcao--marcada', b.dataset.id === atual || b.dataset.id === outro);
         });
+        mostrarPrevia(atual);
       }
 
       function montar() {
         var grade = document.getElementById('aparencia-grade');
         if (grade.childElementCount) return;
+        document.getElementById('aparencia-previa').innerHTML = maquete(temaAtual());
         function opcao(t) {
           return '<button type="button" class="aparencia-opcao" data-id="' + t[0] + '" aria-pressed="false">' +
-            '<span class="aparencia-moldura"><span class="maquete" data-tema="' + t[0] + '" aria-hidden="true">' +
-            '<span class="maquete__topo"></span><span class="maquete__menu"><span></span><span></span><span></span><span></span></span>' +
-            '<span class="maquete__corpo"><span class="maquete__cartao">' +
-            '<span class="maquete__linha maquete__linha--cab"><span class="maquete__barra"></span><span class="maquete__barra"></span></span>' +
-            LINHA + LINHA + LINHA + '</span></span></span>' +
+            '<span class="aparencia-moldura" aria-hidden="true">' + maquete(t[0]) +
             '<span class="aparencia-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span></span>' +
             '<span class="aparencia-nome">' + t[1] + '</span></button>';
         }
         grade.innerHTML = GRUPOS.map(function (g) {
-          return '<h3 class="aparencia-secao">' + g[0] + '</h3><div class="aparencia-grade">' + g[1].map(opcao).join('') + '</div>';
+          return '<div><h3 class="aparencia-secao">' + g[0] + '</h3><div class="aparencia-grade">' + g[1].map(opcao).join('') + '</div></div>';
         }).join('');
         grade.addEventListener('click', function (e) {
           var b = e.target.closest('.aparencia-opcao');
           if (b) escolherTema(b.dataset.id);
         });
+        // passar o mouse (ou o foco do teclado) mostra o tema na prévia; ao sair volta pro atual
+        function previaDo(e) { var b = e.target.closest('.aparencia-opcao'); if (b) mostrarPrevia(b.dataset.id); }
+        grade.addEventListener('mouseover', previaDo);
+        grade.addEventListener('focusin', previaDo);
+        grade.addEventListener('mouseleave', function () { mostrarPrevia(temaAtual()); });
+        grade.addEventListener('focusout', function (e) { if (!grade.contains(e.relatedTarget)) mostrarPrevia(temaAtual()); });
       }
 
       function aplicar(id) {
@@ -1715,7 +1751,7 @@
       }
 
       function escolherTema(id) {
-        var anterior = document.documentElement.getAttribute('data-tema') || 'claro';
+        var anterior = temaAtual();
         lembrar(id);
         if (salvando || id === anterior) return;
         salvando = true;
@@ -1735,7 +1771,7 @@
         if (sel) sel.focus();
       };
       window.alternarTema = function () {
-        var atual = document.documentElement.getAttribute('data-tema') || 'claro';
+        var atual = temaAtual();
         lembrar(atual);
         escolherTema(lembrado(familia(atual) === 'escuro' ? 'claro' : 'escuro'));
       };
