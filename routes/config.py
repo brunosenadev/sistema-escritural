@@ -159,6 +159,16 @@ def api_atualizar_servico(texto):
     if checar_admin():
         return jsonify({'erro': 'Sem permissão'}), 403
     d = request.get_json() or {}
+    if 'horas' in d:
+        try:
+            horas = float(d.get('horas') or 0)
+        except (ValueError, TypeError):
+            return jsonify({'erro': 'Horas inválidas'}), 400
+        if horas < 0:
+            return jsonify({'erro': 'Horas inválidas'}), 400
+        banco.atualizar_horas_servico(texto, horas)
+        _log('Configurações', 'EDITOU', f'Alterou horas de orçamento do serviço "{texto}" → {horas:g}h')
+        return jsonify({'sucesso': True})
     destino = d.get('destino', '')
     banco.atualizar_destino_servico(texto, destino)
     _log('Configurações', 'EDITOU', f'Alterou destino do serviço "{texto}" → {destino}')

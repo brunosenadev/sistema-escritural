@@ -59,6 +59,7 @@ def aba_pendente():
         registros.sort(key=_sort_sem_logado)
 
     cores_tecnicos = banco.cores_por_tecnico()
+    servicos_completo = banco.listar_servicos_completo()
 
     return render_template(
         'aba_pendente.html',
@@ -68,7 +69,8 @@ def aba_pendente():
         lista_tecnicos=lista_tecnicos,
         lista_status=banco.listar_status(),
         lista_servicos=banco.listar_servicos(),
-        lista_servicos_mapa={s['texto']: s['destino_homologado'] for s in banco.listar_servicos_completo()},
+        lista_servicos_mapa={s['texto']: s['destino_homologado'] for s in servicos_completo},
+        lista_servicos_completo=servicos_completo,
         cores_tecnicos=cores_tecnicos,
         tecnico_padrao=banco.get_config('tecnico_padrao'),
         sla_conf=banco.listar_sla_config(),

@@ -844,6 +844,21 @@
       </div>
     </div>
 
+    <!-- Horas de orçamento por serviço (cadastro em Configurações › Status & Serviços) -->
+    <div class="card-resumo">
+      <div class="card-resumo-header">Horas de Orçamento por Serviço</div>
+      <div class="lista-resumo">
+        {% for s in lista_servicos_completo | sort(attribute='horas_orcamento') %}
+        <div class="item-resumo">
+          <span class="item-resumo-nome">{{ s.texto }}</span>
+          <span class="item-resumo-cont">{{ '%g' | format(s.horas_orcamento) }}h</span>
+        </div>
+        {% else %}
+        <div style="padding:16px;text-align:center;color:var(--texto-leve);font-size:13px;">Sem serviços</div>
+        {% endfor %}
+      </div>
+    </div>
+
   </div><!-- /coluna-resumo -->
 </div><!-- /grade-pendente -->
 

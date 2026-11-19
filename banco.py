@@ -714,6 +714,7 @@ def inicializar_banco():
     # Migrações para bancos já existentes
     for ddl in [
         "ALTER TABLE servicos_lista ADD COLUMN destino_homologado TEXT DEFAULT ''",
+        "ALTER TABLE servicos_lista ADD COLUMN horas_orcamento REAL DEFAULT 0",
         "ALTER TABLE usuarios ADD COLUMN mudar_senha INTEGER DEFAULT 0",
         "ALTER TABLE usuarios ADD COLUMN tema TEXT DEFAULT 'light'",
         "ALTER TABLE usuarios ADD COLUMN setor TEXT DEFAULT ''",
@@ -1125,7 +1126,7 @@ def listar_servicos():
 
 def listar_servicos_completo():
     conn = conectar()
-    rows = conn.execute("SELECT texto,destino_homologado FROM servicos_lista ORDER BY id").fetchall()
+    rows = conn.execute("SELECT texto,destino_homologado,COALESCE(horas_orcamento,0) AS horas_orcamento FROM servicos_lista ORDER BY id").fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
@@ -1151,6 +1152,13 @@ def remover_servico(texto):
 def atualizar_destino_servico(texto, destino):
     conn = conectar()
     conn.execute("UPDATE servicos_lista SET destino_homologado=? WHERE texto=?", (destino or '', texto))
+    conn.commit()
+    conn.close()
+
+
+def atualizar_horas_servico(texto, horas):
+    conn = conectar()
+    conn.execute("UPDATE servicos_lista SET horas_orcamento=? WHERE texto=?", (horas, texto))
     conn.commit()
     conn.close()
 

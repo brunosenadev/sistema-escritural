@@ -674,7 +674,8 @@
             <tr>
               <th>Serviço</th>
               <th>Destino ao Homologar</th>
-              <th style="width:80px;"></th>
+              <th style="width:110px;">Horas Orçamento</th>
+              <th style="width:50px;"></th>
             </tr>
           </thead>
           <tbody>
@@ -691,16 +692,20 @@
                 </select>
               </td>
               <td>
-                <button class="btn-acao-mini btn-deletar-mini" onclick="removerServico('{{ servico.texto }}')">
+                <input class="select-destino" type="number" min="0" step="0.5" style="width:80px;cursor:text;"
+                  data-servico="{{ servico.texto }}" value="{{ '%g' | format(servico.horas_orcamento) }}"
+                  onchange="atualizarHorasServico(this)" title="Horas a lançar no orçamento">
+              </td>
+              <td>
+                <button class="btn-acao-mini btn-deletar-mini" onclick="removerServico('{{ servico.texto }}')" title="Remover" aria-label="Remover {{ servico.texto }}">
                   <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
                   </svg>
-                  Remover
                 </button>
               </td>
             </tr>
             {% else %}
-            <tr><td colspan="3" style="text-align:center;padding:24px;color:var(--texto-leve);">Nenhum serviço cadastrado.</td></tr>
+            <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--texto-leve);">Nenhum serviço cadastrado.</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -1378,6 +1383,22 @@
   document.getElementById('input-novo-servico').addEventListener('keydown', e => {
     if (e.key === 'Enter') adicionarServico();
   });
+
+  function atualizarHorasServico(el) {
+    const servico = el.dataset.servico;
+    const horas = el.value === '' ? 0 : Number(el.value);
+    if (!(horas >= 0)) { mostrarToast('erro', 'Informe horas válidas.'); return; }
+    fetch(`/api/servicos/${encodeURIComponent(servico)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ horas }),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.sucesso) mostrarToast('sucesso', `${servico} → ${horas}h de orçamento`);
+      else mostrarToast('erro', d.erro || 'Erro ao atualizar horas.');
+    });
+  }
 
   function atualizarDestinoServico(el) {
     const servico = el.dataset.servico;
