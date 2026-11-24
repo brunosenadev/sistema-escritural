@@ -34,15 +34,19 @@ def aba_pendente():
     lista_tecnicos  = banco.listar_tecnicos()
     resumo_tecnicos = {}
     resumo_status   = {}
+    resumo_servicos = {}
 
     for reg in registros:
         tecnico = reg.get('tecnico') or 'SEM TEC.'
         status  = reg.get('status')  or 'SEM STATUS'
         resumo_tecnicos[tecnico] = resumo_tecnicos.get(tecnico, 0) + 1
         resumo_status[status]    = resumo_status.get(status, 0) + 1
+        servico = reg.get('servico') or 'SEM SERVIÇO'
+        resumo_servicos[servico] = resumo_servicos.get(servico, 0) + 1
 
     resumo_tecnicos = dict(sorted(resumo_tecnicos.items(), key=lambda x: x[1], reverse=True))
     resumo_status   = dict(sorted(resumo_status.items(),   key=lambda x: x[1], reverse=True))
+    resumo_servicos = dict(sorted(resumo_servicos.items(), key=lambda x: x[1], reverse=True))
 
     tecnico_logado = session.get('tecnico_vinculado', '') or ''
     if tecnico_logado:
@@ -66,6 +70,7 @@ def aba_pendente():
         registros=registros,
         resumo_tecnicos=resumo_tecnicos,
         resumo_status=resumo_status,
+        resumo_servicos=resumo_servicos,
         lista_tecnicos=lista_tecnicos,
         lista_status=banco.listar_status(),
         lista_servicos=banco.listar_servicos(),

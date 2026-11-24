@@ -116,6 +116,18 @@
     font-size:12px;color:var(--texto-leve);border-top:1px solid var(--fundo-muted);
   }
 
+  .rodape-tabela { align-items:center; flex-wrap:wrap; gap:10px; }
+  .paginacao { display:flex; align-items:center; gap:6px; }
+  .paginacao label { display:flex; align-items:center; gap:6px; margin-right:8px; }
+  .paginacao .select-filtro { padding:4px 8px; }
+  .botao-pagina {
+    min-width:28px; height:28px; padding:0 6px; border-radius:6px;
+    border:1.5px solid var(--borda); background:var(--fundo-card); color:var(--texto-medio);
+    font-size:14px; font-family:inherit; cursor:pointer; transition:border-color .15s, color .15s;
+  }
+  .botao-pagina:hover:not(:disabled) { border-color:var(--tx-2563eb); color:var(--tx-2563eb); }
+  .botao-pagina:disabled { opacity:.4; cursor:default; }
+
   .coluna-resumo { display:flex;flex-direction:column;gap:14px; }
   .card-resumo { background:var(--fundo-card);border-radius:12px;border:1px solid var(--borda);overflow:hidden; }
   .card-resumo-header {
@@ -169,19 +181,23 @@
 
   <div>
     <div class="card-tabela">
-      <div class="barra-ferramentas">
-        <input class="campo-busca" type="text" id="campo-busca-texto" placeholder="Buscar empresa, serviço..." oninput="filtrarTabela()">
+      <!-- Filtros vão para o servidor (paginação); trocar filtro volta para a página 1 -->
+      <form class="barra-ferramentas" method="get" id="form-filtros">
+        <input class="campo-busca" type="search" name="busca" id="campo-busca-texto" value="{{ busca }}"
+               placeholder="Buscar empresa, serviço, banco, obs... (Enter)"
+               oninput="if (!this.value) this.form.submit()">
+        <input type="hidden" name="por_pagina" value="{{ por_pagina }}">
         <a href="/homologados-{{ tipo }}/exportar" class="botao-novo" title="Exportar {{ nome_aba }} para Excel">
           <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           Exportar
         </a>
-        <select class="select-filtro" id="filtro-tecnico" onchange="filtrarTabela()">
+        <select class="select-filtro" name="tecnico" id="filtro-tecnico" onchange="this.form.submit()">
           <option value="">Todos os técnicos</option>
           {% for tecnico in resumo_tecnicos.keys() %}
-          <option value="{{ tecnico }}">{{ tecnico }}</option>
+          <option value="{{ tecnico }}" {% if tecnico == tecnico_filtro %}selected{% endif %}>{{ tecnico }}</option>
           {% endfor %}
         </select>
-      </div>
+      </form>
 
       <div style="overflow-x:auto;">
         <table class="tabela-dados">
@@ -195,8 +211,7 @@
           <tbody id="corpo-tabela">
             {% if registros %}
               {% for reg in registros %}
-              <tr data-id="{{ reg.id }}" data-tecnico="{{ reg.tecnico | lower }}"
-                  data-busca="{{ (reg.empresa ~ ' ' ~ reg.banco ~ ' ' ~ reg.obs ~ ' ' ~ reg.tecnico) | lower }}">
+              <tr data-id="{{ reg.id }}" data-tecnico="{{ reg.tecnico | lower }}">
                 <td class="celula-tecnico" style="color: {{ cores_tecnicos.get(reg.tecnico, '#64748b') }};">{{ reg.tecnico or '—' }}</td>
                 <td title="{{ reg.empresa }}">{{ reg.empresa or '—' }}</td>
                 <td>{{ reg.servico or '—' }}</td>
@@ -245,8 +260,13 @@
               <tr>
                 <td colspan="8" class="linha-vazia">
                   <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  {% if busca or tecnico_filtro %}
+                  <p>Nenhum registro encontrado</p>
+                  <small>Ajuste a busca ou o técnico selecionado.</small>
+                  {% else %}
                   <p>Nenhum registro homologado</p>
                   <small>Registros com status HOMOLOGADO e serviço compatível aparecerão aqui.</small>
+                  {% endif %}
                 </td>
               </tr>
             {% endif %}
@@ -255,8 +275,21 @@
       </div>
 
       <div class="rodape-tabela">
-        <span id="contador-linhas">{{ registros | length }} registros</span>
-        <span>Aba: {{ nome_aba }}</span>
+        <span id="contador-linhas" data-inicio="{{ inicio }}" data-total="{{ total }}"></span>
+        <div class="paginacao">
+          <label>Por página
+            <select class="select-filtro" onchange="irParaPagina(1, this.value)">
+              {% for n in por_pagina_opcoes %}
+              <option value="{{ n }}" {% if n == por_pagina %}selected{% endif %}>{{ n }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <button type="button" class="botao-pagina" title="Primeira página" onclick="irParaPagina(1)" {% if pagina == 1 %}disabled{% endif %}>«</button>
+          <button type="button" class="botao-pagina" title="Página anterior" onclick="irParaPagina({{ pagina - 1 }})" {% if pagina == 1 %}disabled{% endif %}>‹</button>
+          <span>Página {{ pagina }} de {{ total_paginas }}</span>
+          <button type="button" class="botao-pagina" title="Próxima página" onclick="irParaPagina({{ pagina + 1 }})" {% if pagina == total_paginas %}disabled{% endif %}>›</button>
+          <button type="button" class="botao-pagina" title="Última página" onclick="irParaPagina({{ total_paginas }})" {% if pagina == total_paginas %}disabled{% endif %}>»</button>
+        </div>
       </div>
     </div>
   </div>
@@ -369,22 +402,26 @@
     _autoResizeObs(el);
   }
 
-  function filtrarTabela() {
-    const termo   = document.getElementById('campo-busca-texto').value.toLowerCase();
-    const tecnico = document.getElementById('filtro-tecnico').value.toLowerCase();
-    let vis = 0;
-    document.querySelectorAll('#corpo-tabela tr[data-id]').forEach(tr => {
-      const ok = (termo === '' || (tr.dataset.busca || '').includes(termo))
-               && (tecnico === '' || (tr.dataset.tecnico || '').includes(tecnico));
-      tr.style.display = ok ? '' : 'none';
-      if (ok) vis++;
-    });
-    document.getElementById('contador-linhas').textContent = `${vis} registros`;
+  // ─── Paginação (no servidor) ─────────────────────────────────
+  function irParaPagina(pagina, porPagina) {
+    const params = new URLSearchParams(location.search);
+    params.set('pagina', pagina);
+    if (porPagina) params.set('por_pagina', porPagina);
+    location.search = params.toString();
   }
+
+  function atualizarContador() {
+    const el = document.getElementById('contador-linhas');
+    const total = +el.dataset.total, inicio = +el.dataset.inicio;
+    const naPagina = document.querySelectorAll('#corpo-tabela tr[data-id]').length;
+    const fmt = n => n.toLocaleString('pt-BR');
+    el.textContent = total ? `Mostrando ${fmt(inicio + 1)}–${fmt(inicio + naPagina)} de ${fmt(total)} registros` : '0 registros';
+  }
+  atualizarContador();
 
   function filtrarPorTecnico(t) {
     document.getElementById('filtro-tecnico').value = t;
-    filtrarTabela();
+    document.getElementById('form-filtros').submit();
   }
 
   let modoEdicao = false;
@@ -516,8 +553,9 @@
 
   function _fadeRemoverLinha(id) {
     Fx.removerLinha(document.querySelector(`tr[data-id="${id}"]`), () => {
-      const vis = document.querySelectorAll('#corpo-tabela tr[data-id]').length;
-      document.getElementById('contador-linhas').textContent = `${vis} registros`;
+      const el = document.getElementById('contador-linhas');
+      el.dataset.total = Math.max(0, +el.dataset.total - 1);
+      atualizarContador();
     });
   }
 
@@ -555,7 +593,7 @@
     if (novoStatus === 'CANCELADO') {
       abrirDialogo({
         titulo: 'Mover para Cancelados?',
-        mensagem: `O registro será movido para a aba <strong>Cancelados</strong>.`,
+        mensagem: `O registro será movido para a aba <strong>Hom. Canceladas</strong>.`,
         tipo: 'aviso',
         textoBotao: 'Confirmar',
         callback: () => _enviar(`${_BASE_URL}/cancelar/${id}`, null),
@@ -563,7 +601,7 @@
     } else {
       abrirDialogo({
         titulo: 'Retornar para Pendentes?',
-        mensagem: `O registro voltará para <strong>Pendente</strong> com status <em>${novoStatus}</em>.`,
+        mensagem: `O registro voltará para <strong>Hom. Pendente</strong> com status <em>${novoStatus}</em>.`,
         tipo: 'info',
         textoBotao: 'Confirmar',
         callback: () => _enviar(`${_BASE_URL}/retornar-pendente/${id}`, { status: novoStatus }),

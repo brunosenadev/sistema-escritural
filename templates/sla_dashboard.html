@@ -2,6 +2,18 @@
 {% set aba_ativa = 'sla_dashboard' %}
 
 {% block titulo %}Dashboard SLA{% endblock %}
+{% block titulo_pagina %}Dashboard SLA{% endblock %}
+{% block breadcrumb %}Controle de Escriturais / Dashboard SLA{% endblock %}
+{% block acoes_header %}
+  <button class="btn btn-ghost btn-sm" onclick="_abrirModalNotif()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+    Alertas de SLA
+  </button>
+  <button class="btn btn-primary btn-sm" onclick="carregarDados()" id="btn-refresh">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+    Atualizar
+  </button>
+{% endblock %}
 
 {% block conteudo %}
 <style>
@@ -10,28 +22,32 @@
 ════════════════════════════════════════════════════════════ */
 .sla-wrap { max-width: 1460px; margin: 0 auto; padding: 0 1rem 3rem; }
 
-/* ── Header ── */
-.sla-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.4rem; gap:1rem; flex-wrap:wrap; }
-.sla-header-left h1 { font-size:1.5rem; font-weight:800; margin:0; }
-.sla-header-left p  { color:var(--text-muted,var(--tx-888)); margin:.15rem 0 0; font-size:.84rem; }
-.sla-header-actions { display:flex; gap:.5rem; align-items:center; }
+/* ── Linha de atualização (título e botões ficam no cabeçalho padrão) ── */
+.sla-atualizado { margin:0 0 .9rem; font-size:.78rem; color:var(--texto-suave); }
+.sla-atualizado span:first-child { font-weight:600; color:var(--texto-medio); }
 
 /* ── KPI cards ── */
 .sla-kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:.75rem; margin-bottom:.9rem; }
 @media(max-width:1100px){ .sla-kpis{grid-template-columns:repeat(3,1fr);} }
 @media(max-width:600px) { .sla-kpis{grid-template-columns:repeat(2,1fr);} }
-.kpi-card { border-radius:14px; padding:.95rem 1.1rem; position:relative; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,.12); transition:transform .2s,box-shadow .2s; cursor:default; }
-.kpi-card:hover { transform:translateY(-3px); box-shadow:0 8px 26px rgba(0,0,0,.18); }
-.kpi-card::before { content:''; position:absolute; top:-22px; right:-22px; width:78px; height:78px; border-radius:50%; background:rgba(255,255,255,.13); }
-.kpi-card .kpi-label { font-size:.68rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; opacity:.85; }
-.kpi-card .kpi-val   { font-size:2.1rem; font-weight:800; line-height:1.1; margin:.2rem 0 .1rem; }
-.kpi-card .kpi-sub   { font-size:.7rem; opacity:.8; }
-.kpi-critico  { background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff; }
-.kpi-atrasado { background:linear-gradient(135deg,#ea580c,#c2410c); color:#fff; }
-.kpi-vencido  { background:linear-gradient(135deg,#7c3aed,#5b21b6); color:#fff; }
-.kpi-atencao  { background:linear-gradient(135deg,#d97706,#b45309); color:#fff; }
-.kpi-ok       { background:linear-gradient(135deg,#16a34a,#15803d); color:#fff; }
-.kpi-total    { background:linear-gradient(135deg,#4f46e5,#6d28d9); color:#fff; }
+.kpi-card {
+  border-radius:14px; padding:.95rem 1.1rem; position:relative; overflow:hidden; cursor:default;
+  background:var(--fundo-card); border:1px solid var(--borda); border-left:4px solid var(--kpi-cor);
+  box-shadow:0 1px 4px rgba(0,0,0,.04); transition:transform .2s,box-shadow .2s;
+}
+.kpi-card:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(16,33,81,.10); }
+.kpi-card .kpi-label { font-size:.68rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--texto-suave); }
+/* bolinha na cor do nível (substitui os emojis coloridos) */
+.dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:1px; background:currentColor; }
+.kpi-card .dot { background:var(--kpi-cor); }
+.kpi-card .kpi-val   { font-size:2.1rem; font-weight:800; line-height:1.1; margin:.2rem 0 .1rem; color:var(--kpi-cor); }
+.kpi-card .kpi-sub   { font-size:.7rem; color:var(--texto-leve); }
+.kpi-critico  { --kpi-cor:var(--tx-dc2626); }
+.kpi-atrasado { --kpi-cor:var(--tx-c2410c); }
+.kpi-vencido  { --kpi-cor:var(--tx-7c3aed, #7c3aed); }
+.kpi-atencao  { --kpi-cor:var(--tx-d97706); }
+.kpi-ok       { --kpi-cor:var(--tx-16a34a); }
+.kpi-total    { --kpi-cor:var(--tx-6366f1, #6366f1); }
 
 /* ── Painel de saúde ── */
 .health-panel {
@@ -120,13 +136,17 @@
 .taxa-bar  { flex:1; height:13px; border-radius:6px; background:var(--bg-inset,var(--bg-f3f4f6)); overflow:hidden; }
 .taxa-fill { height:100%; border-radius:6px; transition:width .7s ease; }
 .taxa-pct  { font-size:.76rem; font-weight:800; width:38px; text-align:right; flex-shrink:0; }
+.taxa-aviso { margin:0 0 .8rem; padding:.5rem .75rem; border-radius:8px; font-size:.75rem; font-weight:600;
+  color:var(--tx-b91c1c); background:var(--bg-fef2f2); border:1px solid var(--bd-fecaca, rgba(220,38,38,.25)); }
 .taxa-qtd  { font-size:.68rem; color:var(--text-muted,var(--tx-888)); width:52px; text-align:right; flex-shrink:0; }
 
 /* ── Ranking ── */
 .rank-row  { display:flex; flex-direction:column; gap:.45rem; }
 .rank-card { display:flex; align-items:center; gap:.65rem; padding:.6rem .8rem; border-radius:10px; background:var(--bg-inset,var(--bg-f9fafb)); border:1px solid var(--border-color,var(--bd-e5e7eb)); transition:box-shadow .18s; }
 .rank-card:hover { box-shadow:0 2px 10px rgba(0,0,0,.08); }
-.rank-pos  { font-size:1rem; width:22px; text-align:center; flex-shrink:0; }
+.rank-pos  { width:26px; height:26px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  font-size:.7rem; font-weight:800; color:var(--texto-medio); background:var(--fundo-muted); }
+.rank-card:first-child .rank-pos { color:var(--tx-dc2626); background:color-mix(in srgb, var(--tx-dc2626) 13%, transparent); } /* 1º = maior risco */
 .rank-info { flex:1; min-width:0; }
 .rank-nome { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.82rem; }
 .rank-sub  { font-size:.7rem; color:var(--text-muted,var(--tx-888)); margin-top:.08rem; }
@@ -156,12 +176,21 @@
 .sla-table tr.row-crit td { background:rgba(220,38,38,.045); }
 .sla-table tr.row-atr  td { background:rgba(234,88,12,.04); }
 .sla-table tr.row-ven  td { background:rgba(124,58,237,.04); }
-.chip { display:inline-block; padding:.12rem .52rem; border-radius:99px; font-size:.69rem; font-weight:700; color:#fff; }
-.chip-critico  { background:#dc2626; }
-.chip-atrasado { background:#ea580c; }
-.chip-vencido  { background:#7c3aed; }
-.chip-atencao  { background:#d97706; }
-.chip-ok       { background:#16a34a; }
+/* estilo comum das tabelas vem do temas.css; aqui só o que é desta tabela */
+.sla-table-card .sla-table :is(th, td) { padding-left:10px; padding-right:10px; } /* 8 colunas: lateral menor para não cortar o Status */
+.sla-table td.col-banco { max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sla-table td.col-tec   { white-space:nowrap; }
+/* status como pílula clara, igual aos status das outras abas */
+.chip {
+  display:inline-block; padding:.14rem .55rem; border-radius:99px; font-size:.68rem; font-weight:700; white-space:nowrap;
+  color:var(--chip); background:color-mix(in srgb, var(--chip) 13%, transparent);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--chip) 25%, transparent);
+}
+.chip-critico  { --chip:var(--tx-dc2626); }
+.chip-atrasado { --chip:var(--tx-c2410c); }
+.chip-vencido  { --chip:var(--tx-7c3aed); }
+.chip-atencao  { --chip:var(--tx-d97706); }
+.chip-ok       { --chip:var(--tx-16a34a); }
 .dias-pos  { color:var(--tx-16a34a); font-weight:700; }
 .dias-neg  { color:var(--tx-dc2626); font-weight:700; }
 .dias-aviso{ color:var(--tx-d97706); font-weight:700; }
@@ -204,7 +233,7 @@
 @keyframes pulse-ring { 0%,100%{opacity:1;} 50%{opacity:.45;} }
 .pulse { animation:pulse-ring 1.5s ease-in-out infinite; }
 .btn { display:inline-flex; align-items:center; gap:.4rem; padding:.38rem .85rem; border-radius:8px; font-size:.78rem; font-weight:600; border:none; cursor:pointer; transition:all .16s; }
-.btn-primary { background:#6366f1; color:#fff; } .btn-primary:hover{ background:#4f46e5; }
+.btn-primary { background:#2563eb; color:#fff; } .btn-primary:hover{ background:#1d4ed8; }
 .btn-ghost   { background:transparent; border:1.5px solid var(--border-color,var(--bd-ccc)); color:inherit; } .btn-ghost:hover{ border-color:#6366f1; color:var(--tx-6366f1); }
 .btn-sm { padding:.26rem .65rem; font-size:.74rem; }
 
@@ -212,23 +241,8 @@
 
 <div class="sla-wrap">
 
-  <!-- HEADER -->
-  <div class="sla-header">
-    <div class="sla-header-left">
-      <h1>📊 Dashboard SLA — Homologações Pendentes</h1>
-      <p id="sla-subtitle">Carregando dados...</p>
-    </div>
-    <div class="sla-header-actions">
-      <button class="btn btn-ghost btn-sm" onclick="_abrirModalNotif()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-        Alertas de SLA
-      </button>
-      <button class="btn btn-primary btn-sm" onclick="carregarDados()" id="btn-refresh">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-        Atualizar
-      </button>
-    </div>
-  </div>
+  <!-- Título e botões ficam no cabeçalho padrão do app (blocos acima); aqui só a data da última atualização -->
+  <p class="sla-atualizado"><span>Homologações pendentes</span> · <span id="sla-subtitle">Carregando dados...</span></p>
 
   <!-- ALERT BAR -->
   <div class="sla-alert-bar" id="sla-alert-bar">
@@ -239,32 +253,32 @@
   <!-- KPI CARDS -->
   <div class="sla-kpis" data-fx-cascata>
     <div class="kpi-card kpi-critico">
-      <div class="kpi-label">🔴 Crítico</div>
+      <div class="kpi-label"><span class="dot"></span>Crítico</div>
       <div class="kpi-val" id="kpi-critico">—</div>
       <div class="kpi-sub">+15d além do prazo</div>
     </div>
     <div class="kpi-card kpi-atrasado">
-      <div class="kpi-label">🟠 Atrasado</div>
+      <div class="kpi-label"><span class="dot"></span>Atrasado</div>
       <div class="kpi-val" id="kpi-atrasado">—</div>
       <div class="kpi-sub">7–15d além do prazo</div>
     </div>
     <div class="kpi-card kpi-vencido">
-      <div class="kpi-label">📅 Vencido</div>
+      <div class="kpi-label"><span class="dot"></span>Vencido</div>
       <div class="kpi-val" id="kpi-vencido">—</div>
       <div class="kpi-sub">0–7d além do prazo</div>
     </div>
     <div class="kpi-card kpi-atencao">
-      <div class="kpi-label">🟡 Atenção</div>
+      <div class="kpi-label"><span class="dot"></span>Atenção</div>
       <div class="kpi-val" id="kpi-atencao">—</div>
       <div class="kpi-sub">Últimos 7d do prazo</div>
     </div>
     <div class="kpi-card kpi-ok">
-      <div class="kpi-label">🟢 No Prazo</div>
+      <div class="kpi-label"><span class="dot"></span>No Prazo</div>
       <div class="kpi-val" id="kpi-ok">—</div>
       <div class="kpi-sub" id="kpi-taxa-sub">Dentro do SLA</div>
     </div>
     <div class="kpi-card kpi-total">
-      <div class="kpi-label">📋 Total</div>
+      <div class="kpi-label"><span class="dot"></span>Total</div>
       <div class="kpi-val" id="kpi-total">—</div>
       <div class="kpi-sub">Pendentes ativos</div>
     </div>
@@ -416,11 +430,11 @@
     <p style="font-size:.7rem;color:var(--text-muted,var(--tx-888));margin:.0 0 .0">Ordenado por urgência. Linhas coloridas indicam atenção imediata.</p>
     <div class="filter-bar">
       <button class="filter-btn fb-all active"  onclick="_filtrar('todos',    this)">Todos</button>
-      <button class="filter-btn fb-critico"      onclick="_filtrar('critico',  this)">🔴 Crítico</button>
-      <button class="filter-btn fb-atrasado"     onclick="_filtrar('atrasado', this)">🟠 Atrasado</button>
-      <button class="filter-btn fb-vencido"      onclick="_filtrar('vencido',  this)">📅 Vencido</button>
-      <button class="filter-btn fb-atencao"      onclick="_filtrar('atencao',  this)">🟡 Atenção</button>
-      <button class="filter-btn fb-ok"           onclick="_filtrar('ok',       this)">🟢 No Prazo</button>
+      <button class="filter-btn fb-critico"      onclick="_filtrar('critico',  this)"><span class="dot"></span>Crítico</button>
+      <button class="filter-btn fb-atrasado"     onclick="_filtrar('atrasado', this)"><span class="dot"></span>Atrasado</button>
+      <button class="filter-btn fb-vencido"      onclick="_filtrar('vencido',  this)"><span class="dot"></span>Vencido</button>
+      <button class="filter-btn fb-atencao"      onclick="_filtrar('atencao',  this)"><span class="dot"></span>Atenção</button>
+      <button class="filter-btn fb-ok"           onclick="_filtrar('ok',       this)"><span class="dot"></span>No Prazo</button>
     </div>
     <div class="sla-table-wrap">
       <table class="sla-table">
@@ -448,7 +462,7 @@
 <!-- MODAL ALERTAS -->
 <div class="modal-overlay" id="modal-notif" onclick="_fecharModalNotif(event)">
   <div class="modal-box" onclick="event.stopPropagation()" style="max-width:520px">
-    <h2>🔔 Configurações de Alerta SLA</h2>
+    <h2 style="display:flex;align-items:center;gap:.45rem"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Configurações de Alerta SLA</h2>
     <p class="modal-sub">Notificações por nível de urgência e por setor da equipe.</p>
 
     <p style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted,var(--tx-888));margin:0 0 .5rem">Minhas alertas pessoais</p>
@@ -612,6 +626,9 @@ function _renderTudo() {
     taxa >= 80 ? 'linear-gradient(90deg,#16a34a,#22c55e)'
     : taxa >= 50 ? 'linear-gradient(90deg,#d97706,#f59e0b)'
     : 'linear-gradient(90deg,#dc2626,#ef4444)';
+  // trilha com a cor clara da situação: em 0% a barra não fica "vazia", parecendo que não carregou
+  document.querySelector('.health-track').style.background =
+    taxa >= 80 ? 'rgba(22,163,74,.14)' : taxa >= 50 ? 'rgba(217,119,6,.14)' : 'rgba(220,38,38,.14)';
   document.getElementById('health-desc').textContent =
     taxa >= 80 ? 'Situação saudável — maioria dos pendentes dentro do prazo.'
     : taxa >= 50 ? 'Atenção — parte significativa do portfólio está comprometida.'
@@ -811,7 +828,6 @@ function _desenharTecnicos(tecnicos) {
 
 /* ════════════════ RANKINGS ════════════════ */
 function _desenharRankings(tecnicos) {
-  const emojis = ['🥇','🥈','🥉','4º','5º'];
   const piores = [...tecnicos]
     .sort((a,b) => (b.critico*1000+b.atrasado*100+b.vencido*10) - (a.critico*1000+a.atrasado*100+a.vencido*10))
     .slice(0,5)
@@ -820,7 +836,7 @@ function _desenharRankings(tecnicos) {
   const mkCard = (t, idx) => {
     const _pior = (t.critico||0)>0?'critico':((t.atrasado||0)>0?'atrasado':((t.vencido||0)>0?'vencido':'atencao'));
     return '<div class="rank-card">' +
-      '<div class="rank-pos">'+(emojis[idx]||((idx+1)+'º'))+'</div>' +
+      '<div class="rank-pos">'+(idx+1)+'º</div>' +
       '<div class="rank-info">' +
         '<div class="rank-nome">'+t.tecnico+'</div>' +
         '<div class="rank-sub">'+t.total+' pend. · média '+t.media_dias+' dias</div>' +
@@ -831,7 +847,7 @@ function _desenharRankings(tecnicos) {
 
   document.getElementById('rank-piores').innerHTML =
     piores.length ? piores.map((t,i) => mkCard(t,i)).join('') :
-    '<div class="empty-state" style="padding:1.5rem;font-size:.8rem">Nenhum técnico com pendentes fora do prazo 🎉</div>';
+    '<div class="empty-state" style="padding:1.5rem;font-size:.8rem">Nenhum técnico com pendentes fora do prazo.</div>';
 }
 
 /* ════════════════ TAXA DE CUMPRIMENTO ════════════════ */
@@ -845,12 +861,15 @@ function _desenharTaxa(tecnicos) {
     return tB - tA;
   });
 
-  wrap.innerHTML = sorted.map(t => {
+  const nenhumNoPrazo = sorted.every(t => !t.ok);
+  wrap.innerHTML = (nenhumNoPrazo
+      ? '<div class="taxa-aviso">Nenhum técnico tem pendentes dentro do prazo no momento.</div>' : '') +
+    sorted.map(t => {
     const taxa = t.total ? Math.round(t.ok/t.total*100) : 0;
     const cor  = taxa >= 80 ? '#16a34a' : taxa >= 50 ? '#d97706' : '#dc2626';
     return '<div class="taxa-row">' +
       '<div class="taxa-nome" title="'+t.tecnico+'">'+t.tecnico+'</div>' +
-      '<div class="taxa-bar"><div class="taxa-fill" style="width:'+taxa+'%;background:'+cor+'"></div></div>' +
+      '<div class="taxa-bar" style="background:'+cor+'24"><div class="taxa-fill" style="width:'+taxa+'%;background:'+cor+'"></div></div>' +
       '<div class="taxa-pct" style="color:'+cor+'">'+taxa+'%</div>' +
       '<div class="taxa-qtd">'+t.ok+'/'+t.total+' pend.</div>' +
     '</div>';
@@ -920,9 +939,9 @@ function _renderTabela(pendentes, filtro) {
     const tec = (p.tecnico||'').trim() || '<em style="opacity:.45">Sem técnico</em>';
     return '<tr'+rowCls+'>' +
       '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(p.empresa||'')+'">'+( p.empresa||'—')+'</td>' +
-      '<td style="white-space:nowrap">'+(p.banco||'—')+'</td>' +
+      '<td class="col-banco" title="'+(p.banco||'')+'">'+(p.banco||'—')+'</td>' +
       '<td>'+(p.servico||'—')+'</td>' +
-      '<td>'+tec+'</td>' +
+      '<td class="col-tec">'+tec+'</td>' +
       '<td style="white-space:nowrap;color:var(--text-muted,var(--tx-888));font-size:.77rem">'+(p.dt_solicita||'—')+'</td>' +
       '<td style="font-weight:700;color:'+_FAIXA_CORES[f]+'">'+(p.dias_em_aberto??0)+'d</td>' +
       '<td>'+_prazoRestStr(p)+'</td>' +

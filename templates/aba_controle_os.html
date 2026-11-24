@@ -140,9 +140,11 @@
 
   /* colunas de tamanho previsível; Empresa, Banco e Serviço dividem o resto */
   .tabela-dados th:nth-child(1) { width: 92px; }
-  .tabela-dados th:nth-child(5) { width: 130px; }
-  .tabela-dados th:nth-child(6) { width: 110px; }
-  .tabela-dados th:nth-child(7) { width: 170px; }
+  .tabela-dados th:nth-child(5) { width: 175px; } /* cabe "Hom. Extrato Bancário" */
+  .tabela-dados th:nth-child(6) { width: 112px; }
+  .tabela-dados th:nth-child(7) { width: 80px; }
+  .tabela-dados th:nth-child(8) { width: 140px; }
+  .celula-horas { font-weight: 700; color: var(--texto-escuro); }
   .tabela-dados tr:last-child td { border-bottom: none; }
   .tabela-dados tr:hover td { background: var(--bg-f8fbff); }
 
@@ -232,6 +234,7 @@
           <th>Serviço</th>
           <th>Homologação</th>
           <th>Criado em</th>
+          <th title="Horas previstas para a O.S., conforme o serviço em Configurações">Horas</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -264,7 +267,9 @@
             <td>{{ reg.banco or '—' }}</td>
             <td>{{ reg.servico or '—' }}</td>
             <td>{{ nomes_aba.get(reg.aba_homologado, reg.aba_homologado) }}</td>
-            <td>{{ reg.criado_em or '—' }}</td>
+            <td title="{{ reg.criado_em or '' }}">{{ reg.criado_em | fmt_data }}</td>
+            {% set _horas = horas_servico.get((reg.servico or '') | upper | trim) %}
+            <td class="celula-horas">{{ ('%g' | format(_horas)) ~ 'h' if _horas else '—' }}</td>
             <td>
               {% set _classe_status = {'CONCLUIDA': 'status-homologado', 'BONIFICADA': 'status-aguardando-atualizacao'}.get(reg.status, 'status-padrao') %}
               <select
@@ -281,7 +286,7 @@
           {% endfor %}
         {% else %}
           <tr>
-            <td colspan="7" class="linha-vazia">
+            <td colspan="8" class="linha-vazia">
               <svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
               <p>Nenhuma O.S. pendente</p>
               <small>Quando você homologar um pendente, a O.S. correspondente aparece aqui automaticamente.</small>

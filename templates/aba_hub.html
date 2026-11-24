@@ -44,7 +44,8 @@
   /* Grid */
   .hub-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    /* no máximo 4 por linha; em telas estreitas cai para 3/2/1 (card nunca menor que 320px) */
+    grid-template-columns: repeat(auto-fill, minmax(max(320px, calc((100% - 3 * 16px) / 4)), 1fr));
     gap: 16px;
   }
   .hub-card {
@@ -115,6 +116,7 @@
   .instr-add-row input:focus { border-color:#6366f1; }
   .instr-add-row .inp-cod { width:60px;flex:none; }
   .instr-btn-add { background:#6366f1;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap; }
+  .instr-btn-add.so-mais { padding:3px 0;min-width:30px;font-size:1.05rem;line-height:1.2; } /* botão só com "+" na lista de instruções */
 
   /* Botões header */
   .hbtn {
@@ -318,7 +320,7 @@
                     <div class="instr-add-row">
                       <input class="inp-cod" type="text" placeholder="Cód." id="inp-cod-{{ b.id }}" maxlength="4">
                       <input type="text" placeholder="Descrição da instrução" id="inp-desc-{{ b.id }}">
-                      <button class="instr-btn-add" onclick="adicionarInstrucao({{ b.id }})">+ Add</button>
+                      <button class="instr-btn-add so-mais" onclick="adicionarInstrucao({{ b.id }})" title="Adicionar instrução" aria-label="Adicionar instrução">+</button>
                     </div>
                   </td></tr>
                   {% endif %}

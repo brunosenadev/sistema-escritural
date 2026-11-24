@@ -152,14 +152,14 @@ HUB_INSTRUCOES_INICIAIS = {
 
 TELAS_AGRUPADAS = [
     ('Abas', [
-        ('pendente',               'Pendente'),
-        ('homologados_cobranca',   'Homologados Cobrança'),
-        ('homologados_pagamentos', 'Homologados Pagamentos'),
-        ('homologados_extrato',         'Homologados Extrato Cartão'),
-        ('homologados_ext_bancario',    'Homologados Extrato Bancário'),
-        ('cancelados',             'Cancelados'),
+        ('pendente',               'Hom. Pendente'),
+        ('homologados_cobranca',   'Hom. Cobrança'),
+        ('homologados_pagamentos', 'Hom. Pagamentos'),
+        ('homologados_extrato',         'Hom. Extrato Cartão'),
+        ('homologados_ext_bancario',    'Hom. Extrato Bancário'),
+        ('cancelados',             'Hom. Canceladas'),
         ('controle_os',            'Controle de O.S.'),
-        ('sispbol',                'SispBol'),
+        ('sispbol',                'Hom. SispBol'),
         ('credenciais',            'Credenciais'),
         ('descriptografar',        'Descriptografar Credenciais'),
         ('conversor_certificado',  'Conversor de Certificado'),
@@ -1196,7 +1196,8 @@ def listar_bancos_cadastro(apenas_ativos=False):
     sql = "SELECT * FROM bancos_cadastro"
     if apenas_ativos:
         sql += " WHERE ativo=1"
-    sql += " ORDER BY ordem, codigo"
+    # pelo número do banco (001, 003, 033...); códigos não numéricos, como "FIDC", vão para o fim
+    sql += " ORDER BY codigo GLOB '[0-9]*' DESC, CAST(codigo AS INTEGER), codigo, nome"
     rows = conn.execute(sql).fetchall()
     conn.close()
     return [dict(r) for r in rows]

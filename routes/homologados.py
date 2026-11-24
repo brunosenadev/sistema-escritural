@@ -1,4 +1,5 @@
 import os
+import unicodedata
 from flask import Blueprint, render_template, request, jsonify, session, send_file
 import banco
 import exclusoes
@@ -18,11 +19,11 @@ def _sem_permissao():
 homologados_bp = Blueprint('homologados', __name__)
 
 _CONFIGS = {
-    'cobranca':     ('listar_homologados_cobranca',       'Homologados Cobrança',          'homologados_cobranca'),
-    'pagamentos':   ('listar_homologados_pagamentos',     'Homologados Pagamentos',         'homologados_pagamentos'),
-    'extrato':      ('listar_homologados_extrato',        'Homologados Extrato Cartão',     'homologados_extrato'),
-    'ext-bancario': ('listar_homologados_ext_bancario',  'Homologados Extrato Bancário',   'homologados_ext_bancario'),
-    'sispbol':      ('listar_sispbol',                   'SispBol',                        'sispbol'),
+    'cobranca':     ('listar_homologados_cobranca',       'Hom. Cobrança',          'homologados_cobranca'),
+    'pagamentos':   ('listar_homologados_pagamentos',     'Hom. Pagamentos',         'homologados_pagamentos'),
+    'extrato':      ('listar_homologados_extrato',        'Hom. Extrato Cartão',     'homologados_extrato'),
+    'ext-bancario': ('listar_homologados_ext_bancario',  'Hom. Extrato Bancário',   'homologados_ext_bancario'),
+    'sispbol':      ('listar_sispbol',                   'Hom. SispBol',                        'sispbol'),
 }
 
 _NOME_ABA = {
@@ -61,6 +62,21 @@ def _chave_data(s):
     return '0000/00/00'
 
 
+POR_PAGINA_OPCOES = (50, 100, 150, 200)
+
+
+def _sem_acento(texto):
+    # busca ignora acento e caixa: "itau" acha "BANCO ITAÚ"
+    return ''.join(c for c in unicodedata.normalize('NFD', texto.lower()) if unicodedata.category(c) != 'Mn')
+
+
+def _int_arg(nome, padrao):
+    try:
+        return int(request.args.get(nome, padrao))
+    except (TypeError, ValueError):
+        return padrao
+
+
 def _render(tipo):
     tela_map = {
         'cobranca':     'homologados_cobranca',
@@ -83,10 +99,35 @@ def _render(tipo):
         tec = reg.get('tecnico') or 'SEM TEC.'
         resumo_tecnicos[tec] = resumo_tecnicos.get(tec, 0) + 1
     resumo_tecnicos = dict(sorted(resumo_tecnicos.items(), key=lambda x: x[1], reverse=True))
+
+    # Paginação no servidor: Cobrança passa de 2.500 registros e a página inteira pesava ~8 MB.
+    # Busca e técnico filtram aqui (antes era no navegador) para valer sobre todos, não só a página.
+    busca          = (request.args.get('busca') or '').strip()
+    tecnico_filtro = (request.args.get('tecnico') or '').strip()
+    por_pagina     = _int_arg('por_pagina', 100)
+    if por_pagina not in POR_PAGINA_OPCOES:
+        por_pagina = 100
+
+    filtrados = registros
+    if busca:
+        termo = _sem_acento(busca)
+        filtrados = [r for r in filtrados
+                     if termo in _sem_acento(' '.join(str(r.get(k) or '') for k in ('empresa', 'servico', 'banco', 'obs', 'tecnico')))]
+    if tecnico_filtro:
+        filtrados = [r for r in filtrados if (r.get('tecnico') or 'SEM TEC.') == tecnico_filtro]
+
+    total         = len(filtrados)
+    total_paginas = max(1, -(-total // por_pagina))
+    pagina        = min(max(1, _int_arg('pagina', 1)), total_paginas)
+    inicio        = (pagina - 1) * por_pagina
+
     return render_template(
         'aba_homologados.html',
         tipo=tipo, nome_aba=nome_aba, aba_ativa=aba_ativa,
-        registros=registros, resumo_tecnicos=resumo_tecnicos,
+        registros=filtrados[inicio:inicio + por_pagina], resumo_tecnicos=resumo_tecnicos,
+        busca=busca, tecnico_filtro=tecnico_filtro,
+        pagina=pagina, total_paginas=total_paginas, por_pagina=por_pagina,
+        por_pagina_opcoes=POR_PAGINA_OPCOES, total=total, inicio=inicio,
         lista_tecnicos=lista_tecnicos, lista_servicos=banco.listar_servicos(),
         lista_status=banco.listar_status(),
         cores_tecnicos=cores_tecnicos,

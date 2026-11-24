@@ -9,7 +9,7 @@ NOMES_ABA = {
     'pagamentos':   'Hom. Pagamentos',
     'extrato':      'Hom. Extrato Cartão',
     'ext_bancario': 'Hom. Extrato Bancário',
-    'sispbol':      'SispBol',
+    'sispbol':      'Hom. SispBol',
 }
 
 
@@ -45,6 +45,8 @@ def aba_controle_os():
         nomes_aba=NOMES_ABA,
         tecnicos_distintos=tecnicos_distintos,
         cores_tecnicos=banco.cores_por_tecnico(),
+        # horas previstas por serviço (Configurações › Status & Serviços)
+        horas_servico={s['texto']: s['horas_orcamento'] for s in banco.listar_servicos_completo()},
     )
 
 

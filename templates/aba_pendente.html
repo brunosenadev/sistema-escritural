@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block titulo %}Pendente{% endblock %}
-{% block titulo_pagina %}Pendente{% endblock %}
-{% block breadcrumb %}Controle de Escriturais / Pendente{% endblock %}
+{% block titulo %}Hom. Pendente{% endblock %}
+{% block titulo_pagina %}Hom. Pendente{% endblock %}
+{% block breadcrumb %}Controle de Escriturais / Hom. Pendente{% endblock %}
 
 {% set aba_ativa = 'pendente' %}
 {% set total_pendentes = registros | length %}
@@ -422,6 +422,20 @@
     letter-spacing: 0.7px;
     color: var(--texto-suave);
   }
+  /* Clicar no título do card limpa o filtro dele; "✕ Todos" aparece só com filtro ativo */
+  .card-resumo-header.limpa-filtro {
+    cursor: pointer; user-select: none;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: color .15s;
+  }
+  .card-resumo-header.limpa-filtro:hover { color: var(--tx-2563eb); }
+  .card-resumo-header.limpa-filtro.ativo::after {
+    content: '✕ Todos';
+    padding: 2px 8px; border-radius: 99px;
+    font-size: 10px; font-weight: 700; letter-spacing: .3px;
+    color: var(--tx-2563eb);
+    background: color-mix(in srgb, var(--tx-2563eb) 10%, transparent);
+  }
 
   .lista-resumo {
     padding: 8px 0;
@@ -682,6 +696,14 @@
         {% endfor %}
       </select>
 
+      <!-- Filtro por serviço -->
+      <select class="select-filtro" id="filtro-servico" onchange="filtrarTabela()">
+        <option value="">Todos os serviços</option>
+        {% for servico in resumo_servicos.keys() %}
+        <option value="{{ servico }}">{{ servico }}</option>
+        {% endfor %}
+      </select>
+
       <label class="opcao-inverter-filtro">
         <input type="checkbox" id="chk-inverter-status" onchange="filtrarTabela()">
         Desconsiderar status selecionado
@@ -813,7 +835,7 @@
 
     <!-- Resumo por técnico -->
     <div class="card-resumo">
-      <div class="card-resumo-header">Resumo por Técnico</div>
+      <div class="card-resumo-header limpa-filtro" data-filtro="filtro-tecnico" onclick="limparFiltro('filtro-tecnico')" title="Mostrar todos os técnicos">Resumo por Técnico</div>
       <div class="lista-resumo">
         {% for tecnico, quantidade in resumo_tecnicos.items() %}
         <div class="item-resumo" onclick="filtrarPorTecnico('{{ tecnico }}')" style="cursor:pointer;" title="Filtrar por {{ tecnico }}">
@@ -831,11 +853,26 @@
 
     <!-- Resumo por status -->
     <div class="card-resumo">
-      <div class="card-resumo-header">Resumo por Status</div>
+      <div class="card-resumo-header limpa-filtro" data-filtro="filtro-status" onclick="limparFiltro('filtro-status')" title="Mostrar todos os status">Resumo por Status</div>
       <div class="lista-resumo">
         {% for status, quantidade in resumo_status.items() %}
         <div class="item-resumo" onclick="filtrarPorStatus('{{ status }}')" style="cursor:pointer;" title="Filtrar por {{ status }}">
           <span class="badge-status {{ status | css_status }}" style="font-size:11px;">{{ status }}</span>
+          <span class="item-resumo-cont">{{ quantidade }}</span>
+        </div>
+        {% else %}
+        <div style="padding:16px;text-align:center;color:var(--texto-leve);font-size:13px;">Sem dados</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Resumo por serviço -->
+    <div class="card-resumo">
+      <div class="card-resumo-header limpa-filtro" data-filtro="filtro-servico" onclick="limparFiltro('filtro-servico')" title="Mostrar todos os serviços">Resumo por Serviço</div>
+      <div class="lista-resumo">
+        {% for servico, quantidade in resumo_servicos.items() %}
+        <div class="item-resumo" onclick="filtrarPorServico('{{ servico }}')" style="cursor:pointer;" title="Filtrar por {{ servico }}">
+          <span class="item-resumo-nome">{{ servico }}</span>
           <span class="item-resumo-cont">{{ quantidade }}</span>
         </div>
         {% else %}
@@ -1061,6 +1098,7 @@
     const termoBusca     = document.getElementById('campo-busca-texto').value.toLowerCase();
     const filtroTecnico  = document.getElementById('filtro-tecnico').value.toLowerCase();
     const filtroStatus   = document.getElementById('filtro-status').value.toLowerCase();
+    const filtroServico  = document.getElementById('filtro-servico').value.toUpperCase();
     const inverterStatus = document.getElementById('chk-inverter-status').checked;
 
     const linhas = document.querySelectorAll('#corpo-tabela tr[data-id]');
@@ -1070,12 +1108,15 @@
       const textoBusca = linha.dataset.busca || '';
       const tecnico    = linha.dataset.tecnico || '';
       const status     = linha.dataset.status || '';
+      const servico    = linha.dataset.servico || 'SEM SERVIÇO';
 
       const passaBusca   = termoBusca   === '' || textoBusca.includes(termoBusca);
       const passaTecnico = filtroTecnico === '' || tecnico.includes(filtroTecnico);
       const passaStatus  = filtroStatus  === '' || (inverterStatus ? !status.includes(filtroStatus) : status.includes(filtroStatus));
+      // igualdade exata: "COBRANÇA" não pode trazer junto "COBRANÇA/API"
+      const passaServico = filtroServico === '' || servico === filtroServico;
 
-      if (passaBusca && passaTecnico && passaStatus) {
+      if (passaBusca && passaTecnico && passaStatus && passaServico) {
         linha.style.display = '';
         visiveis++;
       } else {
@@ -1084,6 +1125,15 @@
     });
 
     document.getElementById('contador-linhas').textContent = `${visiveis} registros`;
+
+    // marca os títulos dos cards de resumo cujo filtro está ativo ("✕ Todos")
+    document.querySelectorAll('.limpa-filtro').forEach(h =>
+      h.classList.toggle('ativo', document.getElementById(h.dataset.filtro).value !== ''));
+  }
+
+  function limparFiltro(id) {
+    document.getElementById(id).value = '';
+    filtrarTabela();
   }
 
   function filtrarPorTecnico(tecnico) {
@@ -1093,6 +1143,11 @@
 
   function filtrarPorStatus(status) {
     document.getElementById('filtro-status').value = status;
+    filtrarTabela();
+  }
+
+  function filtrarPorServico(servico) {
+    document.getElementById('filtro-servico').value = servico;
     filtrarTabela();
   }
 
@@ -1112,7 +1167,9 @@
     sel.disabled = travar;
     sel.style.opacity = travar ? '0.6' : '';
     sel.style.cursor  = travar ? 'not-allowed' : '';
-    if (lbl) lbl.textContent = travar ? 'Técnico (padrão — editável após salvar)' : 'Técnico';
+    // rótulo curto para caber em uma linha e não desalinhar do campo Empresa ao lado
+    if (lbl) lbl.textContent = travar ? 'Técnico (padrão)' : 'Técnico';
+    sel.title = travar ? 'Editável após salvar' : '';
   }
 
   function abrirModalAdicionar() {
@@ -1137,6 +1194,7 @@
   function limparFiltros() {
     document.getElementById('filtro-status').value = '';
     document.getElementById('filtro-tecnico').value = '';
+    document.getElementById('filtro-servico').value = '';
     document.getElementById('chk-inverter-status').checked = false;
     filtrarTabela();
   }
@@ -1216,7 +1274,7 @@
       let nomeAba = _nomeAbaPorServico(dados.servico);
       abrirDialogo({
         titulo: 'Mover para ' + nomeAba + '?',
-        mensagem: `Esse registro será <strong>removido da aba Pendente</strong> e movido para <strong>${nomeAba}</strong>.`,
+        mensagem: `Esse registro será <strong>removido da aba Hom. Pendente</strong> e movido para <strong>${nomeAba}</strong>.`,
         tipo: 'info',
         textoBotao: 'Homologar',
         callback: () => {
@@ -1240,7 +1298,7 @@
       fecharModal();
       abrirDialogo({
         titulo: 'Mover para Cancelados?',
-        mensagem: 'Esse registro será <strong>removido da aba Pendente</strong> e movido para a aba <strong>Cancelados</strong>.',
+        mensagem: 'Esse registro será <strong>removido da aba Hom. Pendente</strong> e movido para a aba <strong>Hom. Canceladas</strong>.',
         tipo: 'aviso',
         textoBotao: 'Cancelar registro',
         callback: () => {
@@ -1324,7 +1382,7 @@
 
       abrirDialogo({
         titulo: 'Mover para Cancelados?',
-        mensagem: 'Esse registro será <strong>removido da aba Pendente</strong> e movido para a aba <strong>Cancelados</strong>.',
+        mensagem: 'Esse registro será <strong>removido da aba Hom. Pendente</strong> e movido para a aba <strong>Hom. Canceladas</strong>.',
         tipo: 'aviso',
         textoBotao: 'Cancelar registro',
         callback: () => {
@@ -1354,7 +1412,7 @@
 
       abrirDialogo({
         titulo: 'Mover para ' + nomeAba + '?',
-        mensagem: `Esse registro será <strong>removido da aba Pendente</strong> e movido para <strong>${nomeAba}</strong>.`,
+        mensagem: `Esse registro será <strong>removido da aba Hom. Pendente</strong> e movido para <strong>${nomeAba}</strong>.`,
         tipo: 'info',
         textoBotao: 'Homologar',
         callback: () => {

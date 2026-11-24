@@ -14,12 +14,12 @@ _HOMOLOGADOS = [
 
 _TELAS_INICIAL = [
     ('home',                      'Home'),
-    ('pendente',                  'Pendente'),
-    ('homologados_cobranca',      'Homologados Cobrança'),
-    ('homologados_pagamentos',    'Homologados Pagamentos'),
-    ('homologados_extrato',       'Homologados Extrato Cartão'),
-    ('homologados_ext_bancario',  'Homologados Extrato Bancário'),
-    ('cancelados',                'Cancelados'),
+    ('pendente',                  'Hom. Pendente'),
+    ('homologados_cobranca',      'Hom. Cobrança'),
+    ('homologados_pagamentos',    'Hom. Pagamentos'),
+    ('homologados_extrato',       'Hom. Extrato Cartão'),
+    ('homologados_ext_bancario',  'Hom. Extrato Bancário'),
+    ('cancelados',                'Hom. Canceladas'),
     ('melhorias',                 'Melhorias'),
     ('hub',                       'Hub Bancário'),
 ]

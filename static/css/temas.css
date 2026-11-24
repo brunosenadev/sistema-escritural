@@ -368,3 +368,99 @@ html { background: var(--fundo-pagina); }
 .maquete__linha--cab i { background: var(--texto-leve); }
 .maquete__linha--sel { background: var(--fundo-muted); }
 .maquete__pilula { padding: 2px 6px; border-radius: 99px; background: var(--bg-dcfce7); color: var(--tx-15803d); font-size: 7px; font-weight: 700; }
+
+/* ── Tabelas: estilo comum a todas as abas ──────────────────────────────────
+   Fica aqui (carregado depois dos estilos de cada aba) para valer em todas sem
+   repetir CSS. Seletores com :where() têm peso baixo de propósito: assim regras
+   específicas das abas (status, linha vazia, "minha sessão") continuam valendo. */
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums; /* IDs, datas e horas alinham na vertical */
+}
+
+/* Cabeçalho: mais alto e firme, com linha de base marcada */
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) thead th {
+  padding: 13px 12px 11px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  color: var(--texto-suave);
+  background: var(--fundo-sutil);
+  border-bottom: 1px solid var(--borda-forte);
+}
+
+/* Linhas mais arejadas */
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) > tbody > tr:where(:not(.linha-vazia)) > td:where(:not(.linha-vazia)) {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--fundo-muted);
+  transition: background-color .12s;
+}
+/* Respiro nas bordas do card */
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) :is(th, td):first-child { padding-left: 18px; }
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) :is(th, td):last-child  { padding-right: 18px; }
+
+/* shortcut: nth-child conta linhas escondidas pelo filtro, então após filtrar duas listras iguais podem ficar juntas; trocar por classe via JS se incomodar */
+:where(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) > tbody > tr:nth-child(even) > td {
+  background: color-mix(in srgb, var(--fundo-sutil) 70%, transparent);
+}
+
+/* Linha sob o mouse: fundo azulado + barrinha azul à esquerda */
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) tbody tr:not(.linha-vazia):hover > td:not(.linha-vazia) {
+  background: color-mix(in srgb, var(--tx-2563eb) 7%, var(--fundo-card));
+}
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) tbody tr:not(.linha-vazia):hover > td:first-child:not(.linha-vazia) {
+  box-shadow: inset 3px 0 0 var(--tx-2563eb);
+}
+
+/* Técnico: bolinha com a cor dele (a cor já vem no style da célula) */
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) td.celula-tecnico::before {
+  content: '';
+  display: inline-block;
+  width: 7px; height: 7px;
+  margin: 0 5px 0 -8px; /* a bolinha usa o respiro da esquerda e não rouba espaço do nome */
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
+}
+
+/* Coluna Técnico 10px mais larga (era 92px) para caber a bolinha sem cortar o nome */
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table):has(> tbody > tr > td.celula-tecnico:first-child) th:first-child { width: 102px; }
+
+/* Status: contorno fino na cor do próprio status, pílula mais definida */
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) .select-status-inline {
+  padding-top: 4px; padding-bottom: 4px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent);
+}
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) .select-status-inline:hover {
+  opacity: 1;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 50%, transparent);
+}
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) .select-status-inline:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tx-2563eb) 30%, transparent);
+}
+
+/* Ações: discretas até passar o mouse na linha (menos poluição visual) */
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) tbody .botao-acao {
+  opacity: .8;
+  transition: opacity .12s, background .15s;
+}
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) tbody tr:hover .botao-acao,
+:is(.tabela-dados, .tabela-es, .tabela-pendente, .tabela-config, .logs-table,
+    .tabela-sessoes, .cred-tabela, .em-table, .tabela-sql, .sla-table) tbody .botao-acao:focus-visible { opacity: 1; }
