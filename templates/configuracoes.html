@@ -657,6 +657,33 @@
             Adicionar
           </button>
         </div>
+
+        <!-- Minha Fila: com quem fica a vez em cada status -->
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--fundo-muted);">
+          <div style="font-size:12px;font-weight:600;color:var(--texto-escuro);margin-bottom:2px;">Minha Fila: com quem fica a vez</div>
+          <div style="font-size:11.5px;color:var(--texto-medio);margin-bottom:10px;">"Técnico" entra em Faça agora. Os demais ficam recolhidos até passar o prazo de cobrança.</div>
+          {% for status in lista_status %}
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+            <span class="badge-status {{ status | css_status }}" style="font-size:10.5px;">{{ status }}</span>
+            <select class="input-config" style="width:auto;padding:4px 8px;font-size:12px;" aria-label="Vez do status {{ status }}"
+                    onchange="salvarVezStatus('{{ status }}', this.value)">
+              {% for valor, rotulo in [('comigo','Técnico'),('cliente','Cliente'),('banco','Banco'),('outro','Outro setor'),('encerrado','Não entra na fila')] %}
+              <option value="{{ valor }}" {% if status_vez.get(status) == valor %}selected{% endif %}>{{ rotulo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endfor %}
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;">
+            <label for="input-fila-dias-cobrar" style="font-size:12px;color:var(--texto-medio);">Cobrar após quantos dias sem retorno</label>
+            <input class="input-config" type="number" min="1" max="60" id="input-fila-dias-cobrar" value="{{ fila_dias_cobrar }}"
+                   style="width:70px;padding:4px 8px;font-size:12px;" onchange="salvarDiasCobrar(this.value)">
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;">
+            <label for="input-fila-aviso-inicio" style="font-size:12px;color:var(--texto-medio);" title="Os agendamentos do dia são avisados no sininho do sistema neste horário. Com hora marcada, sai outro aviso 30 min antes.">Aviso dos agendamentos do dia às</label>
+            <input class="input-config" type="time" id="input-fila-aviso-inicio" value="{{ fila_aviso_inicio }}"
+                   style="width:100px;padding:4px 8px;font-size:12px;" onchange="salvarAvisoInicio(this.value)">
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1288,6 +1315,16 @@
   document.getElementById('input-novo-status').addEventListener('keydown', e => {
     if (e.key === 'Enter') adicionarStatus();
   });
+
+  function _putFila(url, corpo, msgOk) {
+    fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
+      .then(r => r.json())
+      .then(d => d.sucesso ? mostrarToast('sucesso', msgOk) : mostrarToast('erro', d.erro || 'Erro ao salvar.'))
+      .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
+  }
+  function salvarVezStatus(texto, vez) { _putFila('/api/status-vez', { texto, vez }, 'Minha Fila atualizada.'); }
+  function salvarDiasCobrar(dias) { _putFila('/api/fila-dias-cobrar', { dias }, 'Prazo de cobrança salvo.'); }
+  function salvarAvisoInicio(hora) { _putFila('/api/fila-aviso-inicio', { hora }, 'Horário do aviso salvo.'); }
 
   // ─── Status (Novos Escriturais) ────────────────────────────────
 

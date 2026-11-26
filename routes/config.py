@@ -43,6 +43,9 @@ def pagina_configuracoes():
         'configuracoes.html',
         tecnicos=banco.listar_tecnicos(),
         lista_status=banco.listar_status(),
+        status_vez=banco.listar_status_vez(),
+        fila_dias_cobrar=banco.get_config('fila_dias_cobrar', '5'),
+        fila_aviso_inicio=banco.get_config('fila_aviso_inicio', '08:00'),
         lista_status_escritural=banco.listar_status_escritural(),
         lista_servicos=banco.listar_servicos_completo(),
         lista_setores=banco.listar_setores(),
@@ -115,6 +118,47 @@ def api_remover_status(texto):
         lambda a, d: _log('Configurações', a, d)
     )
     return jsonify(payload), status_http
+
+
+@config_bp.route('/api/status-vez', methods=['PUT'])
+def api_status_vez():
+    if checar_admin():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    d = request.get_json() or {}
+    texto, vez = d.get('texto', ''), d.get('vez', '')
+    if not banco.salvar_status_vez(texto, vez):
+        return jsonify({'erro': 'Status ou opção inválida.'}), 400
+    _log('Configurações', 'EDITOU', f'Status {texto}: vez com {vez}')
+    return jsonify({'sucesso': True})
+
+
+@config_bp.route('/api/fila-dias-cobrar', methods=['PUT'])
+def api_fila_dias_cobrar():
+    if checar_admin():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    try:
+        dias = int((request.get_json() or {}).get('dias'))
+    except (TypeError, ValueError):
+        return jsonify({'erro': 'Informe um número de dias.'}), 400
+    if not 1 <= dias <= 60:
+        return jsonify({'erro': 'Use entre 1 e 60 dias.'}), 400
+    banco.set_config('fila_dias_cobrar', dias)
+    _log('Configurações', 'EDITOU', f'Minha Fila: cobrar após {dias} dias sem retorno')
+    return jsonify({'sucesso': True})
+
+
+@config_bp.route('/api/fila-aviso-inicio', methods=['PUT'])
+def api_fila_aviso_inicio():
+    if checar_admin():
+        return jsonify({'erro': 'Sem permissão'}), 403
+    from datetime import datetime as _dt
+    try:
+        hora = _dt.strptime((request.get_json() or {}).get('hora') or '', '%H:%M').strftime('%H:%M')
+    except ValueError:
+        return jsonify({'erro': 'Hora inválida.'}), 400
+    banco.set_config('fila_aviso_inicio', hora)
+    _log('Configurações', 'EDITOU', f'Minha Fila: aviso do início do dia às {hora}')
+    return jsonify({'sucesso': True})
 
 
 # ── API Status (Novos Escriturais) ────────────────────────

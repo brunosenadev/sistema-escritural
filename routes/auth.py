@@ -19,6 +19,7 @@ def _set_tokens(response, usuario_row: dict, ip: str = '', registrar: bool = Fal
 
 
 _TELAS_ORDEM = [
+    ('minha_fila',               'minha_fila.aba_minha_fila',              {}),
     ('pendente',                 'pendente.aba_pendente',                  {}),
     ('homologados_cobranca',     'homologados.aba_homologados_cobranca',   {}),
     ('homologados_pagamentos',   'homologados.aba_homologados_pagamentos', {}),

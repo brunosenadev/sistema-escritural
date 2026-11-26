@@ -193,6 +193,35 @@ def atualizar_obs_interna(id_registro):
     return jsonify({'sucesso': True})
 
 
+@pendente_bp.route('/pendente/retomar/<int:id_registro>', methods=['PATCH'])
+def agendar_retomar_pendente(id_registro):
+    err = _sem_permissao()
+    if err: return err
+    from datetime import date as _date, datetime as _dt
+    dados = request.get_json() or {}
+    data_iso = (dados.get('retomar_em') or '').strip()
+    hora = (dados.get('hora') or '').strip()
+    if data_iso:
+        try:
+            dia = _date.fromisoformat(data_iso)
+        except ValueError:
+            return jsonify({'erro': 'Data inválida.'}), 400
+        if hora:
+            try:
+                hora = _dt.strptime(hora, '%H:%M').strftime('%H:%M')
+            except ValueError:
+                return jsonify({'erro': 'Hora inválida.'}), 400
+        agora = _dt.now()
+        # hoje só vale com hora ainda por vir (ex.: treinamento mais tarde)
+        if dia < agora.date() or (dia == agora.date() and (not hora or hora <= agora.strftime('%H:%M'))):
+            return jsonify({'erro': 'Escolha uma data futura, ou uma hora ainda por vir hoje.'}), 400
+    if not banco.salvar_retomar_pendente(id_registro, data_iso, dados.get('nota', ''), hora):
+        return jsonify({'erro': 'Registro não encontrado'}), 404
+    _log('RETOMAR', f'Retorno do pendente #{id_registro} ' +
+         (f'agendado para {data_iso}{" " + hora if hora else ""}' if data_iso else 'removido'))
+    return jsonify({'sucesso': True})
+
+
 @pendente_bp.route('/pendente/homologar/<int:id_registro>', methods=['POST'])
 def homologar_pendente(id_registro):
     err = _sem_permissao()

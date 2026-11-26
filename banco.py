@@ -152,6 +152,7 @@ HUB_INSTRUCOES_INICIAIS = {
 
 TELAS_AGRUPADAS = [
     ('Abas', [
+        ('minha_fila',             'Minha Fila'),
         ('pendente',               'Hom. Pendente'),
         ('homologados_cobranca',   'Hom. Cobrança'),
         ('homologados_pagamentos', 'Hom. Pagamentos'),
@@ -731,6 +732,11 @@ def inicializar_banco():
         "ALTER TABLE usuarios ADD COLUMN usuario_sisplan TEXT DEFAULT ''",
         "ALTER TABLE usuarios ADD COLUMN tela_inicial TEXT DEFAULT 'home'",
         "ALTER TABLE usuarios ADD COLUMN bloqueado_usuarios INTEGER DEFAULT 0",
+        "ALTER TABLE status_lista ADD COLUMN vez TEXT DEFAULT ''",
+        "ALTER TABLE pendentes ADD COLUMN retomar_em TEXT DEFAULT ''",
+        "ALTER TABLE pendentes ADD COLUMN retomar_nota TEXT DEFAULT ''",
+        "ALTER TABLE pendentes ADD COLUMN retomar_hora TEXT DEFAULT ''",
+        "ALTER TABLE pendentes ADD COLUMN retomar_avisos TEXT DEFAULT ''",
     ]:
         try:
             conn.execute(ddl)
@@ -2129,8 +2135,17 @@ def atualizar_status_pendente(id_registro, novo_status):
     hoje  = datetime.now().strftime('%d/%m/%Y')
     conn  = conectar()
     conn.execute(
+        # mexer no status conta como "retomei": limpa o retorno agendado que já chegou
+        # (agendamento de hoje com hora ainda por vir, ex. treinamento às 14h, continua valendo)
         "UPDATE pendentes SET status=?, dt_status=?, atualizado_em=? WHERE id=?",
         (novo_status, hoje, agora, id_registro)
+    )
+    conn.execute(
+        "UPDATE pendentes SET retomar_em='', retomar_hora='', retomar_avisos='' "
+        "WHERE id=? AND retomar_em != '' AND (retomar_em < date('now','localtime') OR "
+        "(retomar_em = date('now','localtime') AND "
+        " (COALESCE(retomar_hora,'') = '' OR retomar_hora <= strftime('%H:%M','now','localtime'))))",
+        (id_registro,)
     )
     conn.commit()
     conn.close()
@@ -4033,3 +4048,201 @@ EXECUTORES_EXCLUSAO = {
     'email_modelo':      remover_email_modelo,
     'credencial':        deletar_credencial,
 }
+
+
+# ── Minha Fila ────────────────────────────────────────────
+# Com quem está a vez em cada status: decide se o pendente aparece em "Faça agora"
+# (comigo) ou fica recolhido esperando cliente/banco/outro setor.
+
+VEZ_OPCOES = ('comigo', 'cliente', 'banco', 'outro', 'encerrado')
+_VEZ_ROTULO = {'cliente': 'Cliente', 'banco': 'Banco', 'outro': 'Outro setor'}
+_PESO_FAIXA = {'ok': 0, 'atencao': 40, 'vencido': 60, 'atrasado': 80, 'critico': 100}
+
+
+def _vez_padrao(status):
+    s = (status or '').upper()
+    if 'CANCELAD' in s or 'HOMOLOGADO' in s:
+        return 'encerrado'
+    if 'CLIENTE' in s:
+        return 'cliente'
+    if 'BANCO' in s:
+        return 'banco'
+    if s.startswith('AGUARDANDO') or 'PROG' in s:
+        return 'outro'
+    return 'comigo'
+
+
+def listar_status_vez():
+    """{status: vez}; status sem vez definida em Configurações usa o palpite pelo nome."""
+    conn = conectar()
+    rows = conn.execute("SELECT texto, vez FROM status_lista ORDER BY id").fetchall()
+    conn.close()
+    return {r['texto']: (r['vez'] or _vez_padrao(r['texto'])) for r in rows}
+
+
+def salvar_status_vez(texto, vez):
+    if vez not in VEZ_OPCOES:
+        return False
+    conn = conectar()
+    cur = conn.execute("UPDATE status_lista SET vez=? WHERE texto=?", (vez, texto))
+    conn.commit()
+    conn.close()
+    return cur.rowcount > 0
+
+
+def salvar_retomar_pendente(id_reg, data_iso, nota, hora=''):
+    data_iso = data_iso or ''
+    hora = (hora or '') if data_iso else ''
+    # agendou para hoje: quem agendou já sabe, então o aviso de início do dia não vai
+    avisos = 'dia' if data_iso == datetime.now().date().isoformat() else ''
+    conn = conectar()
+    cur = conn.execute(
+        "UPDATE pendentes SET retomar_em=?, retomar_hora=?, retomar_nota=?, retomar_avisos=? WHERE id=?",
+        (data_iso, hora, (nota or '').strip() if data_iso else '', avisos, id_reg)
+    )
+    conn.commit()
+    conn.close()
+    return cur.rowcount > 0
+
+
+def _parse_data_qualquer(txt):
+    txt = (txt or '').strip()
+    for fmt in ('%d/%m/%Y %H:%M', '%Y-%m-%d %H:%M:%S', '%d/%m/%Y', '%Y-%m-%d'):
+        try:
+            return datetime.strptime(txt, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _mesmo_tecnico(tec_reg, tecnico):
+    a = (tec_reg or '').strip().upper()
+    b = (tecnico or '').strip().upper()
+    if b == 'SEM TEC.':
+        return a in ('', 'SEM TEC.')
+    return a == b
+
+
+def montar_minha_fila(tecnico=None):
+    """Separa os pendentes de um técnico (None = todos) em:
+    agora (a vez é dele), retomar (retorno agendado chegou ou cliente/banco sem resposta há tempo),
+    aguardando (com outros, ainda no prazo) e adiados (retorno agendado no futuro)."""
+    from datetime import date as _date
+    hoje = _date.today()
+    hoje_iso = hoje.isoformat()
+    vez_map = listar_status_vez()
+    try:
+        dias_cobrar = int(get_config('fila_dias_cobrar', '5') or 5)
+    except ValueError:
+        dias_cobrar = 5
+
+    fila = {'agora': [], 'retomar': [], 'aguardando': [], 'adiados': []}
+    for p in calcular_sla_pendentes():
+        if tecnico is not None and not _mesmo_tecnico(p.get('tecnico'), tecnico):
+            continue
+        status = p.get('status') or ''
+        vez = vez_map.get(status) or _vez_padrao(status)
+        if vez == 'encerrado':
+            continue
+
+        ultima = _parse_data_qualquer(p.get('atualizado_em')) or _parse_data_qualquer(p.get('dt_solicita'))
+        parado = max((hoje - ultima).days, 0) if ultima else 0
+        retomar = (p.get('retomar_em') or '').strip()
+        p['vez'] = vez
+        p['vez_rotulo'] = _VEZ_ROTULO.get(vez, '')
+        p['dias_parado'] = parado
+
+        if retomar > hoje_iso:
+            p['dias_para_voltar'] = (_date.fromisoformat(retomar) - hoje).days
+            fila['adiados'].append(p)
+            continue
+
+        motivos = []
+        if retomar:
+            atraso = (hoje - _date.fromisoformat(retomar)).days
+            hora = (p.get('retomar_hora') or '').strip()
+            if atraso == 0 and hora:
+                p['hora_hoje'] = hora
+            motivos.append((f'Agendado para hoje às {hora}' if hora else 'Retorno agendado para hoje') if atraso == 0
+                           else f'Retorno agendado há {atraso} dia(s)')
+            secao = 'retomar'
+        elif vez == 'comigo':
+            secao = 'agora'
+        elif parado >= dias_cobrar:
+            motivos.append(f'{p["vez_rotulo"]} sem retorno há {parado} dias')
+            secao = 'retomar'
+        else:
+            secao = 'aguardando'
+
+        faixa = p['sla_faixa']
+        restantes = p['dias_restantes']
+        if faixa in ('vencido', 'atrasado', 'critico'):
+            motivos.append('SLA venceu hoje' if restantes == 0 else f'SLA estourado há {-restantes} dia(s)')
+        elif faixa == 'atencao':
+            motivos.append(f'SLA vence em {restantes} dia(s)')
+        if vez == 'comigo' and parado >= 3:
+            motivos.append(f'Parado com você há {parado} dias')
+        if not motivos:
+            motivos.append('Movimentado hoje' if parado == 0 else f'Última movimentação há {parado} dia(s)')
+
+        p['motivos'] = motivos
+        p['prioridade'] = _PESO_FAIXA.get(faixa, 0) + parado
+        if retomar == hoje_iso and p.get('retomar_hora'):
+            p['prioridade'] += 500  # compromisso com hora marcada hoje vai para o topo
+        fila[secao].append(p)
+
+    for chave in ('agora', 'retomar', 'aguardando'):
+        fila[chave].sort(key=lambda x: x['prioridade'], reverse=True)
+    fila['adiados'].sort(key=lambda x: x.get('retomar_em') or '')
+    return fila
+
+
+def listar_agendamentos_do_dia(data_iso):
+    """Pendentes ativos com retorno agendado para a data (usado pelos avisos da Minha Fila)."""
+    conn = conectar()
+    rows = conn.execute(
+        "SELECT id, empresa, banco, servico, tecnico, status, obs, retomar_em, retomar_hora, retomar_nota, retomar_avisos "
+        "FROM pendentes WHERE retomar_em=? AND UPPER(COALESCE(status,'')) NOT IN ('CANCELADO','HOMOLOGADO')",
+        (data_iso,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def marcar_aviso_retomar(id_reg, avisos_antes, avisos_depois):
+    """Troca a lista de avisos enviados só se ninguém mexeu nela antes (evita aviso duplicado
+    quando há mais de um processo rodando a checagem). True = este processo ficou com o envio."""
+    conn = conectar()
+    cur = conn.execute(
+        "UPDATE pendentes SET retomar_avisos=? WHERE id=? AND COALESCE(retomar_avisos,'')=?",
+        (avisos_depois, id_reg, avisos_antes or '')
+    )
+    conn.commit()
+    conn.close()
+    return cur.rowcount == 1
+
+
+def contar_homologados_hoje(usuario_id):
+    if not usuario_id:
+        return 0
+    conn = conectar()
+    n = conn.execute(
+        "SELECT COUNT(*) FROM logs WHERE usuario_id=? AND tela='Pendentes' "
+        "AND descricao LIKE 'Homologou pendente%' AND data_hora LIKE ?",
+        (usuario_id, datetime.now().strftime('%Y-%m-%d') + '%')
+    ).fetchone()[0]
+    conn.close()
+    return n
+
+
+def contar_os_abertas(tecnico=None):
+    conn = conectar()
+    if tecnico is None:
+        n = conn.execute("SELECT COUNT(*) FROM os_controle WHERE status='PENDENTE'").fetchone()[0]
+    else:
+        n = conn.execute(
+            "SELECT COUNT(*) FROM os_controle WHERE status='PENDENTE' AND UPPER(TRIM(tecnico))=UPPER(TRIM(?))",
+            (tecnico,)
+        ).fetchone()[0]
+    conn.close()
+    return n

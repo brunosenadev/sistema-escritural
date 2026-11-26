@@ -14,6 +14,7 @@ _HOMOLOGADOS = [
 
 _TELAS_INICIAL = [
     ('home',                      'Home'),
+    ('minha_fila',                'Minha Fila'),
     ('pendente',                  'Hom. Pendente'),
     ('homologados_cobranca',      'Hom. Cobrança'),
     ('homologados_pagamentos',    'Hom. Pagamentos'),

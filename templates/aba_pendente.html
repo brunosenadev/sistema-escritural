@@ -743,6 +743,9 @@
               data-busca="{{ (reg.empresa ~ ' ' ~ reg.banco ~ ' ' ~ reg.obs ~ ' ' ~ reg.tecnico) | lower }}"
               data-dt-solicita="{{ reg.dt_solicita or '' }}"
               data-obs-interna="{{ reg.obs_interna or '' }}"
+              data-retomar-em="{{ reg.retomar_em or '' }}"
+              data-retomar-nota="{{ reg.retomar_nota or '' }}"
+              data-retomar-hora="{{ reg.retomar_hora or '' }}"
               ondblclick="_abrirDetalhe(this)"
               style="cursor:pointer"
             >
@@ -1027,6 +1030,17 @@
       </div>
       <div class="modal-detalhe-campo campo-completo">
         <label>Observação</label><span id="d-obs"></span>
+      </div>
+
+      <div class="obs-interna-wrap">
+        <label>Retomar em <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--texto-medio)">(o registro some da Minha Fila até essa data; a hora é opcional e gera aviso 30 min antes)</span></label>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <input type="date" id="detalhe-retomar-em" style="padding:6px 8px;border:1.5px solid var(--borda);border-radius:8px;font-family:inherit;background:var(--fundo-card);color:var(--texto-escuro)">
+          <input type="time" id="detalhe-retomar-hora" title="Hora (opcional)" style="padding:6px 8px;border:1.5px solid var(--borda);border-radius:8px;font-family:inherit;background:var(--fundo-card);color:var(--texto-escuro)">
+          <input type="text" id="detalhe-retomar-nota" maxlength="200" placeholder="Lembrete: cobrar arquivo de remessa teste" style="flex:1;min-width:180px;padding:6px 8px;border:1.5px solid var(--borda);border-radius:8px;font-family:inherit;background:var(--fundo-card);color:var(--texto-escuro)">
+          <button type="button" class="botao-salvar" onclick="_salvarRetomar(false)">Agendar</button>
+          <button type="button" class="botao-cancelar" id="detalhe-retomar-limpar" onclick="_salvarRetomar(true)">Remover</button>
+        </div>
       </div>
 
       <div class="obs-interna-wrap">
@@ -1620,6 +1634,10 @@
       ? tr.querySelector('.celula-obs').textContent.trim() : get(7);
 
     document.getElementById('detalhe-obs-interna').value = tr.getAttribute('data-obs-interna') || '';
+    document.getElementById('detalhe-retomar-em').value   = tr.getAttribute('data-retomar-em') || '';
+    document.getElementById('detalhe-retomar-nota').value = tr.getAttribute('data-retomar-nota') || '';
+    document.getElementById('detalhe-retomar-hora').value = tr.getAttribute('data-retomar-hora') || '';
+    document.getElementById('detalhe-retomar-limpar').style.display = tr.getAttribute('data-retomar-em') ? '' : 'none';
 
     // SLA bar
     const srv = tr.dataset.servico || '';
@@ -1664,6 +1682,29 @@
       } else {
         mostrarToast('erro', d.erro || 'Erro ao salvar.');
       }
+    })
+    .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
+  }
+
+  function _salvarRetomar(limpar) {
+    if (!_detalheIdAtual) return;
+    const data = limpar ? '' : document.getElementById('detalhe-retomar-em').value;
+    const nota = limpar ? '' : document.getElementById('detalhe-retomar-nota').value;
+    const hora = limpar ? '' : document.getElementById('detalhe-retomar-hora').value;
+    if (!limpar && !data) { mostrarToast('erro', 'Escolha a data de retorno.'); return; }
+    fetch('/pendente/retomar/' + _detalheIdAtual, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ retomar_em: data, nota, hora }),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.sucesso) { mostrarToast('erro', d.erro || 'Erro ao salvar.'); return; }
+      const tr = document.querySelector('tr[data-id="' + _detalheIdAtual + '"]');
+      if (tr) { tr.setAttribute('data-retomar-em', data); tr.setAttribute('data-retomar-nota', nota); tr.setAttribute('data-retomar-hora', hora); }
+      document.getElementById('detalhe-retomar-limpar').style.display = data ? '' : 'none';
+      if (limpar) { document.getElementById('detalhe-retomar-em').value = ''; document.getElementById('detalhe-retomar-hora').value = ''; }
+      mostrarToast('sucesso', limpar ? 'Agendamento removido.' : 'Retorno agendado.');
     })
     .catch(() => mostrarToast('erro', 'Erro de comunicação.'));
   }

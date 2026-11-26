@@ -336,6 +336,20 @@
     document.getElementById('contador-linhas').textContent = `${visiveis} registros`;
   }
 
+  // ─── Filtro vindo pela URL (ex.: card "O.S. abertas" da Minha Fila) ──
+  (function () {
+    const p = new URLSearchParams(location.search);
+    const tec = (p.get('tecnico') || '').toLowerCase(), st = p.get('status') || '';
+    const selTec = document.getElementById('filtro-tecnico');
+    if (tec && selTec) {
+      // técnico sem nenhuma O.S. não tem opção no select: cria para o filtro mostrar zero, e não tudo
+      if (![...selTec.options].some(o => o.value === tec)) selTec.add(new Option(p.get('tecnico'), tec));
+      selTec.value = tec;
+    }
+    if (st) document.getElementById('filtro-status').value = st;
+    if (tec || st) filtrarTabela();
+  })();
+
   // ─── Status ──────────────────────────────────────────────────
   function atualizarStatusOS(el) {
     const id = el.dataset.id;

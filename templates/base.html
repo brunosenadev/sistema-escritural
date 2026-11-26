@@ -622,6 +622,40 @@
       from { opacity:1; transform:translateX(0); }
       to   { opacity:0; transform:translateX(-18px); }
     }
+    /* Alerta de agendamento (Minha Fila): fica na tela até a pessoa confirmar */
+    #area-agenda-alerta {
+      position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; display: flex; flex-direction: column; gap: 10px;
+      width: min(480px, 94vw); pointer-events: none;
+    }
+    .ag-alerta {
+      pointer-events: auto; position: relative; overflow: hidden;
+      background: var(--fundo-card); border: 1px solid rgba(6,182,212,.55); border-radius: 16px;
+      box-shadow: 0 18px 50px -10px rgba(6,182,212,.45), 0 0 0 4px rgba(6,182,212,.12);
+      animation: ag-entrar .45s cubic-bezier(.2,1.3,.4,1) both, ag-brilho 2s ease-in-out .5s infinite;
+    }
+    .ag-alerta::before { content:""; position:absolute; left:0; right:0; top:0; height:4px; background:linear-gradient(90deg,#06b6d4,#3b82f6,#06b6d4); background-size:200% 100%; animation: ag-faixa 2.4s linear infinite; }
+    .ag-cab { display:flex; align-items:center; gap:12px; padding:16px 16px 10px; }
+    .ag-ico { flex:none; width:42px; height:42px; border-radius:12px; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg,#06b6d4,#3b82f6); box-shadow:0 6px 18px rgba(6,182,212,.45); animation: ag-sino 1.6s ease-in-out infinite; }
+    .ag-ico svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .ag-cab-txt { flex:1; min-width:0; }
+    .ag-cab-txt small { display:block; font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#0891b2; }
+    .ag-cab-txt b { display:block; font-size:15px; line-height:1.3; color:var(--texto-forte); }
+    .ag-x { flex:none; align-self:flex-start; width:28px; height:28px; border:1px solid var(--borda); border-radius:8px; background:transparent; color:var(--texto-medio); cursor:pointer; font-size:16px; line-height:1; }
+    .ag-corpo { padding:0 16px 12px 70px; display:flex; flex-direction:column; gap:6px; }
+    .ag-linha { font-size:13px; line-height:1.45; color:var(--texto-2); padding:7px 10px; border-radius:9px; background:var(--fundo-sutil); border:1px solid var(--borda); }
+    .ag-rot { display:block; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--texto-suave); margin-bottom:1px; }
+    .ag-det { font-size:12px; color:var(--texto-suave); }
+    .ag-rodape { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; padding:10px 16px 14px; border-top:1px solid var(--borda); }
+    .ag-rodape button { padding:7px 12px; border:1px solid var(--borda-forte); border-radius:9px; background:transparent; color:var(--texto-escuro); font-family:inherit; font-size:12.5px; cursor:pointer; }
+    .ag-rodape button:hover { border-color:#06b6d4; color:#0891b2; }
+    .ag-rodape button.prim { background:linear-gradient(135deg,#06b6d4,#3b82f6); border-color:transparent; color:#fff; font-weight:600; }
+    .ag-rodape button.prim:hover { filter:brightness(1.08); color:#fff; }
+    @keyframes ag-entrar { from { opacity:0; transform:translateY(-24px) scale(.96); } to { opacity:1; transform:none; } }
+    @keyframes ag-brilho { 50% { box-shadow: 0 18px 50px -10px rgba(6,182,212,.6), 0 0 0 8px rgba(6,182,212,.18); } }
+    @keyframes ag-faixa { to { background-position:-200% 0; } }
+    @keyframes ag-sino { 0%,60%,100% { transform:rotate(0); } 10%,30%,50% { transform:rotate(-12deg); } 20%,40% { transform:rotate(12deg); } }
+    @media (prefers-reduced-motion: reduce) { .ag-alerta, .ag-alerta::before, .ag-ico { animation:none; } }
 
     /* ── Sidebar: scrollbar oculta ──────────── */
     .sidebar::-webkit-scrollbar { display: none !important; }
@@ -1074,6 +1108,13 @@
         </button>
         <div class="nav-grupo-items">
 
+          {% if _eh_master or 'minha_fila' in _ta %}
+          <a href="/minha-fila" class="nav-item {% if aba_ativa == 'minha_fila' %}ativo{% endif %}" title="Minha Fila">
+            <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><polyline points="3.5 6 4.5 7 6 5"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>
+            <span class="nav-item-texto">Minha Fila</span>
+          </a>
+          {% endif %}
+
           {% if _eh_master or 'pendente' in _ta %}
           <a href="/pendente" class="nav-item {% if aba_ativa == 'pendente' %}ativo{% endif %}" title="Hom. Pendente">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14.5"/></svg>
@@ -1395,6 +1436,7 @@
   <!-- Área de toasts/notificações -->
   <div id="area-toasts"></div>
   <div id="area-notif-toast"></div>
+  <div id="area-agenda-alerta"></div>
 
   <!-- Dropdown de notificações -->
   <div id="dropdown-notif">
@@ -1854,11 +1896,79 @@
       }, 5000);
     }
 
+    // ── Alerta de agendamento da Minha Fila ──────────────────
+    // A notificação com link "/minha-fila?abrir=<id>" vira um alerta grande que só sai com um clique.
+    var _AG_PREFIXO = '/minha-fila?abrir=';
+    var _agTitulo = document.title, _agPisca = null;
+    function _ehAgenda(n) { return String(n.link || '').indexOf(_AG_PREFIXO) === 0; }
+    function _agMapa() { try { return JSON.parse(localStorage.getItem('ag-adiados') || '{}'); } catch (e) { return {}; } }
+    function _agAdiadoAte(id) { return Number(_agMapa()[id] || 0); }
+    function _agAdiar(id, min) { var m = _agMapa(); m[id] = Date.now() + min * 60000; localStorage.setItem('ag-adiados', JSON.stringify(m)); }
+    function _agPiscarTitulo() {
+      var abertos = document.querySelectorAll('.ag-alerta').length;
+      if (abertos && !_agPisca) {
+        var lig = false;
+        _agPisca = setInterval(function () { lig = !lig; document.title = lig ? '⏰ Agendamento agora!' : _agTitulo; }, 1000);
+      } else if (!abertos && _agPisca) {
+        clearInterval(_agPisca); _agPisca = null; document.title = _agTitulo;
+      }
+    }
+    function _mostrarAlertaAgenda(n) {
+      var area = document.getElementById('area-agenda-alerta');
+      if (!area || area.querySelector('.ag-alerta[data-id="' + n.id + '"]')) return;
+      var corpo = String(n.mensagem || '').split('\n').filter(Boolean).map(function (l) {
+        var m = l.match(/^(Lembrete|Obs\.):\s*(.*)$/);
+        if (m) return '<div class="ag-linha"><span class="ag-rot">' + (m[1] === 'Obs.' ? 'Observação' : 'Lembrete') + '</span>' + _esc(m[2]) + '</div>';
+        return '<div class="ag-det">' + _esc(l) + '</div>';
+      }).join('');
+      var el = document.createElement('div');
+      el.className = 'ag-alerta';
+      el.dataset.id = n.id;
+      el.setAttribute('role', 'alertdialog');
+      el.setAttribute('aria-live', 'assertive');
+      el.innerHTML =
+        '<div class="ag-cab"><span class="ag-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M5 3 2 6M22 6l-3-3"/></svg></span>' +
+        '<div class="ag-cab-txt"><small>Agendamento</small><b>' + _esc(n.titulo) + '</b></div>' +
+        '<button type="button" class="ag-x" data-acao="ok" aria-label="Fechar">×</button></div>' +
+        '<div class="ag-corpo">' + corpo + '</div>' +
+        '<div class="ag-rodape"><button type="button" data-acao="adiar">Lembrar em 10 min</button>' +
+        '<button type="button" data-acao="ok">Ok, entendi</button>' +
+        '<button type="button" class="prim" data-acao="abrir">Abrir na Minha Fila</button></div>';
+      el.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-acao]');
+        if (!b) return;
+        var acao = b.dataset.acao;
+        el.remove(); _agPiscarTitulo();
+        if (acao === 'adiar') {
+          _agAdiar(n.id, 10);
+          setTimeout(function () { _mostrarAlertaAgenda(n); _tocarSom(); }, 10 * 60000);
+          return;
+        }
+        fetch('/api/notificacoes/' + n.id + '/lida', { method: 'POST' })
+          .then(function () { _setBadge(Math.max(0, _naoLidas - 1)); })
+          .catch(function () {})
+          .then(function () { if (acao === 'abrir') window.location.href = n.link; });
+      });
+      area.appendChild(el);
+      _agPiscarTitulo();
+    }
+    // Ao abrir qualquer página: reapresenta os alertas de hoje que ainda não foram confirmados
+    function _agReabrirPendentes(lista) {
+      var d = new Date();
+      var hoje = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      (lista || []).filter(function (n) { return _ehAgenda(n) && !n.lida && String(n.criado_em || '').indexOf(hoje) === 0; })
+        .reverse().forEach(function (n) {
+          var espera = _agAdiadoAte(n.id) - Date.now();
+          if (espera > 0) setTimeout(function () { _mostrarAlertaAgenda(n); _tocarSom(); }, espera);
+          else _mostrarAlertaAgenda(n);
+        });
+    }
+
     // Notificação nativa do Windows/OS
-    function _notifNativa(titulo, mensagem, link) {
+    function _notifNativa(titulo, mensagem, link, fixa) {
       if (!('Notification' in window)) return;
       if (Notification.permission !== 'granted') return;
-      var n = new Notification(titulo, { body: mensagem, icon: '/static/icon.ico' });
+      var n = new Notification(titulo, { body: mensagem, icon: '/static/icon.ico', requireInteraction: !!fixa });
       if (link) {
         n.onclick = function() {
           window.focus();
@@ -1880,11 +1990,14 @@
           if (!d) return;
           _setBadge(d.nao_lidas);
           if (d.novas && d.novas.length > 0) {
+            var temAgenda = false;
             d.novas.forEach(function(n) {
-              _mostrarToastNotif(n.titulo, n.mensagem);
-              _notifNativa(n.titulo, n.mensagem, n.link);
+              if (_ehAgenda(n)) { temAgenda = true; _mostrarAlertaAgenda(n); }
+              else _mostrarToastNotif(n.titulo, n.mensagem);
+              _notifNativa(n.titulo, n.mensagem, n.link, _ehAgenda(n));
             });
             _tocarSom();
+            if (temAgenda) setTimeout(_tocarSom, 1300);  // agendamento toca duas vezes
             var maxId = Math.max.apply(null, d.novas.map(function(n) { return n.id; }));
             if (maxId > _ultimoId) _ultimoId = maxId;
           }
@@ -1902,6 +2015,7 @@
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(lista) {
         _ultimoId = (lista && lista.length > 0) ? lista[0].id : 0;
+        _agReabrirPendentes(lista);
         setInterval(_poll, 10000); // poll a cada 10s após init
       })
       .catch(function() { _ultimoId = 0; setInterval(_poll, 10000); });

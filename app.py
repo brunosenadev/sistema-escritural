@@ -16,6 +16,7 @@ from routes.pendente    import pendente_bp
 from routes.homologados import homologados_bp
 from routes.cancelados  import cancelados_bp
 from routes.controle_os import controle_os_bp
+from routes.minha_fila  import minha_fila_bp, iniciar_avisos_agenda
 from routes.conversor_certificado import conversor_certificado_bp
 from routes.gerador_certificado_itau import gerador_certificado_itau_bp
 from routes.home import home_bp
@@ -106,6 +107,7 @@ app.register_blueprint(pendente_bp)
 app.register_blueprint(homologados_bp)
 app.register_blueprint(cancelados_bp)
 app.register_blueprint(controle_os_bp)
+app.register_blueprint(minha_fila_bp)
 app.register_blueprint(conversor_certificado_bp)
 app.register_blueprint(gerador_certificado_itau_bp)
 app.register_blueprint(home_bp)
@@ -130,6 +132,7 @@ app.register_blueprint(solicitacoes_exclusao_bp)
 
 iniciar_polling()
 iniciar_checker_credenciais()
+iniciar_avisos_agenda()
 
 _MANUT_BYPASS = {'static', None, 'auth.pagina_login', 'auth.sair',
                  'api_status_manutencao', 'api_toggle_manutencao'}

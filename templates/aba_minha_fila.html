@@ -1,0 +1,659 @@
+{% extends "base.html" %}
+
+{% block titulo %}Minha Fila{% endblock %}
+{% block titulo_pagina %}Minha Fila{% endblock %}
+{% block breadcrumb %}Controle de Escriturais / Minha Fila{% endblock %}
+
+{% set aba_ativa = 'minha_fila' %}
+{% set todos = fila.agora + fila.retomar + fila.aguardando + fila.adiados %}
+{% set n_alta = todos | selectattr('sla_faixa', 'in', ['vencido', 'atrasado', 'critico']) | list | length %}
+{% set n_media = todos | selectattr('sla_faixa', 'equalto', 'atencao') | list | length %}
+{% set n_ok = todos | selectattr('sla_faixa', 'equalto', 'ok') | list | length %}
+{% set n_total = todos | length %}
+
+{% block estilos_extras %}
+<style>
+  :root { --fq-azul:#3b82f6; --fq-ciano:#06b6d4; --fq-verm:#ef4444; --fq-amb:#f59e0b; --fq-verde:#10b981; --fq-mono: "JetBrains Mono", "Cascadia Code", Consolas, ui-monospace, monospace; }
+
+  /* ── Guia "como funciona" ───────────────────── */
+  .fq-guia { position:relative; display:grid; grid-template-columns:1fr auto 1fr auto 1fr auto; align-items:center; gap:14px; padding:14px 16px; margin-bottom:14px; border:1px solid var(--borda); border-radius:16px; background:linear-gradient(120deg, rgba(59,130,246,.09), rgba(6,182,212,.05) 55%, transparent), var(--fundo-card); animation:fcEntra .3s ease both; }
+  .fq-guia[hidden] { display:none; }
+  .fq-passo { display:flex; gap:11px; align-items:flex-start; }
+  .fq-passo-n { flex:none; width:28px; height:28px; border-radius:9px; display:grid; place-items:center; font-family:var(--fq-mono); font-size:12px; font-weight:700; color:#fff; background:linear-gradient(135deg, var(--fq-azul), var(--fq-ciano)); box-shadow:0 4px 12px rgba(59,130,246,.3); }
+  .fq-passo b { display:block; font-size:12.5px; color:var(--texto-forte); }
+  .fq-passo p { margin:3px 0 0; font-size:11.5px; line-height:1.45; color:var(--texto-medio); }
+  .fq-tag { display:inline-block; padding:0 6px; border-radius:5px; font-size:10.5px; font-weight:600; white-space:nowrap; color:var(--cor); background:color-mix(in srgb, var(--cor) 14%, transparent); }
+  .fq-seta { color:var(--texto-leve); font-size:16px; }
+  @media (max-width: 1100px) { .fq-guia { grid-template-columns:1fr; } .fq-seta { display:none; } }
+
+  /* ── Barra de comando ───────────────────────── */
+  .fq-cmd { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .fq-busca { flex:1; min-width:220px; position:relative; }
+  .fq-busca input { width:100%; box-sizing:border-box; padding:9px 12px 9px 34px; border:1px solid var(--borda); border-radius:10px; background:var(--fundo-card); color:var(--texto-escuro); font-family:inherit; font-size:13px; outline:none; transition:border-color .15s, box-shadow .15s; }
+  .fq-busca input:focus { border-color:var(--fq-azul); box-shadow:0 0 0 3px rgba(59,130,246,.18); }
+  .fq-busca svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--texto-leve); }
+  .fq-busca kbd { position:absolute; right:9px; top:50%; transform:translateY(-50%); }
+  kbd { font-family:var(--fq-mono); font-size:10.5px; padding:1px 6px; border:1px solid var(--borda-forte); border-bottom-width:2px; border-radius:5px; color:var(--texto-suave); background:var(--fundo-sutil); }
+  .fq-chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .fq-chip { padding:7px 12px; border:1px solid var(--borda); border-radius:99px; background:var(--fundo-card); color:var(--texto-medio); font-family:inherit; font-size:12px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all .15s; }
+  .fq-chip:hover { border-color:var(--borda-forte); color:var(--texto-escuro); }
+  .fq-chip.ativo { background:var(--texto-escuro); border-color:var(--texto-escuro); color:var(--fundo-card); }
+  .fq-chip i { width:7px; height:7px; border-radius:50%; display:inline-block; }
+  .fq-sel { padding:8px 10px; border:1px solid var(--borda); border-radius:10px; background:var(--fundo-card); color:var(--texto-escuro); font-family:inherit; font-size:12.5px; }
+  .fq-ajuda-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border:1px solid var(--borda); border-radius:10px; background:var(--fundo-card); color:var(--texto-medio); font-family:inherit; font-size:12px; cursor:pointer; transition:all .15s; }
+  .fq-ajuda-btn:hover, .fq-ajuda-btn[aria-expanded="true"] { border-color:var(--fq-azul); color:var(--fq-azul); }
+  .fq-ajuda-btn svg { width:14px; height:14px; }
+
+  /* ── Indicadores ────────────────────────────── */
+  .fq-kpis { display:grid; grid-template-columns:minmax(0, 2.2fr); grid-auto-flow:column; grid-auto-columns:minmax(0, 1fr); gap:12px; margin-bottom:14px; }
+  @media (max-width: 900px) { .fq-kpis { grid-auto-flow:row; grid-template-columns:1fr 1fr; } .fq-kpis > :first-child { grid-column:1 / -1; } }
+  .fq-kpi { position:relative; overflow:hidden; background:var(--fundo-card); border:1px solid var(--borda); border-radius:16px; padding:13px 16px; text-decoration:none; color:inherit; display:block; transition:border-color .15s, transform .15s; }
+  .fq-kpi::before { content:""; position:absolute; right:-30px; top:-30px; width:110px; height:110px; border-radius:50%; background:radial-gradient(circle, var(--brilho, rgba(59,130,246,.12)), transparent 70%); pointer-events:none; }
+  a.fq-kpi:hover { border-color:var(--fq-azul); transform:translateY(-1px); }
+  .fq-kpi-rot { font-size:10.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--texto-suave); }
+  .fq-kpi-num { font-family:var(--fq-mono); font-size:27px; font-weight:600; color:var(--texto-forte); line-height:1.2; margin-top:4px; }
+  .fq-saude-barra { display:flex; gap:3px; height:8px; margin:11px 0 8px; }
+  .fq-saude-barra span { display:block; height:100%; border-radius:99px; transition:width .6s ease; }
+  .fq-saude-barra:empty { background:var(--fundo-muted); border-radius:99px; }
+  .fq-saude-leg { display:flex; gap:16px; font-size:11.5px; color:var(--texto-medio); flex-wrap:wrap; }
+  .fq-saude-leg b { font-family:var(--fq-mono); color:var(--texto-escuro); }
+  .fq-saude-leg i { width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:0; }
+
+  /* ── Quadro: 4 colunas no desktop, sem rolagem lateral ── */
+  .fq-quadro { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:14px; align-items:start; }
+  @media (max-width: 1280px) { .fq-quadro { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 720px)  { .fq-quadro { grid-template-columns:minmax(0, 1fr); } }
+  .fq-col { position:relative; border:1px solid var(--borda); border-radius:18px; padding:12px 8px 8px 10px; min-height:240px;
+            background:linear-gradient(180deg, color-mix(in srgb, var(--cor) 9%, transparent), transparent 120px), var(--fundo-sutil); transition:border-color .2s, box-shadow .2s; }
+  .fq-col::before { content:""; position:absolute; left:18px; right:18px; top:-1px; height:2px; border-radius:0 0 3px 3px; background:var(--cor); box-shadow:0 0 12px var(--cor); opacity:.85; }
+  .fq-col-cab { display:flex; align-items:center; gap:10px; padding:2px 6px 12px 2px; }
+  .fq-col-ico { flex:none; width:34px; height:34px; border-radius:11px; display:grid; place-items:center; color:var(--cor); background:color-mix(in srgb, var(--cor) 15%, var(--fundo-card)); border:1px solid color-mix(in srgb, var(--cor) 25%, transparent); }
+  .fq-col-ico svg { width:17px; height:17px; }
+  .fq-col-tit { min-width:0; }
+  .fq-col-tit h2 { margin:0; font-size:13px; font-weight:700; color:var(--texto-forte); }
+  .fq-col-tit p { margin:1px 0 0; font-size:11px; line-height:1.3; color:var(--texto-suave); }
+  .fq-col-cab .qtd { margin-left:auto; font-family:var(--fq-mono); font-size:20px; font-weight:600; color:var(--texto-forte); }
+  /* lista rola por dentro, com barra fina que só aparece ao passar o mouse */
+  .fq-col-lista { display:flex; flex-direction:column; gap:10px; max-height:calc(100vh - 330px); min-height:150px; overflow-y:auto; overflow-x:hidden; padding:4px 6px 10px 2px;
+                  scrollbar-width:thin; scrollbar-color:transparent transparent; scrollbar-gutter:stable; }
+  .fq-col-lista:hover { scrollbar-color:var(--borda-forte) transparent; }
+  .fq-col-lista::-webkit-scrollbar { width:6px; }
+  .fq-col-lista::-webkit-scrollbar-thumb { background:transparent; border-radius:99px; }
+  .fq-col-lista:hover::-webkit-scrollbar-thumb { background:var(--borda-forte); }
+  @media (max-width: 1280px) { .fq-col-lista { max-height:560px; } }
+  .fq-grupo { display:flex; align-items:center; gap:8px; font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--cor); margin:4px 2px -2px; }
+  .fq-grupo::after { content:""; flex:1; height:1px; background:color-mix(in srgb, var(--cor) 30%, transparent); }
+  .fq-vazio { display:flex; flex-direction:column; align-items:center; gap:8px; border:1.5px dashed var(--borda-forte); border-radius:14px; padding:26px 14px; text-align:center; font-size:12px; line-height:1.45; color:var(--texto-suave); }
+  .fq-vazio svg { width:24px; height:24px; color:var(--cor); opacity:.7; }
+
+  /* ── Destinos ao arrastar ───────────────────── */
+  .fq-drop { position:absolute; inset:-1px; z-index:3; border-radius:18px; display:none; flex-direction:column; align-items:center; justify-content:flex-start; gap:6px; padding:110px 24px 24px; text-align:center; pointer-events:none; }
+  .fq-drop b { font-size:15px; color:var(--texto-forte); }
+  .fq-drop small { font-size:12px; color:var(--texto-medio); max-width:220px; line-height:1.4; }
+  .fq-drop-ico { width:52px; height:52px; border-radius:16px; display:grid; place-items:center; margin-bottom:4px; }
+  .fq-drop-ico svg { width:26px; height:26px; }
+  .fq-quadro.arrastando .fq-col[data-drop="agendar"] .fq-drop,
+  .fq-quadro.arrastando .fq-col[data-drop="tirar"] .fq-drop { display:flex; border:2px dashed var(--cor); background:color-mix(in srgb, var(--cor) 12%, color-mix(in srgb, var(--fundo-sutil) 85%, transparent)); backdrop-filter:blur(3px); animation:dropPulsa 1.4s ease-in-out infinite; }
+  .fq-quadro.arrastando .fq-col[data-drop="agendar"] .fq-drop-ico,
+  .fq-quadro.arrastando .fq-col[data-drop="tirar"] .fq-drop-ico { color:#fff; background:var(--cor); box-shadow:0 8px 24px color-mix(in srgb, var(--cor) 45%, transparent); }
+  .fq-quadro.arrastando .fq-col.alvo .fq-drop { border-style:solid; background:color-mix(in srgb, var(--cor) 24%, var(--fundo-card)); animation:none; }
+  .fq-quadro.arrastando .fq-col.alvo .fq-drop-ico { transform:scale(1.12); transition:transform .15s; }
+  .fq-quadro.arrastando .fq-col[data-drop="bloq"] .fq-drop { display:flex; background:color-mix(in srgb, var(--fundo-sutil) 80%, transparent); backdrop-filter:blur(4px) grayscale(.7); }
+  .fq-quadro.arrastando .fq-col[data-drop="bloq"] .fq-drop-ico { color:var(--texto-suave); background:var(--fundo-muted); }
+  .fq-quadro.arrastando .fq-col[data-drop="bloq"] .fq-drop b { font-size:13px; color:var(--texto-medio); }
+  .fq-quadro.arrastando .fq-col[data-drop="bloq"] { border-color:var(--borda); }
+  @keyframes dropPulsa { 50% { box-shadow:0 0 0 6px color-mix(in srgb, var(--cor) 18%, transparent); } }
+
+  /* ── Card ───────────────────────────────────── */
+  .fc { --u:var(--fq-azul); position:relative; background:var(--fundo-card); border:1px solid var(--borda); border-radius:14px; padding:11px 12px 10px 15px; cursor:pointer; transition:transform .18s, box-shadow .18s, border-color .18s; animation:fcEntra .35s ease both; }
+  .fc.u-alta  { --u:var(--fq-verm); }
+  .fc.u-media { --u:var(--fq-amb); }
+  .fc.u-ok    { --u:#94a3b8; }
+  .fc::before { content:""; position:absolute; left:0; top:12px; bottom:12px; width:3px; border-radius:0 3px 3px 0; background:var(--u); }
+  .fc.u-alta::before { box-shadow:0 0 10px var(--u); }
+  .fc:hover { transform:translateY(-2px); border-color:color-mix(in srgb, var(--u) 45%, var(--borda)); box-shadow:0 10px 26px -8px color-mix(in srgb, var(--u) 35%, rgba(15,23,42,.25)); }
+  .fc:focus-visible { outline:none; border-color:var(--fq-azul); box-shadow:0 0 0 3px rgba(59,130,246,.25); }
+  .fc.sel { border-color:var(--fq-azul); box-shadow:0 0 0 3px rgba(59,130,246,.2); }
+  .fc.arrastando { opacity:.35; transform:scale(.97); animation:none; }
+  @keyframes fcEntra { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  .fc-top { display:flex; align-items:center; gap:6px; margin-bottom:7px; }
+  .fc-grip { width:14px; height:14px; color:var(--texto-leve); cursor:grab; margin-left:-4px; opacity:.6; transition:opacity .15s, color .15s; }
+  .fc:hover .fc-grip { opacity:1; color:var(--texto-medio); }
+  .fc-id { font-family:var(--fq-mono); font-size:10.5px; color:var(--texto-leve); }
+  .fc-tec { font-size:10px; font-weight:700; letter-spacing:.03em; }
+  .fc-chip { margin-left:auto; font-family:var(--fq-mono); font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:99px; display:inline-flex; align-items:center; gap:5px; color:var(--u); background:color-mix(in srgb, var(--u) 13%, transparent); }
+  .u-media .fc-chip { color:#d97706; }
+  .fc-hora { display:inline-flex; align-items:center; gap:4px; font-family:var(--fq-mono); font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:99px; color:#fff; background:linear-gradient(135deg, var(--fq-ciano), var(--fq-azul)); box-shadow:0 2px 8px rgba(6,182,212,.35); }
+  .fc-hora svg { width:11px; height:11px; }
+  .pulso { width:6px; height:6px; border-radius:50%; background:currentColor; animation:pulso 1.4s ease-out infinite; }
+  @keyframes pulso { 0% { box-shadow:0 0 0 0 rgba(239,68,68,.6); } 100% { box-shadow:0 0 0 7px rgba(239,68,68,0); } }
+  .fc-corpo { display:flex; align-items:center; gap:10px; }
+  .fc-txt { flex:1; min-width:0; }
+  .fc h3 { margin:0; font-size:13.5px; font-weight:650; color:var(--texto-forte); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fc-sub { font-size:11.5px; color:var(--texto-suave); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* anel de SLA: dias em aberto contra o prazo */
+  .fc-anel { --p:0; position:relative; flex:none; width:42px; height:42px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(var(--u) calc(var(--p) * 1%), var(--fundo-muted) 0); }
+  .fc-anel::before { content:""; position:absolute; inset:4px; border-radius:50%; background:var(--fundo-card); }
+  .fc-anel span { position:relative; font-family:var(--fq-mono); font-size:11.5px; font-weight:700; color:var(--texto-forte); line-height:1; text-align:center; }
+  .fc-anel small { display:block; font-size:8.5px; font-weight:500; color:var(--texto-suave); }
+  .fc-motivo { display:flex; gap:6px; align-items:flex-start; margin-top:9px; padding:6px 8px; border-radius:8px; font-size:11.5px; line-height:1.35; color:var(--texto-2); background:var(--fundo-sutil); }
+  .fc-motivo svg { width:13px; height:13px; flex:none; margin-top:1px; color:var(--u); }
+  .fc-motivo.volta { color:var(--fq-ciano); background:color-mix(in srgb, var(--fq-ciano) 10%, transparent); font-weight:600; }
+  .fc-motivo.volta svg { color:var(--fq-ciano); }
+  .fc-nota { font-size:11.5px; color:var(--texto-suave); font-style:italic; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fc-rodape { display:flex; align-items:center; gap:6px; margin-top:9px; }
+  .fc-rodape .badge-status { font-size:10px; padding:2px 8px; max-width:150px; overflow:hidden; text-overflow:ellipsis; }
+  .fc-acao { margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding:4px 9px; border:1px solid var(--borda); border-radius:8px; background:transparent; color:var(--texto-medio); font-family:inherit; font-size:11px; cursor:pointer; transition:all .15s; }
+  .fc-acao:hover { border-color:var(--fq-ciano); color:var(--fq-ciano); background:color-mix(in srgb, var(--fq-ciano) 8%, transparent); }
+  .fc-acao svg { width:12px; height:12px; }
+
+  /* ── Status (mesmas cores da Pendente) ─────── */
+  .badge-status { display:inline-flex; align-items:center; padding:3px 10px; border-radius:99px; font-size:11px; font-weight:600; white-space:nowrap; }
+  .status-aguardando-banco       { background-color:var(--bg-dbeafe); color:var(--tx-1d4ed8); }
+  .status-aguardando-cliente     { background-color:var(--bg-ffedd5); color:var(--tx-c2410c); }
+  .status-aguardando-comercial   { background-color:var(--bg-fef9c3); color:var(--tx-854d0e); }
+  .status-aguardando-atualizacao { background-color:var(--bg-ede9fe); color:var(--tx-6d28d9); }
+  .status-homologado             { background-color:var(--bg-dcfce7); color:var(--tx-15803d); }
+  .status-falta-cadastrar        { background-color:var(--bg-fee2e2); color:var(--tx-991b1b); }
+  .status-pendente-treinamento   { background-color:var(--bg-fef3c7); color:var(--tx-92400e); }
+  .status-pendencia-em-prog      { background-color:#fce7f3; color:#9d174d; }
+  .status-em-processo            { background-color:#ccfbf1; color:#0f766e; }
+  .status-cancelado              { background-color:var(--bg-fca5a5); color:var(--tx-7f1d1d); }
+  .status-padrao                 { background-color:var(--fundo-muted); color:var(--texto-medio); }
+
+  /* ── Painel de detalhes ─────────────────────── */
+  .fq-painel { position:fixed; top:0; right:0; bottom:0; width:min(410px, 94vw); background:var(--fundo-card); border-left:1px solid var(--borda); box-shadow:-18px 0 40px rgba(15,23,42,.18); transform:translateX(105%); transition:transform .25s ease; z-index:1001; display:flex; flex-direction:column; }
+  .fq-painel.aberto { transform:none; }
+  .fq-painel-cab { padding:18px 20px 14px; border-bottom:1px solid var(--borda); background:linear-gradient(120deg, rgba(59,130,246,.08), transparent 60%); }
+  .fq-painel-cab .fc-id { font-size:11px; }
+  .fq-painel-cab h3 { margin:4px 30px 2px 0; font-size:17px; color:var(--texto-forte); }
+  .fq-painel-cab p { margin:0; font-size:12.5px; color:var(--texto-suave); }
+  .fq-fechar { position:absolute; top:14px; right:14px; width:30px; height:30px; border:1px solid var(--borda); border-radius:8px; background:var(--fundo-card); color:var(--texto-medio); cursor:pointer; font-size:16px; }
+  .fq-painel-corpo { padding:16px 20px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; }
+  .fq-bloco-rot { font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--texto-suave); margin-bottom:6px; }
+  .fq-grade { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .fq-dado { background:var(--fundo-sutil); border:1px solid var(--borda); border-radius:10px; padding:8px 10px; }
+  .fq-dado span { display:block; font-size:10.5px; color:var(--texto-suave); }
+  .fq-dado b { font-family:var(--fq-mono); font-size:13px; color:var(--texto-escuro); font-weight:600; }
+  .fq-motivos { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px; }
+  .fq-motivos li { font-size:12.5px; color:var(--texto-2); padding:7px 10px; border-radius:8px; background:var(--fundo-sutil); border:1px solid var(--borda); }
+  .fq-texto { font-size:12.5px; color:var(--texto-2); white-space:pre-wrap; background:var(--fundo-sutil); border:1px solid var(--borda); border-radius:10px; padding:9px 11px; }
+  .fq-painel select, .fq-painel input { width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--borda); border-radius:9px; background:var(--fundo-card); color:var(--texto-escuro); font-family:inherit; font-size:13px; }
+  .fq-agenda { border:1px solid color-mix(in srgb, var(--fq-ciano) 35%, var(--borda)); border-radius:12px; padding:12px; background:color-mix(in srgb, var(--fq-ciano) 6%, transparent); }
+  .fq-agenda-dica { margin:0 0 10px; font-size:11.5px; line-height:1.45; color:var(--texto-medio); }
+  .fq-data-hora { display:grid; grid-template-columns:1fr 110px; gap:8px; }
+  .fq-agenda-aviso { display:flex; gap:7px; align-items:flex-start; margin:10px 0 0; font-size:11px; line-height:1.45; color:var(--texto-suave); }
+  .fq-agenda-aviso svg { width:13px; height:13px; flex:none; margin-top:1px; color:var(--fq-ciano); }
+  .fq-atalhos { display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin:8px 0; }
+  .fq-btn { padding:7px 10px; border:1px solid var(--borda-forte); border-radius:8px; background:transparent; color:var(--texto-escuro); font-family:inherit; font-size:12px; cursor:pointer; transition:all .15s; }
+  .fq-btn:hover { border-color:var(--fq-azul); color:var(--fq-azul); }
+  .fq-btn.prim { background:linear-gradient(135deg, var(--fq-azul), #2563eb); border-color:var(--fq-azul); color:#fff; }
+  .fq-btn.prim:hover { filter:brightness(1.08); color:#fff; }
+  .fq-painel-rodape { padding:12px 20px; border-top:1px solid var(--borda); display:flex; gap:8px; justify-content:space-between; }
+  .fq-veu { position:fixed; inset:0; background:rgba(15,23,42,.25); opacity:0; pointer-events:none; transition:opacity .2s; z-index:1000; }
+  .fq-veu.aberto { opacity:1; pointer-events:auto; }
+  .fq-aviso { padding:16px 18px; border:1px solid var(--borda); border-radius:14px; background:var(--fundo-card); font-size:13px; color:var(--texto-medio); }
+  .fq-teclas { font-size:11px; color:var(--texto-suave); display:flex; gap:14px; justify-content:flex-end; margin-top:10px; }
+</style>
+{% endblock %}
+
+{% macro icone(chave) -%}
+  {%- if chave == 'agora' -%}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+  {%- elif chave == 'retomar' -%}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+  {%- elif chave == 'aguardando' -%}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12M6 22h12M7 2v4a5 5 0 0 0 10 0V2M7 22v-4a5 5 0 0 1 10 0v4"/></svg>
+  {%- else -%}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/><path d="M8 15h3"/></svg>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro card(p, col) %}
+  {% set faixa = p.sla_faixa %}
+  {% set urg = 'alta' if faixa in ('vencido','atrasado','critico') else ('media' if faixa == 'atencao' else ('baixa' if p.vez == 'comigo' else 'ok')) %}
+  {% set prazo = (p.sla_prazo or {}).get('prazo_total', 30) or 30 %}
+  {% set pct = [((p.dias_em_aberto or 0) / prazo * 100) | round | int, 100] | min %}
+  {% set dt_volta = (p.retomar_em[8:10] ~ '/' ~ p.retomar_em[5:7]) if p.retomar_em else '' %}
+  {% set hr_volta = p.retomar_hora or '' %}
+  {% set motivos = p.motivos or [('Retorno agendado para ' ~ dt_volta) if p.retomar_em else 'Sem motivo'] %}
+  <article class="fc u-{{ urg }}" draggable="true" tabindex="0" title="Clique para abrir · arraste para agendar"
+    data-id="{{ p.id }}" data-col="{{ col }}" data-faixa="{{ faixa }}" data-parado="{{ p.dias_parado }}"
+    data-busca="{{ (p.empresa ~ ' ' ~ p.banco ~ ' ' ~ p.servico ~ ' ' ~ p.status ~ ' ' ~ (p.tecnico or '') ~ ' ' ~ (p.obs or '')) | lower }}"
+    data-empresa="{{ p.empresa or '' }}" data-banco="{{ p.banco or '' }}" data-servico="{{ p.servico or '' }}"
+    data-tecnico="{{ p.tecnico or '' }}" data-status="{{ p.status or '' }}"
+    data-dt-solicita="{{ p.dt_solicita or '—' }}" data-dias="{{ p.dias_em_aberto }}" data-prazo="{{ prazo }}"
+    data-restantes="{{ p.dias_restantes }}" data-vez="{{ p.vez_rotulo or 'Técnico' }}"
+    data-retomar="{{ p.retomar_em or '' }}" data-hora="{{ hr_volta }}" data-nota="{{ p.retomar_nota or '' }}"
+    data-obs="{{ p.obs or '' }}" data-obs-interna="{{ p.obs_interna or '' }}"
+    data-motivos="{{ motivos | join('|') }}">
+    <div class="fc-top">
+      <svg class="fc-grip" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+      <span class="fc-id">#{{ p.id }}</span>
+      {% if tecnico is none %}<span class="fc-tec" style="color:{{ cores_tecnicos.get(p.tecnico, '#64748b') }}">{{ p.tecnico or 'SEM TEC.' }}</span>{% endif %}
+      {% if p.hora_hoje %}<span class="fc-hora" title="Compromisso hoje às {{ p.hora_hoje }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Hoje {{ p.hora_hoje }}</span>{% endif %}
+      <span class="fc-chip">
+        {% if faixa == 'critico' %}<span class="pulso"></span>{% endif %}
+        {% if urg == 'alta' %}SLA +{{ -p.dias_restantes }}d{% elif faixa == 'atencao' %}vence em {{ p.dias_restantes }}d{% else %}{{ p.dias_restantes }}d no prazo{% endif %}
+      </span>
+    </div>
+    <div class="fc-corpo">
+      <div class="fc-txt">
+        <h3 title="{{ p.empresa }}">{{ p.empresa or '—' }}</h3>
+        <div class="fc-sub">{{ p.banco or '—' }} · {{ p.servico or '—' }}</div>
+      </div>
+      <div class="fc-anel" style="--p:{{ pct }}" title="{{ p.dias_em_aberto }} dias em aberto de {{ prazo }} do SLA"><span>{{ p.dias_em_aberto }}<small>/{{ prazo }}d</small></span></div>
+    </div>
+    {% if col == 'adiados' %}
+    <div class="fc-motivo volta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      <span>Volta para a fila {{ 'amanhã' if p.dias_para_voltar == 1 else 'em ' ~ p.dias_para_voltar ~ ' dias' }} · {{ dt_volta }}{% if hr_volta %} às {{ hr_volta }}{% endif %}</span>
+    </div>
+    {% else %}
+    <div class="fc-motivo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span>{{ motivos[0] }}{% if motivos | length > 1 %} <span style="color:var(--texto-leve)">+{{ motivos | length - 1 }}</span>{% endif %}</span>
+    </div>
+    {% endif %}
+    {% if p.retomar_nota %}<div class="fc-nota">“{{ p.retomar_nota }}”</div>{% endif %}
+    <div class="fc-rodape">
+      <span class="badge-status {{ p.status | css_status }}" title="{{ p.status }}">{{ p.status or '—' }}</span>
+      <button type="button" class="fc-acao" onclick="event.stopPropagation(); abrirPainel(this.closest('.fc'), true)" title="{{ 'Mudar agendamento' if p.retomar_em else 'Agendar retorno' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
+        {{ (dt_volta ~ (' ' ~ hr_volta if hr_volta else '')) if dt_volta else 'Agendar' }}
+      </button>
+    </div>
+  </article>
+{% endmacro %}
+
+{% macro coluna(chave, titulo, cor, dica, itens, vazio) %}
+  <section class="fq-col" data-col="{{ chave }}" style="--cor:{{ cor }}">
+    <div class="fq-col-cab">
+      <span class="fq-col-ico">{{ icone(chave) }}</span>
+      <div class="fq-col-tit"><h2>{{ titulo }}</h2><p>{{ dica }}</p></div>
+      <span class="qtd" data-qtd="{{ chave }}">{{ itens | length }}</span>
+    </div>
+    <div class="fq-col-lista">
+      {% set ns = namespace(grupo='') %}
+      {% for p in itens %}
+        {% if chave == 'adiados' %}
+          {% set g = 'Amanhã' if p.dias_para_voltar <= 1 else ('Próximos 7 dias' if p.dias_para_voltar <= 7 else 'Mais adiante') %}
+          {% if g != ns.grupo %}<div class="fq-grupo">{{ g }}</div>{% set ns.grupo = g %}{% endif %}
+        {% endif %}
+        {{ card(p, chave) }}
+      {% endfor %}
+      <div class="fq-vazio" {% if itens %}style="display:none"{% endif %}>{{ icone(chave) }}<span>{{ vazio }}</span></div>
+    </div>
+    <div class="fq-drop" aria-hidden="true"></div>
+  </section>
+{% endmacro %}
+
+{% block conteudo %}
+
+{% if sem_tecnico %}
+  <div class="fq-aviso">Seu usuário não tem técnico vinculado, então não há fila para mostrar. Peça a um administrador para vincular um técnico no Cadastro de Usuários.</div>
+{% else %}
+
+<div class="fq-kpis">
+  <div class="fq-kpi">
+    <div class="fq-kpi-rot">Saúde da fila{% if tecnico %} · {{ tecnico }}{% endif %}</div>
+    <div class="fq-saude-barra" aria-label="Distribuição por SLA">{% if n_total %}{% if n_alta %}<span style="width:{{ (n_alta / n_total * 100) | round(1) }}%;background:var(--fq-verm)"></span>{% endif %}{% if n_media %}<span style="width:{{ (n_media / n_total * 100) | round(1) }}%;background:var(--fq-amb)"></span>{% endif %}{% if n_ok %}<span style="width:{{ (n_ok / n_total * 100) | round(1) }}%;background:var(--fq-verde)"></span>{% endif %}{% endif %}</div>
+    <div class="fq-saude-leg">
+      <span><i style="background:var(--fq-verm)"></i>SLA estourado <b>{{ n_alta }}</b></span>
+      <span><i style="background:var(--fq-amb)"></i>Vence em breve <b>{{ n_media }}</b></span>
+      <span><i style="background:var(--fq-verde)"></i>No prazo <b>{{ n_ok }}</b></span>
+    </div>
+  </div>
+  <div class="fq-kpi"><div class="fq-kpi-rot">Na fila</div><div class="fq-kpi-num" data-contar="{{ n_total }}">{{ n_total }}</div></div>
+  {% if homologados_hoje is not none %}
+  <div class="fq-kpi" style="--brilho:rgba(16,185,129,.16)"><div class="fq-kpi-rot">Homologados hoje</div><div class="fq-kpi-num" style="color:var(--fq-verde)" data-contar="{{ homologados_hoje }}">{{ homologados_hoje }}</div></div>
+  {% endif %}
+  {% if acesso_os %}
+  <a class="fq-kpi" href="/controle-os?status=PENDENTE{% if tecnico %}&tecnico={{ tecnico | urlencode }}{% endif %}"style="--brilho:rgba(6,182,212,.16)"><div class="fq-kpi-rot">O.S. abertas ↗</div><div class="fq-kpi-num" data-contar="{{ os_abertas }}">{{ os_abertas }}</div></a>
+  {% endif %}
+</div>
+
+<div class="fq-guia" id="fq-guia" hidden>
+  <div class="fq-passo">
+    <span class="fq-passo-n">1</span>
+    <div><b>As três primeiras colunas são automáticas</b>
+      <p>O card cai em <span class="fq-tag" style="--cor:#3b82f6">Faça agora</span>, <span class="fq-tag" style="--cor:#ef4444">Retomar / cobrar</span> ou <span class="fq-tag" style="--cor:#94a3b8">Aguardando</span> conforme o status e o SLA. Para mudar de coluna, troque o status.</p></div>
+  </div>
+  <span class="fq-seta">→</span>
+  <div class="fq-passo">
+    <span class="fq-passo-n">2</span>
+    <div><b>Arraste para Agendados</b>
+      <p>Tira o card da sua frente até a data que você escolher, com um lembrete. Também dá pelo botão <b>Agendar</b> do card.</p></div>
+  </div>
+  <span class="fq-seta">→</span>
+  <div class="fq-passo">
+    <span class="fq-passo-n">3</span>
+    <div><b>Na data, ele volta sozinho</b>
+      <p>Aparece em <span class="fq-tag" style="--cor:#ef4444">Retomar / cobrar</span> com o seu lembrete. Para desistir antes, arraste de volta para qualquer coluna.</p></div>
+  </div>
+  <button type="button" class="fq-btn prim" onclick="guia(false)">Entendi</button>
+</div>
+
+<div class="fq-cmd">
+  <div class="fq-busca">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="fq-busca" placeholder="Filtrar por empresa, banco, serviço ou status" autocomplete="off">
+    <kbd>/</kbd>
+  </div>
+  <div class="fq-chips" role="group" aria-label="Filtro de urgência">
+    <button type="button" class="fq-chip ativo" data-filtro="todos">Todos</button>
+    <button type="button" class="fq-chip" data-filtro="alta"><i style="background:var(--fq-verm)"></i>SLA estourado</button>
+    <button type="button" class="fq-chip" data-filtro="media"><i style="background:var(--fq-amb)"></i>Vence em breve</button>
+    <button type="button" class="fq-chip" data-filtro="parado"><i style="background:var(--fq-azul)"></i>Parado 7+ dias</button>
+  </div>
+  {% if ve_todos %}
+  <select class="fq-sel" aria-label="Ver fila de" onchange="location.href='/minha-fila?tecnico=' + encodeURIComponent(this.value)">
+    <option value="" {% if tecnico is none %}selected{% endif %}>Todos os técnicos</option>
+    {% for t in lista_tecnicos %}<option value="{{ t.nome }}" {% if tecnico == t.nome %}selected{% endif %}>{{ t.nome }}</option>{% endfor %}
+    <option value="SEM TEC." {% if tecnico == 'SEM TEC.' %}selected{% endif %}>Sem técnico</option>
+  </select>
+  {% endif %}
+  <button type="button" class="fq-ajuda-btn" id="fq-ajuda-btn" onclick="guia(document.getElementById('fq-guia').hidden)" aria-expanded="false" aria-controls="fq-guia">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01"/></svg>
+    Como funciona
+  </button>
+</div>
+
+<div class="fq-quadro" id="fq-quadro">
+  {{ coluna('agora', 'Faça agora', '#3b82f6', 'A vez é sua: depende de você.', fila.agora, 'Nada parado com você agora.') }}
+  {{ coluna('retomar', 'Retomar / cobrar', '#ef4444', 'Retorno chegou ou ninguém respondeu.', fila.retomar, 'Nenhum retorno para hoje.') }}
+  {{ coluna('aguardando', 'Aguardando outros', '#94a3b8', 'Com cliente, banco ou outro setor.', fila.aguardando, 'Nada aguardando resposta.') }}
+  {{ coluna('adiados', 'Agendados', '#06b6d4', 'Fora da sua frente até a data.', fila.adiados, 'Arraste um card para cá para tirá-lo da frente até uma data. Ele volta sozinho em Retomar / cobrar.') }}
+</div>
+
+<div class="fq-teclas">
+  <span><kbd>/</kbd> filtrar</span><span><kbd>Enter</kbd> abrir card</span><span><kbd>Esc</kbd> fechar</span>
+</div>
+
+{% endif %}
+
+<div class="fq-veu" id="fq-veu" onclick="fecharPainel()"></div>
+<aside class="fq-painel" id="fq-painel" role="dialog" aria-modal="true" aria-labelledby="fp-empresa">
+  <button type="button" class="fq-fechar" onclick="fecharPainel()" aria-label="Fechar">×</button>
+  <div class="fq-painel-cab">
+    <span class="fc-id" id="fp-id"></span>
+    <h3 id="fp-empresa"></h3>
+    <p id="fp-sub"></p>
+  </div>
+  <div class="fq-painel-corpo">
+    <div>
+      <div class="fq-bloco-rot">Por que está na fila</div>
+      <ul class="fq-motivos" id="fp-motivos"></ul>
+    </div>
+    <div class="fq-grade">
+      <div class="fq-dado"><span>Solicitado em</span><b id="fp-dt"></b></div>
+      <div class="fq-dado"><span>SLA</span><b id="fp-sla"></b></div>
+      <div class="fq-dado"><span>Parado há</span><b id="fp-parado"></b></div>
+      <div class="fq-dado"><span>Vez com</span><b id="fp-vez"></b></div>
+    </div>
+    <div>
+      <div class="fq-bloco-rot">Status</div>
+      <select id="fp-status" aria-label="Status">
+        {% for s in lista_status %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="fq-agenda" id="fp-retomar-bloco">
+      <div class="fq-bloco-rot" style="color:var(--fq-ciano)">Agendar retorno</div>
+      <p class="fq-agenda-dica">O card vai para <b>Agendados</b> e sai da sua frente. Na data escolhida ele volta sozinho em <b>Retomar / cobrar</b>, com o lembrete abaixo.</p>
+      <div class="fq-data-hora">
+        <input type="date" id="fp-data" aria-label="Data de retorno">
+        <input type="time" id="fp-hora" aria-label="Hora (opcional)" title="Hora (opcional): para treinamentos e compromissos marcados">
+      </div>
+      <div class="fq-atalhos">
+        <button type="button" class="fq-btn" onclick="atalho(1)">Amanhã</button>
+        <button type="button" class="fq-btn" onclick="atalho(3)">+3 dias</button>
+        <button type="button" class="fq-btn" onclick="atalho(7)">+7 dias</button>
+        <button type="button" class="fq-btn" onclick="atalho(15)">+15 dias</button>
+      </div>
+      <input type="text" id="fp-nota" maxlength="200" placeholder="Lembrete: cobrar arquivo de remessa teste" aria-label="Lembrete">
+      <p class="fq-agenda-aviso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <span>O técnico recebe um aviso no sistema (sininho, som e alerta na tela) no <b>início do dia</b>. Com hora marcada, recebe outro <b>30 minutos antes</b>.</span></p>
+    </div>
+    <div id="fp-obs-bloco"><div class="fq-bloco-rot">Observação</div><div class="fq-texto" id="fp-obs"></div></div>
+    <div id="fp-obsi-bloco"><div class="fq-bloco-rot">Obs. interna</div><div class="fq-texto" id="fp-obsi"></div></div>
+  </div>
+  <div class="fq-painel-rodape">
+    <button type="button" class="fq-btn" id="fp-limpar" onclick="salvarRetomar(_painelId, '', '')">Remover agendamento</button>
+    <button type="button" class="fq-btn prim" onclick="salvarPainel()">Salvar</button>
+  </div>
+</aside>
+
+{% endblock %}
+
+{% block scripts_extras %}
+<script>
+  const $ = s => document.querySelector(s);
+  const cards = () => Array.from(document.querySelectorAll('.fc'));
+  let _painelId = null, _painelStatus = null, _filtro = 'todos';
+
+  function _isoLocal(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function _req(url, metodo, corpo) {
+    return fetch(url, { method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
+      .then(r => r.json())
+      .catch(() => ({ erro: 'Erro de comunicação.' }));
+  }
+
+  // ── Guia "Como funciona" (aparece até a pessoa clicar em Entendi) ──
+  function guia(mostrar) {
+    const g = $('#fq-guia'); if (!g) return;
+    g.hidden = !mostrar;
+    $('#fq-ajuda-btn').setAttribute('aria-expanded', mostrar);
+    if (!mostrar) localStorage.setItem('fq-guia-ok', '1');
+  }
+  if (!localStorage.getItem('fq-guia-ok')) guia(true);
+
+  // ── Filtros ───────────────────────────────────
+  const _norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  function aplicarFiltro() {
+    const termo = _norm(($('#fq-busca')?.value || '').trim());
+    cards().forEach(c => {
+      const f = c.dataset.faixa;
+      const urg = _filtro === 'todos'
+        || (_filtro === 'alta' && ['vencido', 'atrasado', 'critico'].includes(f))
+        || (_filtro === 'media' && f === 'atencao')
+        || (_filtro === 'parado' && Number(c.dataset.parado) >= 7);
+      c.style.display = urg && (!termo || _norm(c.dataset.busca).includes(termo)) ? '' : 'none';
+    });
+    document.querySelectorAll('.fq-col').forEach(col => {
+      const n = col.querySelectorAll('.fc:not([style*="none"])').length;
+      col.querySelector('.qtd').textContent = n;
+      col.querySelector('.fq-vazio').style.display = n ? 'none' : '';
+    });
+    // esconde o rótulo de grupo (Amanhã, Próximos 7 dias...) quando todos os cards dele sumiram
+    document.querySelectorAll('.fq-grupo').forEach(g => {
+      let el = g.nextElementSibling, algum = false;
+      while (el && el.classList.contains('fc')) { if (el.style.display !== 'none') algum = true; el = el.nextElementSibling; }
+      g.style.display = algum ? '' : 'none';
+    });
+  }
+  $('#fq-busca')?.addEventListener('input', aplicarFiltro);
+  document.querySelectorAll('.fq-chip').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.fq-chip').forEach(x => x.classList.toggle('ativo', x === b));
+    _filtro = b.dataset.filtro;
+    aplicarFiltro();
+  }));
+
+  // ── Painel de detalhes ────────────────────────
+  function abrirPainel(c, focarData) {
+    const d = c.dataset;
+    _painelId = d.id; _painelStatus = d.status;
+    cards().forEach(x => x.classList.toggle('sel', x === c));
+    $('#fp-id').textContent = '#' + d.id + (d.tecnico ? ' · ' + d.tecnico : '');
+    $('#fp-empresa').textContent = d.empresa || '—';
+    $('#fp-sub').textContent = (d.banco || '—') + ' · ' + (d.servico || '—');
+    $('#fp-motivos').innerHTML = '';
+    d.motivos.split('|').forEach(m => { const li = document.createElement('li'); li.textContent = m; $('#fp-motivos').appendChild(li); });
+    $('#fp-dt').textContent = d.dtSolicita;
+    const r = Number(d.restantes);
+    $('#fp-sla').textContent = r < 0 ? '+' + (-r) + 'd estourado' : r + 'd restantes';
+    $('#fp-parado').textContent = d.parado + ' dia(s)';
+    $('#fp-vez').textContent = d.vez;
+    const sel = $('#fp-status');
+    if (![...sel.options].some(o => o.value === d.status)) sel.add(new Option(d.status, d.status));
+    sel.value = d.status;
+    $('#fp-data').value = d.retomar; $('#fp-hora').value = d.hora; $('#fp-nota').value = d.nota;
+    $('#fp-limpar').style.visibility = d.retomar ? 'visible' : 'hidden';
+    $('#fp-obs').textContent = d.obs; $('#fp-obs-bloco').style.display = d.obs ? '' : 'none';
+    $('#fp-obsi').textContent = d.obsInterna; $('#fp-obsi-bloco').style.display = d.obsInterna ? '' : 'none';
+    $('#fq-veu').classList.add('aberto'); $('#fq-painel').classList.add('aberto');
+    if (focarData) setTimeout(() => $('#fp-data').focus(), 260);
+  }
+  function fecharPainel() {
+    $('#fq-veu').classList.remove('aberto'); $('#fq-painel').classList.remove('aberto');
+    cards().forEach(x => x.classList.remove('sel'));
+    _painelId = null;
+  }
+  function atalho(dias) { const d = new Date(); d.setDate(d.getDate() + dias); $('#fp-data').value = _isoLocal(d); }
+
+  async function salvarRetomar(id, data, nota, hora) {
+    const d = await _req('/pendente/retomar/' + id, 'PATCH', { retomar_em: data, nota, hora: hora || '' });
+    if (!d.sucesso) { mostrarToast('erro', d.erro || 'Erro ao salvar.'); return false; }
+    mostrarToast('sucesso', data ? 'Retorno agendado.' : 'Agendamento removido. O card voltou para a fila.');
+    setTimeout(() => location.reload(), 450);
+    return true;
+  }
+
+  async function salvarPainel() {
+    const id = _painelId, status = $('#fp-status').value, data = $('#fp-data').value, nota = $('#fp-nota').value;
+    const hora = data ? $('#fp-hora').value : '';
+    const card = document.querySelector('.fc[data-id="' + id + '"]');
+    const dataAntes = card ? card.dataset.retomar : '', notaAntes = card ? card.dataset.nota : '', horaAntes = card ? card.dataset.hora : '';
+    const st = status.toUpperCase();
+    if (status !== _painelStatus && (st === 'HOMOLOGADO' || st === 'CANCELADO')) { _moverRegistro(id, st, card); return; }
+    if (data) {
+      const agora = new Date(), hoje = _isoLocal(agora);
+      const hhmm = String(agora.getHours()).padStart(2, '0') + ':' + String(agora.getMinutes()).padStart(2, '0');
+      if (data < hoje || (data === hoje && (!hora || hora <= hhmm))) {
+        mostrarToast('erro', data === hoje ? 'Para hoje, informe uma hora que ainda não passou.' : 'Escolha uma data futura.'); return;
+      }
+    }
+    if (status !== _painelStatus) {
+      const d = await _req('/pendente/status/' + id, 'PATCH', { status });
+      if (!d.sucesso) { mostrarToast('erro', d.erro || 'Erro ao alterar status.'); return; }
+    }
+    if (data !== dataAntes || (data && (nota !== notaAntes || hora !== horaAntes))) { await salvarRetomar(id, data, nota, hora); return; }
+    mostrarToast('sucesso', 'Salvo.');
+    setTimeout(() => location.reload(), 450);
+  }
+
+  // ── Homologado / Cancelado: mesma regra da Hom. Pendente (confirma e move de aba) ──
+  const _destinoNomes = {
+    cobranca:       'Homologados Cobrança',
+    pagamentos:     'Homologados Pagamentos',
+    extrato:        'Homologados Extrato Cartão',
+    ext_bancario:   'Homologados Extrato Bancário',
+    'ext-bancario': 'Homologados Extrato Bancário',
+  };
+  const _servicoDestinoMapa = {{ lista_servicos_mapa | tojson }};
+  function _nomeAbaPorServico(servico) {
+    const s = (servico || '').toUpperCase().trim();
+    const dest = _servicoDestinoMapa[s] || '';
+    if (dest && _destinoNomes[dest]) return _destinoNomes[dest];
+    if (s.includes('EXTRAT')) return 'Homologados Extrato Cartão';
+    if (!s.includes('COBR')) return 'Homologados Pagamentos';
+    return 'Homologados Cobrança';
+  }
+  function _moverRegistro(id, st, card) {
+    const homologar = st === 'HOMOLOGADO';
+    const nomeAba = homologar ? _nomeAbaPorServico(card ? card.dataset.servico : '') : 'Hom. Canceladas';
+    abrirDialogo({
+      titulo: homologar ? 'Mover para ' + nomeAba + '?' : 'Mover para Cancelados?',
+      mensagem: `Esse registro será <strong>removido da aba Hom. Pendente</strong> e da sua fila, e movido para ${homologar ? '' : 'a aba '}<strong>${nomeAba}</strong>.`,
+      tipo: homologar ? 'info' : 'aviso',
+      textoBotao: homologar ? 'Homologar' : 'Cancelar registro',
+      callback: async () => {
+        const d = await fetch(`/pendente/${homologar ? 'homologar' : 'cancelar'}/${id}`, { method: 'POST' })
+          .then(r => r.json()).catch(() => ({ erro: 'Erro de comunicação.' }));
+        if (!d.sucesso) { mostrarToast('erro', d.erro || (homologar ? 'Erro ao homologar.' : 'Erro ao cancelar registro.')); return; }
+        mostrarToast('sucesso', homologar ? `Registro movido para ${d.nome_aba}!` : 'Registro movido para Cancelados.');
+        fecharPainel();
+        if (card) { card.style.transition = 'opacity .3s, transform .3s'; card.style.opacity = '0'; card.style.transform = 'scale(.95)'; }
+        setTimeout(() => location.reload(), 600);
+      }
+    });
+  }
+
+  // ── Arrastar e soltar ─────────────────────────
+  // Só existem dois movimentos: fila → Agendados (agendar) e Agendados → fila (desagendar).
+  // As outras colunas são calculadas pelo status/SLA, então ficam travadas durante o arraste.
+  const _ICO = {
+    agendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M12 14v4M10 16h4"/></svg>',
+    tirar:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>',
+    bloq:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  };
+  const _TXT = {
+    agendar: ['Solte aqui para agendar', 'Você escolhe a data e o card some da sua frente até lá.'],
+    tirar:   ['Solte para tirar do agendamento', 'O card volta para a fila na coluna certa.'],
+    bloq:    ['Coluna automática', 'O card entra aqui pelo status e pelo SLA, não arrastando.'],
+  };
+  let _arrastado = null;
+  cards().forEach(c => {
+    c.addEventListener('click', () => abrirPainel(c));
+    c.addEventListener('keydown', e => { if (e.key === 'Enter') abrirPainel(c); });
+    c.addEventListener('dragstart', e => {
+      _arrastado = c; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', c.dataset.id);
+      const deAgendados = c.dataset.col === 'adiados';
+      // mexer no DOM no mesmo frame do dragstart cancela o arraste no Chrome
+      requestAnimationFrame(() => {
+        c.classList.add('arrastando');
+        $('#fq-quadro').classList.add('arrastando');
+        document.querySelectorAll('.fq-col').forEach(col => {
+          const k = col.dataset.col;
+          const tipo = k === c.dataset.col ? 'origem'
+            : deAgendados ? 'tirar'
+            : k === 'adiados' ? 'agendar' : 'bloq';
+          col.dataset.drop = tipo;
+          const [t, s] = _TXT[tipo] || [];
+          col.querySelector('.fq-drop').innerHTML = t ? '<span class="fq-drop-ico">' + _ICO[tipo] + '</span><b>' + t + '</b><small>' + s + '</small>' : '';
+        });
+      });
+    });
+    c.addEventListener('dragend', () => {
+      c.classList.remove('arrastando');
+      $('#fq-quadro').classList.remove('arrastando');
+      document.querySelectorAll('.fq-col').forEach(col => { col.classList.remove('alvo'); delete col.dataset.drop; });
+    });
+  });
+  const _podeSoltar = col => ['agendar', 'tirar'].includes(col.dataset.drop);
+  document.querySelectorAll('.fq-col').forEach(col => {
+    col.addEventListener('dragover', e => { if (_arrastado && _podeSoltar(col)) { e.preventDefault(); col.classList.add('alvo'); } });
+    col.addEventListener('dragleave', e => { if (!col.contains(e.relatedTarget)) col.classList.remove('alvo'); });
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      const c = _arrastado, tipo = col.dataset.drop; _arrastado = null;
+      col.classList.remove('alvo');
+      if (!c) return;
+      if (tipo === 'agendar') { abrirPainel(c, true); if (!$('#fp-data').value) atalho(3); }
+      else if (tipo === 'tirar') salvarRetomar(c.dataset.id, '', '');
+    });
+  });
+
+  // ── Atalhos de teclado ────────────────────────
+  document.addEventListener('keydown', e => {
+    const digitando = ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName);
+    if (e.key === '/' && !digitando) { e.preventDefault(); $('#fq-busca')?.focus(); }
+    if (e.key === 'Escape') fecharPainel();
+  });
+
+  // ── Vindo de um alerta de agendamento (?abrir=<id>): abre o card direto ──
+  (function () {
+    const id = new URLSearchParams(location.search).get('abrir');
+    if (!id) return;
+    const c = document.querySelector('.fc[data-id="' + CSS.escape(id) + '"]');
+    if (!c) { mostrarToast('info', 'Esse registro não está mais na sua fila.'); return; }
+    c.scrollIntoView({ block: 'center' });
+    abrirPainel(c);
+  })();
+
+  // ── Contadores animados ───────────────────────
+  document.querySelectorAll('[data-contar]').forEach(el => {
+    const alvo = Number(el.dataset.contar); if (!alvo) return;
+    const t0 = performance.now();
+    const passo = t => { const k = Math.min((t - t0) / 600, 1); el.textContent = Math.round(alvo * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(passo); };
+    requestAnimationFrame(passo);
+  });
+</script>
+{% endblock %}
